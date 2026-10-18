@@ -100,6 +100,11 @@ function measureChaseTravel(
     snail.y = points.snail.y;
     player.x = points.player.x;
     player.y = points.player.y;
+    // Set once, then let it integrate: the orca is the only thing allowed to move.
+    if (i === 0) {
+      orca.x = points.orca.x;
+      orca.y = points.orca.y;
+    }
     orca.state = "chase";
     orca.props.timer = 0;
     orca.props.cooldown = Number.MAX_SAFE_INTEGER;
