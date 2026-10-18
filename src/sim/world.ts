@@ -82,7 +82,7 @@ function advancePlayer(world: World, player: Entity, input: InputState, dt: numb
   player.props.vy = dampedVy;
   player.x = clamp(player.x + dampedVx * dt, world.arena.minX, world.arena.maxX);
   player.y = clamp(player.y + dampedVy * dt, world.arena.minY, world.arena.maxY);
-  player.props.speed = Math.sqrt(dampedVx * dampedVx + dampedVy * dampedVy);
+  player.props.speed = Math.min(speed, MOVEMENT.maxSpeed);
 
   if (input.jump && (player.props.jumpMs ?? 0) <= 0) {
     player.props.jumpMs = MOVEMENT.jumpMs;
@@ -92,19 +92,16 @@ function advancePlayer(world: World, player: Entity, input: InputState, dt: numb
   if (jumpMs > 0) {
     const remaining = Math.max(0, jumpMs - dt * 1000);
     player.props.jumpMs = remaining;
-    player.y = clamp(
-      player.y -
-        Math.sin((1 - remaining / MOVEMENT.jumpMs) * Math.PI) * MOVEMENT.jumpHeight * dt * 8,
-      world.arena.minY,
-      world.arena.maxY,
-    );
+    // Lift is a separate 0..1 arc, not a y offset: y is depth, not height.
+    player.props.lift = Math.sin((1 - remaining / MOVEMENT.jumpMs) * Math.PI);
     player.anim = "jump";
     player.state = "jump";
     return;
   }
+  player.props.lift = 0;
 
   if (Math.abs(moveX) > 0.05) player.facing = moveX > 0 ? 1 : -1;
-  if (jumpMs <= 0 && input.action) {
+  if (input.action) {
     world.events.push({ type: "laser", id: player.id, x: player.x, y: player.y });
   }
 

@@ -123,9 +123,12 @@ export function pickBackground(
     );
   }
 
-  // Primary path: the preset already names the variant it wants.
+  // Primary path: the preset already names the variant it wants, and that
+  // variant has to belong to the family we were asked about.
   const declared = manifest.backgrounds.find((entry) => entry.id === preset.background);
-  if (declared !== undefined) {
+  const declaredIsInFamily =
+    declared !== undefined && (declared.id === backgroundId || declared.variantOf === backgroundId);
+  if (declaredIsInFamily) {
     return toChoice(declared, "preset-declared", preset.ratio, 0);
   }
 

@@ -71,7 +71,12 @@ describe("frames", () => {
       expect(entry.frameCount).toBe(1);
       expect(entry.grid).toEqual({ cols: 1, rows: 1 });
       expect(entry.tile).toEqual(entry.sourceSize);
-      expect(frameRect(entry, 0)).toEqual({ x: 0, y: 0, w: entry.sourceSize.w, h: entry.sourceSize.h });
+      expect(frameRect(entry, 0)).toEqual({
+        x: 0,
+        y: 0,
+        w: entry.sourceSize.w,
+        h: entry.sourceSize.h,
+      });
     }
   });
 

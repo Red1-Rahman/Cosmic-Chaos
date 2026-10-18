@@ -12,21 +12,25 @@ Alternatives: what was rejected and why
 ```
 
 ## 2026-10-19 sim: arena constants mirrored, not imported
+
 Context: `src/sim` may not fetch or import `src/assets`, but the sim needs the play band, field radius and default seed.
 Decision: `src/sim/game-config.ts` mirrors `public/assets/assets.json` `arena` verbatim (`ARENA`, `SPAWN_RULES`, `MOVEMENT` exported). The sim reads only that file.
 Alternatives: importing the JSON directly was rejected because it would couple the pure sim to the assets layer and its loader types. qa-ci owns a spec test asserting the mirror still matches assets.json.
 
 ## 2026-10-19 sim: spawn order and field avoidance
+
 Context: `createWorld` must place every character from the seeded stream, and nothing may start inside the snail's time field, which also rules out the player.
 Decision: order is player, snail, then orca, shark, tarantula, humans. The snail is placed first with the extra constraint `distance >= fieldRadius + 8` from the player, so the player never starts in the field. Orca, shark and tarantula use `spawnMinDistance` 220 plus the field margin. Rejection sampling runs 24 attempts (`assets.json maxAttempts`), then falls back to a deterministic golden-angle spiral so the function can never fail to return a point.
 Alternatives: placing the snail last and re-checking the player was rejected as it wastes stream draws and makes the seed hard to reason about. Entity ids are `player`, `snail`, `<kind>-1`, `human-1..n`.
 
 ## 2026-10-19 sim: hash quantisation
+
 Context: golden replay hashes must not trip over float noise.
 Decision: `hashWorld` rounds every number to 1e-6 before FNV-1a hashing and serialises `props` with sorted keys, so the hash is independent of prop insertion order. Output is an 8 hex digit string.
 Alternatives: hashing raw floats was rejected because it is unstable across engines.
 
 ## 2026-10-19 viewport-render: letterbox bar colour
+
 Context: `assets.json` has no `barColor`, but the letterbox and pillarbox bars have to be
 some colour, and the same value must exist in CSS and in Canvas 2D so the debug overlay
 matches the page.
@@ -36,6 +40,7 @@ Alternatives: pure `#000000` (dead flat, harsher on OLED), and `#0b1026` from th
 horizon (too light, reads as part of the scene).
 
 ## 2026-10-19 viewport-render: contain-fit, integer scale and device pixels
+
 Context: the manifest locks the canvas internal size to the preset logical size, so
 devicePixelRatio cannot change the render resolution.
 Decision: contain-fit only. `scale = min(winW/logicalW, winH/logicalH)`, rounded down to a
@@ -46,6 +51,7 @@ Alternatives: stretching to fill (rejected, distorts every sprite), rendering at
 window times devicePixelRatio (rejected, changes the logical size the sim works in).
 
 ## 2026-10-19 viewport-render: eight presets and the computeLayout signature
+
 Context: `assets.json` lists eight viewport presets. The last two, `1:sqrt2` and `9:20`,
 are portrait and name `canvas-03-mobile`; the rest name `canvas-03`. `tech-stack.json`
 only listed seven.
@@ -58,26 +64,31 @@ picking the nearest preset by raw ratio difference (rejected, log distance treat
 narrow gaps equally, which matches how the presets are spaced).
 
 ## 2026-10-19 role: audio: schedule events instead of node graphs
+
 Context: voice specs must be assertable in node, but `src/audio/web-audio-backend.ts` needs real Web Audio types and the AudioContext may only be created inside `unlock()`.
 Decision: `voices/*.ts` are plain data using locally declared `WaveKind`/`FilterKind` unions; `schedule.ts` expands a spec plus a start time into absolute-time parameter events (`gain`, `frequency`, `filterFrequency`, `detune`) with linear ramps and a quantized detune wobble. Only the backend touches DOM types.
 Alternatives: hand-written ramps per voice (rejected: untestable sound design), DOM types inside the specs (rejected: drags Web Audio into node tests).
 
 ## 2026-10-19 role: audio: engine hum is a continuous voice, not a one-shot
+
 Context: `setEngine(speed01, timeScale)` must be safe to call every frame, before `unlock()`, and must pitch down inside the Snail's field.
 Decision: `voices/engine.ts` holds an `EngineSpec` plus pure `engineFrequency`, `engineGain` and `engineFilterHz`. The backend starts two oscillators at `unlock()` and moves them with `setTargetAtTime`; a locked backend drops the update.
 Alternatives: restarting oscillators per change (rejected: clicks and node churn), reading the time scale from the sim (rejected: `src/audio` must not import `src/sim`).
 
 ## 2026-10-19 role: audio: rate limiting only counts cues that sounded
+
 Context: `play()` before `unlock()` must be harmless, but the clock is frozen at zero until a context exists, so naive last-played tracking would swallow the first real play after unlocking.
 Decision: `port.ts` records a timestamp only when the outcome was `played`. `muted`, `rate-limited` and `locked` attempts are still forwarded so the recording backend can assert on them.
 Alternatives: recording every attempt (rejected: a locked start ate the first cue after unlock).
 
 ## 2026-10-19 role: audio: noise buffer comes from the cosmetic RNG stream
+
 Context: `Math.random` is banned and the noise bursts must be reproducible.
 Decision: one shared 2 second mono buffer filled from `createRng(seed).fork("audio:noise")`; buffer start offsets are integer arithmetic on the schedule start time.
 Alternatives: `crypto` noise (banned), a fresh buffer per burst (rejected: wasted buffers, worse reproducibility).
 
 ## 2026-10-19 role: audio: codebase.txt describes a narrower AudioPort
+
 Context: `codebase.txt` line 71 lists `AudioPort { unlock(), play(cue), setMuted(bool) }`, but the lead's contract adds `setEngine` and `dispose`.
 Decision: implemented the lead's five-method contract. `codebase.txt` is human-owned and was left alone; the human should update that line.
 Alternatives: dropping `setEngine` (rejected: the hum has no other driver), editing `codebase.txt` (rejected: human-owned).

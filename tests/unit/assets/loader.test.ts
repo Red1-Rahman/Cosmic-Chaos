@@ -47,9 +47,12 @@ describe("listAssetReferences", () => {
   });
 
   it("matches every file the manifest declares", () => {
-    const referenced = new Set(listAssetReferences(manifest).map((entry) => entry.url.split("/").pop()));
+    const referenced = new Set(
+      listAssetReferences(manifest).map((entry) => entry.url.split("/").pop()),
+    );
     for (const sprite of manifest.sprites) expect(referenced.has(sprite.file)).toBe(true);
-    for (const background of manifest.backgrounds) expect(referenced.has(background.file)).toBe(true);
+    for (const background of manifest.backgrounds)
+      expect(referenced.has(background.file)).toBe(true);
   });
 });
 
@@ -59,7 +62,9 @@ describe("loadManifest", () => {
     const loaded = await loadManifest({
       manifestUrl: "assets/assets.json",
       fetchImpl: (input: RequestInfo | URL) => {
-        seen.push(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+        seen.push(
+          typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
+        );
         return Promise.resolve(jsonResponse(rawManifest));
       },
     });
@@ -109,7 +114,11 @@ describe("loadManifest", () => {
   });
 
   it("throws a typed error for invalid JSON", async () => {
-    const bad = { ok: true, status: 200, text: (): Promise<string> => Promise.resolve("{ nope") } as Response;
+    const bad = {
+      ok: true,
+      status: 200,
+      text: (): Promise<string> => Promise.resolve("{ nope"),
+    } as Response;
     let caught: unknown;
     try {
       await loadManifest({ fetchImpl: fetchReturning(bad) });
@@ -171,7 +180,7 @@ describe("loadImages", () => {
     try {
       await loadImages(manifest, {
         decode: (url) =>
-          url.includes("orca-swim")
+          url.toLowerCase().includes("orca-swim")
             ? Promise.reject(new Error("corrupt"))
             : Promise.resolve(fakeDecoded(1, 1)),
       });
@@ -188,7 +197,8 @@ describe("loadImages", () => {
     let caught: unknown;
     try {
       await loadImages(manifest, {
-        decode: () => Promise.reject(new AssetLoadError("image-request", "canvas-03", "status 500")),
+        decode: () =>
+          Promise.reject(new AssetLoadError("image-request", "canvas-03", "status 500")),
       });
     } catch (error) {
       caught = error;

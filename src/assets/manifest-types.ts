@@ -505,7 +505,8 @@ function parseProp(raw: Dict, path: string, g: Guard): ProceduralProp | undefine
     character,
     reason,
     rules: raw["rules"] === undefined ? undefined : asStringArray(raw["rules"], `${path}.rules`, g),
-    anchors: raw["anchors"] === undefined ? undefined : asVec2Array(raw["anchors"], `${path}.anchors`, g),
+    anchors:
+      raw["anchors"] === undefined ? undefined : asVec2Array(raw["anchors"], `${path}.anchors`, g),
     radius: asOptionalNumber(raw["radius"], `${path}.radius`, g),
     breathHz: asOptionalNumber(raw["breathHz"], `${path}.breathHz`, g),
     breathAmount: asOptionalNumber(raw["breathAmount"], `${path}.breathAmount`, g),
@@ -521,7 +522,11 @@ function parseProp(raw: Dict, path: string, g: Guard): ProceduralProp | undefine
   };
 }
 
-function asOptionalDict(value: unknown, path: string, g: Guard): Record<string, unknown> | undefined {
+function asOptionalDict(
+  value: unknown,
+  path: string,
+  g: Guard,
+): Record<string, unknown> | undefined {
   if (value === undefined) return undefined;
   return asRecord(value, path, g);
 }
@@ -547,7 +552,8 @@ function parseKeyframes(raw: unknown, path: string, g: Guard): Keyframe[] | unde
     const sx = asNumber(raw["sx"], `${at}.sx`, g);
     const sy = asNumber(raw["sy"], `${at}.sy`, g);
     const alpha = asNumber(raw["alpha"], `${at}.alpha`, g);
-    const easing = raw["easing"] === undefined ? undefined : asEasing(raw["easing"], `${at}.easing`, g);
+    const easing =
+      raw["easing"] === undefined ? undefined : asEasing(raw["easing"], `${at}.easing`, g);
     if (t !== undefined) {
       g.require(t >= 0 && t <= 1, `${at}.t`, "expected a value within [0, 1]");
       g.require(t >= previousT, `${at}.t`, "keyframe times must not decrease");
@@ -612,7 +618,9 @@ function parseCharacters(raw: Dict, g: Guard): Record<string, CharacterDefinitio
     const sprites = asStringArray(entry["sprites"], `${at}.sprites`, g);
     const animationsRaw = asRecord(entry["animations"], `${at}.animations`, g);
     const animations =
-      animationsRaw === undefined ? undefined : parseAnimations(animationsRaw, `${at}.animations`, g);
+      animationsRaw === undefined
+        ? undefined
+        : parseAnimations(animationsRaw, `${at}.animations`, g);
     const aliasesRaw =
       entry["aliases"] === undefined ? {} : asStringMap(entry["aliases"], `${at}.aliases`, g);
     const prop = asOptionalString(entry["prop"], `${at}.prop`, g);
@@ -650,38 +658,62 @@ function parseArena(raw: Dict, g: Guard): ArenaConfig | undefined {
   const origin = asString(raw["origin"], `${at}.origin`, g);
 
   const waterRaw = asRecord(raw["water"], `${at}.water`, g);
-  const horizonY = waterRaw === undefined ? undefined : asNumber(waterRaw["horizonY"], `${at}.water.horizonY`, g);
-  const shoreY = waterRaw === undefined ? undefined : asNumber(waterRaw["shoreY"], `${at}.water.shoreY`, g);
+  const horizonY =
+    waterRaw === undefined ? undefined : asNumber(waterRaw["horizonY"], `${at}.water.horizonY`, g);
+  const shoreY =
+    waterRaw === undefined ? undefined : asNumber(waterRaw["shoreY"], `${at}.water.shoreY`, g);
   const waterNote =
     waterRaw === undefined ? undefined : asOptionalString(waterRaw["note"], `${at}.water.note`, g);
 
   const playRaw = asRecord(raw["playBand"], `${at}.playBand`, g);
-  const minX = playRaw === undefined ? undefined : asNumber(playRaw["minX"], `${at}.playBand.minX`, g);
-  const maxX = playRaw === undefined ? undefined : asNumber(playRaw["maxX"], `${at}.playBand.maxX`, g);
-  const minY = playRaw === undefined ? undefined : asNumber(playRaw["minY"], `${at}.playBand.minY`, g);
-  const maxY = playRaw === undefined ? undefined : asNumber(playRaw["maxY"], `${at}.playBand.maxY`, g);
+  const minX =
+    playRaw === undefined ? undefined : asNumber(playRaw["minX"], `${at}.playBand.minX`, g);
+  const maxX =
+    playRaw === undefined ? undefined : asNumber(playRaw["maxX"], `${at}.playBand.maxX`, g);
+  const minY =
+    playRaw === undefined ? undefined : asNumber(playRaw["minY"], `${at}.playBand.minY`, g);
+  const maxY =
+    playRaw === undefined ? undefined : asNumber(playRaw["maxY"], `${at}.playBand.maxY`, g);
   const playNote =
     playRaw === undefined ? undefined : asOptionalString(playRaw["note"], `${at}.playBand.note`, g);
 
   const depthRaw = asRecord(raw["depth"], `${at}.depth`, g);
-  const scaleMin = depthRaw === undefined ? undefined : asNumber(depthRaw["scaleMin"], `${at}.depth.scaleMin`, g);
-  const scaleMax = depthRaw === undefined ? undefined : asNumber(depthRaw["scaleMax"], `${at}.depth.scaleMax`, g);
-  const tintFar = depthRaw === undefined ? undefined : asString(depthRaw["tintFar"], `${at}.depth.tintFar`, g);
-  const tintNear = depthRaw === undefined ? undefined : asString(depthRaw["tintNear"], `${at}.depth.tintNear`, g);
+  const scaleMin =
+    depthRaw === undefined ? undefined : asNumber(depthRaw["scaleMin"], `${at}.depth.scaleMin`, g);
+  const scaleMax =
+    depthRaw === undefined ? undefined : asNumber(depthRaw["scaleMax"], `${at}.depth.scaleMax`, g);
+  const tintFar =
+    depthRaw === undefined ? undefined : asString(depthRaw["tintFar"], `${at}.depth.tintFar`, g);
+  const tintNear =
+    depthRaw === undefined ? undefined : asString(depthRaw["tintNear"], `${at}.depth.tintNear`, g);
   const depthNote =
     depthRaw === undefined ? undefined : asOptionalString(depthRaw["note"], `${at}.depth.note`, g);
 
   const spawnRaw = asRecord(raw["spawn"], `${at}.spawn`, g);
-  const seedDefault = spawnRaw === undefined ? undefined : asNumber(spawnRaw["seedDefault"], `${at}.spawn.seedDefault`, g);
+  const seedDefault =
+    spawnRaw === undefined
+      ? undefined
+      : asNumber(spawnRaw["seedDefault"], `${at}.spawn.seedDefault`, g);
   const playerFraction =
-    spawnRaw === undefined ? undefined : asFractionBox(spawnRaw["playerFraction"], `${at}.spawn.playerFraction`, g);
+    spawnRaw === undefined
+      ? undefined
+      : asFractionBox(spawnRaw["playerFraction"], `${at}.spawn.playerFraction`, g);
   const enemyFraction =
-    spawnRaw === undefined ? undefined : asFractionBox(spawnRaw["enemyFraction"], `${at}.spawn.enemyFraction`, g);
+    spawnRaw === undefined
+      ? undefined
+      : asFractionBox(spawnRaw["enemyFraction"], `${at}.spawn.enemyFraction`, g);
   const ambientFraction =
-    spawnRaw === undefined ? undefined : asFractionBox(spawnRaw["ambientFraction"], `${at}.spawn.ambientFraction`, g);
+    spawnRaw === undefined
+      ? undefined
+      : asFractionBox(spawnRaw["ambientFraction"], `${at}.spawn.ambientFraction`, g);
   const spawnMinDistance =
-    spawnRaw === undefined ? undefined : asNumber(spawnRaw["spawnMinDistance"], `${at}.spawn.spawnMinDistance`, g);
-  const maxAttempts = spawnRaw === undefined ? undefined : asNumber(spawnRaw["maxAttempts"], `${at}.spawn.maxAttempts`, g);
+    spawnRaw === undefined
+      ? undefined
+      : asNumber(spawnRaw["spawnMinDistance"], `${at}.spawn.spawnMinDistance`, g);
+  const maxAttempts =
+    spawnRaw === undefined
+      ? undefined
+      : asNumber(spawnRaw["maxAttempts"], `${at}.spawn.maxAttempts`, g);
   const spawnNote =
     spawnRaw === undefined ? undefined : asOptionalString(spawnRaw["note"], `${at}.spawn.note`, g);
 
@@ -744,7 +776,11 @@ function parseArena(raw: Dict, g: Guard): ArenaConfig | undefined {
 function parseViewport(raw: Dict, g: Guard): ViewportConfig | undefined {
   const at = "viewport";
   const imageRendering = asString(raw["imageRendering"], `${at}.imageRendering`, g);
-  const integerScalePreferred = asBoolean(raw["integerScalePreferred"], `${at}.integerScalePreferred`, g);
+  const integerScalePreferred = asBoolean(
+    raw["integerScalePreferred"],
+    `${at}.integerScalePreferred`,
+    g,
+  );
   const integerScaleMinFill = asNumber(raw["integerScaleMinFill"], `${at}.integerScaleMinFill`, g);
   const select = asString(raw["select"], `${at}.select`, g);
 
@@ -769,7 +805,12 @@ function parseViewport(raw: Dict, g: Guard): ViewportConfig | undefined {
         seen.add(id);
       }
       if (ratio !== undefined) g.require(ratio > 0, `${p}.ratio`, "expected a positive ratio");
-      if (id === undefined || ratio === undefined || logical === undefined || background === undefined) {
+      if (
+        id === undefined ||
+        ratio === undefined ||
+        logical === undefined ||
+        background === undefined
+      ) {
         return;
       }
       presets.push({ id, ratio, logical, background });
@@ -777,7 +818,12 @@ function parseViewport(raw: Dict, g: Guard): ViewportConfig | undefined {
     if (g.issues.length !== before) return undefined;
   }
 
-  if (imageRendering === undefined || integerScalePreferred === undefined || integerScaleMinFill === undefined || select === undefined) {
+  if (
+    imageRendering === undefined ||
+    integerScalePreferred === undefined ||
+    integerScaleMinFill === undefined ||
+    select === undefined
+  ) {
     return undefined;
   }
   return {
@@ -831,7 +877,8 @@ export function parseManifest(value: unknown): Manifest {
       if (raw === undefined) return;
       const background = parseBackground(raw, at, g);
       if (background === undefined) return;
-      if (backgroundIds.has(background.id)) g.fail(at, `duplicate background id "${background.id}"`);
+      if (backgroundIds.has(background.id))
+        g.fail(at, `duplicate background id "${background.id}"`);
       backgroundIds.add(background.id);
       backgrounds.push(background);
     });
@@ -873,10 +920,18 @@ export function parseManifest(value: unknown): Manifest {
   if (characters !== undefined) {
     for (const [id, character] of Object.entries(characters)) {
       for (const spriteId of character.sprites) {
-        g.require(spriteIds.has(spriteId), `characters.${id}.sprites`, `unknown sprite id "${spriteId}"`);
+        g.require(
+          spriteIds.has(spriteId),
+          `characters.${id}.sprites`,
+          `unknown sprite id "${spriteId}"`,
+        );
       }
       if (character.prop !== undefined) {
-        g.require(propIds.has(character.prop), `characters.${id}.prop`, `unknown procedural prop "${character.prop}"`);
+        g.require(
+          propIds.has(character.prop),
+          `characters.${id}.prop`,
+          `unknown procedural prop "${character.prop}"`,
+        );
       }
       for (const [name, animation] of Object.entries(character.animations)) {
         animation.keyframes.forEach((keyframe, k) => {
@@ -932,7 +987,9 @@ export function parseManifest(value: unknown): Manifest {
   if (g.issues.length > 0) throw new ManifestError(g.issues);
 
   const conventions =
-    root["conventions"] === undefined ? undefined : asStringMap(root["conventions"], "conventions", g);
+    root["conventions"] === undefined
+      ? undefined
+      : asStringMap(root["conventions"], "conventions", g);
   const readme = asOptionalString(root["readme"], "manifest.readme", g);
   if (g.issues.length > 0) throw new ManifestError(g.issues);
 

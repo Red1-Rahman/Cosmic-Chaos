@@ -117,7 +117,9 @@ describe("alias resolution", () => {
   it("follows a chain of aliases", () => {
     const m = tinyManifest();
     expect(resolveAnimationName(m, "critter", "stroll")).toBe("bob");
-    expect(sampleAnimation(m, "critter", "stroll", 0)).toEqual(sampleAnimation(m, "critter", "bob", 0));
+    expect(sampleAnimation(m, "critter", "stroll", 0)).toEqual(
+      sampleAnimation(m, "critter", "bob", 0),
+    );
   });
 
   it("throws a typed error on an unknown character", () => {
@@ -210,15 +212,15 @@ describe("interpolation details", () => {
       sy: 1,
       alpha: 1,
     });
-    expect(sampleAnimation(m, "critter", "bob", 1000)).toEqual({
-      spriteId: "critter-a",
-      dx: 20,
-      dy: 8,
-      rot: 1,
-      sx: 3,
-      sy: 3,
-      alpha: 0,
-    });
+    // 999 ms is the last millisecond before the loop wraps back to t = 0.
+    const late = sampleAnimation(m, "critter", "bob", 999);
+    expect(late.spriteId).toBe("critter-a");
+    expect(late.dx).toBeCloseTo(19.98, 5);
+    expect(late.dy).toBeCloseTo(7.976, 5);
+    expect(late.rot).toBeCloseTo(0.999, 5);
+    expect(late.sx).toBeCloseTo(2.998, 5);
+    expect(late.sy).toBeCloseTo(2.995, 5);
+    expect(late.alpha).toBeCloseTo(0.001, 5);
   });
 
   it("cuts sprite ids midway through a segment", () => {
@@ -229,9 +231,12 @@ describe("interpolation details", () => {
 
   it("swaps art at the keyframe boundary for a real sprite change", () => {
     // human swim alternates float-slight and float-high on a 1500 ms cycle.
+    // The two poses sit at t = 0, 0.5 and 1, so the cut lands at 375 ms.
     expect(sampleAnimation(manifest, "human", "swim", 0).spriteId).toBe("human-float-slight");
-    expect(sampleAnimation(manifest, "human", "swim", 375).spriteId).toBe("human-float-slight");
-    expect(sampleAnimation(manifest, "human", "swim", 800).spriteId).toBe("human-float-high");
+    expect(sampleAnimation(manifest, "human", "swim", 374).spriteId).toBe("human-float-slight");
+    expect(sampleAnimation(manifest, "human", "swim", 375).spriteId).toBe("human-float-high");
+    expect(sampleAnimation(manifest, "human", "swim", 1000).spriteId).toBe("human-float-high");
+    expect(sampleAnimation(manifest, "human", "swim", 1150).spriteId).toBe("human-float-slight");
   });
 
   it("evaluates the authored easing curves", () => {

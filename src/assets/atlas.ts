@@ -73,7 +73,9 @@ export class Atlas {
 
   /** Sprite ids in the manifest that have no decoded image. */
   missing(manifest: Manifest): string[] {
-    return manifest.sprites.filter((sprite) => !this.entries.has(sprite.id)).map((sprite) => sprite.id);
+    return manifest.sprites
+      .filter((sprite) => !this.entries.has(sprite.id))
+      .map((sprite) => sprite.id);
   }
 }
 
@@ -115,9 +117,11 @@ function buildEntry(sprite: SpriteEntry, image: DecodedImage): AtlasEntry {
  * Frames are laid out row major starting at the top left. An out of range
  * index clamps to the last frame so a bad clock cannot draw garbage.
  */
-export function frameRect(entry: AtlasEntry, index: number): AtlasRect {
+export function frameRect(entry: AtlasEntry, index = 0): AtlasRect {
   const count = entry.frameCount;
-  const safeIndex = !Number.isFinite(index) ? 0 : Math.min(Math.max(Math.trunc(index), 0), count - 1);
+  const safeIndex = !Number.isFinite(index)
+    ? 0
+    : Math.min(Math.max(Math.trunc(index), 0), count - 1);
   const col = safeIndex % entry.grid.cols;
   const row = Math.floor(safeIndex / entry.grid.cols);
   return { x: col * entry.tile.w, y: row * entry.tile.h, w: entry.tile.w, h: entry.tile.h };

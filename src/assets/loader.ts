@@ -41,15 +41,12 @@ export interface LoadOptions {
 }
 
 export type AssetLoadErrorCode =
-  | "manifest-request"
-  | "manifest-parse"
-  | "image-request"
-  | "image-decode";
+  "manifest-request" | "manifest-parse" | "image-request" | "image-decode";
 
 export class AssetLoadError extends Error {
   readonly code: AssetLoadErrorCode;
   readonly id: string;
-  readonly cause?: unknown;
+  override readonly cause?: unknown;
 
   constructor(code: AssetLoadErrorCode, id: string, message: string, cause?: unknown) {
     super(`[${code}] ${id}: ${message}`);
@@ -88,7 +85,11 @@ function folderOf(url: string): string {
 async function decodeWithBitmap(fetchImpl: typeof fetch, url: string): Promise<DecodedImage> {
   const response = await fetchImpl(url);
   if (!response.ok) {
-    throw new AssetLoadError("image-request", url, `request failed with status ${String(response.status)}`);
+    throw new AssetLoadError(
+      "image-request",
+      url,
+      `request failed with status ${String(response.status)}`,
+    );
   }
   const blob = await response.blob();
   const factory = (globalThis as { createImageBitmap?: (b: Blob) => Promise<ImageBitmap> })
@@ -137,7 +138,11 @@ export async function loadManifest(options: LoadOptions = {}): Promise<Manifest>
   try {
     const response = await fetchImpl(url);
     if (!response.ok) {
-      throw new AssetLoadError("manifest-request", url, `request failed with status ${String(response.status)}`);
+      throw new AssetLoadError(
+        "manifest-request",
+        url,
+        `request failed with status ${String(response.status)}`,
+      );
     }
     text = await response.text();
   } catch (error) {
@@ -168,7 +173,8 @@ export async function loadImages(
   options: LoadOptions = {},
 ): Promise<Map<string, DecodedImage>> {
   const fetchImpl = options.fetchImpl ?? fetch;
-  const decode = options.decode ?? ((url: string): Promise<DecodedImage> => decodeWithBitmap(fetchImpl, url));
+  const decode =
+    options.decode ?? ((url: string): Promise<DecodedImage> => decodeWithBitmap(fetchImpl, url));
   const references = listAssetReferences(manifest, options.baseUrl);
   const images = new Map<string, DecodedImage>();
   for (const [index, reference] of references.entries()) {
@@ -176,7 +182,12 @@ export async function loadImages(
       images.set(reference.id, await decode(reference.url, fetchImpl));
     } catch (error) {
       if (error instanceof AssetLoadError || error instanceof ManifestError) throw error;
-      throw new AssetLoadError("image-decode", reference.id, "the image could not be decoded", error);
+      throw new AssetLoadError(
+        "image-decode",
+        reference.id,
+        "the image could not be decoded",
+        error,
+      );
     }
     options.onProgress?.({
       phase: "images",
@@ -188,4 +199,6 @@ export async function loadImages(
   return images;
 }
 
-export { ManifestError };
+// codebase.txt lists parseManifest as part of this module's contract. It lives
+// with the types it validates, so it is re-exported here rather than moved.
+export { ManifestError, parseManifest };

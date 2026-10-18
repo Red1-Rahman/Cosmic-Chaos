@@ -16,14 +16,20 @@ export interface AnimationSample {
   readonly alpha: number;
 }
 
-export type AnimationErrorCode = "unknown-character" | "unknown-animation" | "alias-cycle" | "no-keyframes";
+export type AnimationErrorCode =
+  "unknown-character" | "unknown-animation" | "alias-cycle" | "no-keyframes";
 
 export class AnimationSampleError extends Error {
   readonly code: AnimationErrorCode;
   readonly characterId: string;
   readonly animationName: string;
 
-  constructor(code: AnimationErrorCode, characterId: string, animationName: string, message: string) {
+  constructor(
+    code: AnimationErrorCode,
+    characterId: string,
+    animationName: string,
+    message: string,
+  ) {
     super(message);
     this.name = "AnimationSampleError";
     this.code = code;
@@ -107,7 +113,11 @@ export function resolveAnimation(manifest: Manifest, characterId: string, name: 
 }
 
 /** Name of the animation actually sampled, after alias resolution. */
-export function resolveAnimationName(manifest: Manifest, characterId: string, name: string): string {
+export function resolveAnimationName(
+  manifest: Manifest,
+  characterId: string,
+  name: string,
+): string {
   return resolve(manifest, characterId, name).name;
 }
 
@@ -126,11 +136,11 @@ function lerp(from: number, to: number, u: number): number {
 }
 
 /** Linear blend of the numeric channels of two keyframes. */
-function blend(from: Keyframe, to: Keyframe, u: number): AnimationSample {
+function blend(from: Keyframe, to: Keyframe, u: number, raw: number): AnimationSample {
   return {
-    // A sprite swap is a step, not a blend: hold the outgoing art until the
-    // segment is halfway through, then cut.
-    spriteId: u < 0.5 ? from.sprite : to.sprite,
+    // A sprite swap is a step, not a blend, and the cut follows the segment
+    // midpoint before easing is applied so a curved ease cannot shift it.
+    spriteId: raw < 0.5 ? from.sprite : to.sprite,
     dx: lerp(from.dx, to.dx, u),
     dy: lerp(from.dy, to.dy, u),
     rot: lerp(from.rot, to.rot, u),
@@ -150,9 +160,10 @@ function sampleKeyframes(
   if (first === undefined) return undefined;
 
   // Before the first key or after the last one, hold that keyframe exactly.
-  if (t <= first.t) return blend(first, first, 0);
+  if (t <= first.t) return blend(first, first, 0, 0);
   const last = keyframes[keyframes.length - 1];
-  if (last === undefined || t >= last.t) return blend(last, last, 0);
+  if (last === undefined) return undefined;
+  if (t >= last.t) return blend(last, last, 0, 1);
 
   for (let i = 0; i < keyframes.length - 1; i += 1) {
     const from = keyframes[i];
@@ -162,9 +173,9 @@ function sampleKeyframes(
     const span = to.t - from.t;
     const raw = span <= 0 ? 0 : (t - from.t) / span;
     const u = ease(raw, to.easing ?? fallbackEasing);
-    return blend(from, to, u);
+    return blend(from, to, u, raw);
   }
-  return blend(last, last, 0);
+  return blend(last, last, 0, 1);
 }
 
 /**
@@ -181,7 +192,11 @@ export function sampleAnimation(
   elapsedMs: number,
 ): AnimationSample {
   const animation = resolveAnimation(manifest, characterId, name);
-  const sample = sampleKeyframes(animation, normalizeTime(animation, elapsedMs), animation.easing ?? "linear");
+  const sample = sampleKeyframes(
+    animation,
+    normalizeTime(animation, elapsedMs),
+    animation.easing ?? "linear",
+  );
   if (sample === undefined) {
     throw new AnimationSampleError(
       "no-keyframes",

@@ -27,14 +27,14 @@ function spriteAt(draft: Dict, index: number): Dict {
 
 function character(draft: Dict, id: string): Dict {
   const characters = draft["characters"] as Dict;
-  const entry = characters[id];
+  const entry = characters[id] as Dict | undefined;
   if (entry === undefined) throw new Error(`no character ${id}`);
   return entry;
 }
 
 function animation(draft: Dict, characterId: string, name: string): Dict {
   const animations = character(draft, characterId)["animations"] as Dict;
-  const entry = animations[name];
+  const entry = animations[name] as Dict | undefined;
   if (entry === undefined) throw new Error(`no animation ${name}`);
   return entry;
 }
@@ -83,7 +83,9 @@ describe("parseManifest on the shipped manifest", () => {
       "stardust",
       "crystal-glow",
     ]);
-    expect(manifest.proceduralProps.find((prop) => prop.id === "crystal-glow")?.character).toBeNull();
+    expect(
+      manifest.proceduralProps.find((prop) => prop.id === "crystal-glow")?.character,
+    ).toBeNull();
   });
 
   it("reads arena, characters and viewport presets", () => {
@@ -161,7 +163,9 @@ describe("parseManifest rejections", () => {
   it("rejects a keyframe time that decreases", () => {
     const draft = draftManifest();
     keyframeAt(draft, "capybara", "idle", 2)["t"] = 0.1;
-    expect(() => parseManifest(draft)).toThrow(/keyframes\[2\]\.t: keyframe times must not decrease/);
+    expect(() => parseManifest(draft)).toThrow(
+      /keyframes\[2\]\.t: keyframe times must not decrease/,
+    );
   });
 
   it("rejects a keyframe pointing at a sprite that does not exist", () => {

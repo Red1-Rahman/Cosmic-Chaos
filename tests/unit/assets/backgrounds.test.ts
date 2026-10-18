@@ -49,20 +49,11 @@ describe("pickBackground on the shipped manifest", () => {
 
   it("covers every viewport preset the arena must support", () => {
     const ids = manifest.viewport.presets.map((preset) => preset.id);
-    expect(ids).toEqual([
-      "16:9",
-      "16:10",
-      "4:3",
-      "20:9",
-      "29.5:9",
-      "sqrt2:1",
-      "1:sqrt2",
-      "9:20",
-    ]);
+    expect(ids).toEqual(["16:9", "16:10", "4:3", "20:9", "29.5:9", "sqrt2:1", "1:sqrt2", "9:20"]);
     for (const id of ids) {
-      expect(pickBackground(manifest, manifest.arena.background, id).id.startsWith("canvas-03")).toBe(
-        true,
-      );
+      expect(
+        pickBackground(manifest, manifest.arena.background, id).id.startsWith("canvas-03"),
+      ).toBe(true);
     }
   });
 
@@ -76,8 +67,16 @@ describe("pickBackground on the shipped manifest", () => {
     });
   });
 
-  it("resolves the title background too", () => {
+  it("resolves a single art background that no preset declares", () => {
     expect(pickBackground(manifest, "title", "16:9").id).toBe("title");
+    expect(pickBackground(manifest, "title", "16:9").rule).toBe("fallback-base");
+  });
+
+  it("ignores a preset background that belongs to another family", () => {
+    // 16:9 declares canvas-03, which is not part of the title family, so the
+    // declared id must not leak into the answer.
+    const choice = pickBackground(manifest, "canvas-01", "16:9");
+    expect(choice.id).toBe("canvas-01");
   });
 
   it("throws a typed error for an unknown preset", () => {
