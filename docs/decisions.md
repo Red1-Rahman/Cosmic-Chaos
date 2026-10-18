@@ -11,6 +11,21 @@ Decision: what was chosen
 Alternatives: what was rejected and why
 ```
 
+## 2026-10-19 sim: arena constants mirrored, not imported
+Context: `src/sim` may not fetch or import `src/assets`, but the sim needs the play band, field radius and default seed.
+Decision: `src/sim/game-config.ts` mirrors `public/assets/assets.json` `arena` verbatim (`ARENA`, `SPAWN_RULES`, `MOVEMENT` exported). The sim reads only that file.
+Alternatives: importing the JSON directly was rejected because it would couple the pure sim to the assets layer and its loader types. qa-ci owns a spec test asserting the mirror still matches assets.json.
+
+## 2026-10-19 sim: spawn order and field avoidance
+Context: `createWorld` must place every character from the seeded stream, and nothing may start inside the snail's time field, which also rules out the player.
+Decision: order is player, snail, then orca, shark, tarantula, humans. The snail is placed first with the extra constraint `distance >= fieldRadius + 8` from the player, so the player never starts in the field. Orca, shark and tarantula use `spawnMinDistance` 220 plus the field margin. Rejection sampling runs 24 attempts (`assets.json maxAttempts`), then falls back to a deterministic golden-angle spiral so the function can never fail to return a point.
+Alternatives: placing the snail last and re-checking the player was rejected as it wastes stream draws and makes the seed hard to reason about. Entity ids are `player`, `snail`, `<kind>-1`, `human-1..n`.
+
+## 2026-10-19 sim: hash quantisation
+Context: golden replay hashes must not trip over float noise.
+Decision: `hashWorld` rounds every number to 1e-6 before FNV-1a hashing and serialises `props` with sorted keys, so the hash is independent of prop insertion order. Output is an 8 hex digit string.
+Alternatives: hashing raw floats was rejected because it is unstable across engines.
+
 ## 2026-10-19 viewport-render: letterbox bar colour
 Context: `assets.json` has no `barColor`, but the letterbox and pillarbox bars have to be
 some colour, and the same value must exist in CSS and in Canvas 2D so the debug overlay
