@@ -17,7 +17,7 @@
       "character": "capybara",
       "pose": "idle",
       "facing": "right",
-      "renderScale": 0.26,
+      "renderScale": 0.28,
       "anchor": {
         "x": 0.5,
         "y": 0.92
@@ -37,7 +37,7 @@
       "character": "orca",
       "pose": "idle",
       "facing": "front",
-      "renderScale": 0.26,
+      "renderScale": 0.32,
       "anchor": {
         "x": 0.5,
         "y": 0.8
@@ -57,7 +57,7 @@
       "character": "orca",
       "pose": "swim",
       "facing": "right",
-      "renderScale": 0.26,
+      "renderScale": 0.32,
       "anchor": {
         "x": 0.5,
         "y": 0.55
@@ -77,7 +77,7 @@
       "character": "orca",
       "pose": "jump",
       "facing": "up-right",
-      "renderScale": 0.26,
+      "renderScale": 0.32,
       "anchor": {
         "x": 0.45,
         "y": 0.9
@@ -97,7 +97,7 @@
       "character": "shark",
       "pose": "slide",
       "facing": "down-right",
-      "renderScale": 0.085,
+      "renderScale": 0.1,
       "anchor": {
         "x": 0.7,
         "y": 0.52
@@ -117,7 +117,7 @@
       "character": "tarantula",
       "pose": "idle",
       "facing": "front",
-      "renderScale": 0.4,
+      "renderScale": 0.42,
       "anchor": {
         "x": 0.5,
         "y": 0.72
@@ -137,7 +137,7 @@
       "character": "tarantula",
       "pose": "jump",
       "facing": "up-right",
-      "renderScale": 0.4,
+      "renderScale": 0.42,
       "anchor": {
         "x": 0.5,
         "y": 0.72
@@ -157,7 +157,7 @@
       "character": "snail",
       "pose": "idle",
       "facing": "right",
-      "renderScale": 0.24,
+      "renderScale": 0.26,
       "anchor": {
         "x": 0.5,
         "y": 0.82
@@ -177,7 +177,7 @@
       "character": "snail",
       "pose": "glide",
       "facing": "right",
-      "renderScale": 0.24,
+      "renderScale": 0.26,
       "anchor": {
         "x": 0.5,
         "y": 0.6
@@ -197,7 +197,7 @@
       "character": "human",
       "pose": "standing",
       "facing": "front",
-      "renderScale": 0.2,
+      "renderScale": 0.24,
       "anchor": {
         "x": 0.5,
         "y": 0.9
@@ -217,7 +217,7 @@
       "character": "human",
       "pose": "float-high",
       "facing": "front",
-      "renderScale": 0.2,
+      "renderScale": 0.24,
       "anchor": {
         "x": 0.5,
         "y": 0.5
@@ -237,7 +237,7 @@
       "character": "human",
       "pose": "float-slight",
       "facing": "front",
-      "renderScale": 0.2,
+      "renderScale": 0.24,
       "anchor": {
         "x": 0.5,
         "y": 0.5
