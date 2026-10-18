@@ -31,9 +31,9 @@ export function updateTarantula(tarantula: Entity, ctx: BehaviourContext): void 
   tarantula.y = ctx.arena.minY - TARANTULA.hoverAboveBand;
 
   // Exactly one reaction: the first time the player fires the laser.
-  const fired = (tarantula.props.reactions ?? 0) < TARANTULA.maxReactions && ctx.world.events.some(
-    (e) => e.type === "laser" && e.id === ctx.world.playerId,
-  );
+  const fired =
+    (tarantula.props.reactions ?? 0) < TARANTULA.maxReactions &&
+    ctx.world.events.some((e) => e.type === "laser" && e.id === ctx.world.playerId);
   if (fired) {
     tarantula.props.reactions = (tarantula.props.reactions ?? 0) + 1;
     tarantula.props.lookMs = TARANTULA.lookMs;

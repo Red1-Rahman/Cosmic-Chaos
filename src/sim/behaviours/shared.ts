@@ -50,7 +50,12 @@ export function steerToward(
 }
 
 /** Normalised direction, written into the props the caller asked for. */
-export function unitDirection(fromX: number, fromY: number, toX: number, toY: number): [number, number] {
+export function unitDirection(
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+): [number, number] {
   const dx = toX - fromX;
   const dy = toY - fromY;
   const d2 = dx * dx + dy * dy;

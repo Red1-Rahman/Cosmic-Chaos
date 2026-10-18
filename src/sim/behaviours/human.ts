@@ -36,8 +36,7 @@ function seedProps(human: Entity): number {
   const seed = seedFromId(human.id);
   human.props.driftDirX = seed % 2 === 0 ? 1 : -1;
   human.props.driftDirY = ((seed >>> 1) % 2 === 0 ? 1 : -1) * 0.35;
-  const speed =
-    HUMAN.minSpeed + ((seed >>> 2) % 1000) / 1000 * (HUMAN.maxSpeed - HUMAN.minSpeed);
+  const speed = HUMAN.minSpeed + (((seed >>> 2) % 1000) / 1000) * (HUMAN.maxSpeed - HUMAN.minSpeed);
   human.props.driftSpeed = speed;
   human.props.bumpedMs = 0;
   human.props.bumpCd = 0;
