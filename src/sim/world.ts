@@ -89,25 +89,24 @@ function advancePlayer(world: World, player: Entity, input: InputState, dt: numb
     world.events.push({ type: "jump", id: player.id, x: player.x, y: player.y });
   }
   const jumpMs = player.props.jumpMs ?? 0;
-  if (jumpMs > 0) {
+  const jumping = jumpMs > 0;
+  const wasJumping = (player.props.jumpWasActive ?? 0) > 0;
+  player.props.jumpWasActive = jumping ? 1 : 0;
+  // Landing is the one step where the arc ran and now does not.
+  player.props.justLanded = !jumping && wasJumping ? 1 : 0;
+  if (jumping) {
     const remaining = Math.max(0, jumpMs - dt * 1000);
     player.props.jumpMs = remaining;
     // Lift is a separate 0..1 arc, not a y offset: y is depth, not height.
     player.props.lift = Math.sin((1 - remaining / MOVEMENT.jumpMs) * Math.PI);
-    player.anim = "jump";
-    player.state = "jump";
-    return;
+  } else {
+    player.props.lift = 0;
   }
-  player.props.lift = 0;
 
   if (Math.abs(moveX) > 0.05) player.facing = moveX > 0 ? 1 : -1;
   if (input.action) {
     world.events.push({ type: "laser", id: player.id, x: player.x, y: player.y });
   }
-
-  const moving = player.props.speed > 12;
-  player.anim = moving ? "swim" : "idle";
-  player.state = moving ? "move" : "idle";
 }
 
 /** One fixed simulation step. `fixedDt` never changes, not even in the field. */

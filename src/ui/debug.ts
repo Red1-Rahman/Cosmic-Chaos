@@ -2,7 +2,7 @@
 // read-out of the model the app already hands the HUD, plus two optional extras.
 // Nothing here touches the sim, and nothing is created at all when the flag is absent.
 import type { HudModel } from "./types.js";
-import { createButton, el, finite, formatCount, formatScale, text } from "./dom.js";
+import { el, finite, formatCount, formatScale, text } from "./dom.js";
 
 export const DEBUG_OVERLAY_ATTRIBUTE = "data-cc-overlay";
 

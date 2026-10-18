@@ -255,9 +255,6 @@ export function createRenderer(
   let flashX = 0;
   let flashY = 0;
 
-  const sameLayout = (a: Layout, b: Layout): boolean =>
-    a.preset.id === b.preset.id && a.logical.w === b.logical.w && a.logical.h === b.logical.h;
-
   const applyLayout = (layout: Layout): void => {
     view = computeArenaView(manifest.arena.logical, layout.logical);
   };
