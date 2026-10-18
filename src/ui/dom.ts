@@ -61,3 +61,29 @@ export function px(value: number): string {
 export function focusQuietly(node: HTMLElement): void {
   if (typeof node.focus === "function") node.focus();
 }
+
+/** Marks every actionable control, so e2e tests and the app can find them by name. */
+export const ACTION_ATTRIBUTE = "data-cc-action";
+
+export type ActionId = "start" | "pause" | "mute" | "resume" | "restart";
+
+export interface ButtonOptions {
+  action: ActionId;
+  label: string;
+  className: string;
+  onClick: () => void;
+}
+
+/** A real <button>, so Enter and Space work without any key handling of our own. */
+export function createButton(doc: Document, options: ButtonOptions): HTMLButtonElement {
+  const button = doc.createElement("button");
+  button.type = "button";
+  button.className = options.className;
+  button.setAttribute(ACTION_ATTRIBUTE, options.action);
+  button.setAttribute("aria-label", options.label);
+  button.textContent = options.label;
+  button.addEventListener("click", (): void => {
+    options.onClick();
+  });
+  return button;
+}

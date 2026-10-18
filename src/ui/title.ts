@@ -2,7 +2,7 @@
 // defeat panel. They own nothing but text and buttons. Every action calls a callback,
 // never audio, never storage. Restarting reuses the seed the app already holds.
 import type { UiCallbacks } from "./types.js";
-import { el, focusQuietly, text } from "./dom.js";
+import { el, focusQuietly, text, createButton } from "./dom.js";
 
 /** Copy lives here so the world tone can be edited in one place. Logged in docs/decisions.md. */
 export const TITLE_COPY = {
@@ -225,5 +225,3 @@ export function createScreens(doc: Document, callbacks: UiCallbacks): ScreensHan
     },
   };
 }
-
-export type { Screen };
