@@ -97,9 +97,14 @@ export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
   const root = el(doc, "cc-hud");
   root.setAttribute("data-cc-overlay", "hud");
 
-  // Hull meter.
+  // Hull meter. The vitals rows and the seed/preset chips share one top-left stack, laid
+  // out in normal flow. An earlier version positioned the chip row with a fixed em
+  // translate, which only cleared the vitals at one particular type size and overlapped
+  // them on short frames. Flow cannot collide, whatever --cc-font-size works out to be.
+  const stack = el(doc, "cc-hud-stack");
+  root.append(stack);
   const vitals = el(doc, "cc-hud-block cc-hud-vitals");
-  root.append(vitals);
+  stack.append(vitals);
 
   const meter = el(doc, "cc-meter");
   meter.setAttribute("role", "progressbar");
@@ -139,7 +144,7 @@ export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
   const preset = el(doc, "cc-hud-chip");
   preset.setAttribute("data-cc-preset", "");
   meta.append(seed, preset);
-  root.append(meta);
+  stack.append(meta);
 
   // Always-reachable controls. Top right, clear of the touch D-pad and the jump buttons.
   const actions = el(doc, "cc-hud-block cc-hud-actions");

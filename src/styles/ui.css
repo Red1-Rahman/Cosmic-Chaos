@@ -164,30 +164,47 @@
   display: block;
 }
 
-.cc-hud-block {
+/* One top-left column holding the vitals rows and the seed/preset chip row, laid out in
+   normal flow. They used to be separate absolutely positioned blocks offset by a fixed em
+   translate, which only cleared the vitals at one type size and overlapped them on short
+   frames. Flow cannot collide, whatever --cc-font-size resolves to.
+
+   The right inset clears the pause and mute row. That row is about 10.5em wide at every
+   size, because its font is a fraction of the same base, so an em inset tracks it exactly
+   and keeps the two clusters apart even on the narrowest preset at the type floor. */
+.cc-hud-stack {
   position: absolute;
+  top: 0.8em;
+  left: 0.9em;
+  right: 11.8em;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35em;
+  min-width: 0;
+}
+
+.cc-hud-block {
   display: flex;
   gap: 0.5em;
   align-items: center;
   flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .cc-hud-vitals {
-  top: 0.8em;
-  left: 0.9em;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.35em;
 }
 
 .cc-hud-meta {
-  top: 0.8em;
-  left: 0.9em;
-  transform: translateY(4.2em);
   gap: 0.4em;
 }
 
 .cc-hud-actions {
+  position: absolute;
   top: 0.8em;
   right: 0.9em;
 }
@@ -212,7 +229,10 @@
 }
 
 .cc-meter-track {
-  width: 7.5em;
+  /* Shrinkable, so the meter still fits one line on the narrowest preset at the type
+     floor instead of running under the pause and mute buttons. */
+  flex: 0 1 7.5em;
+  min-width: 2em;
   height: 0.7em;
   border-radius: 0.35em;
   background: rgb(30 44 70 / 90%);
