@@ -54,13 +54,14 @@ function resolveDebug(options: UiOptions): boolean {
 }
 
 interface UiGlobals {
-  document?: Document;
+  document?: Document | null;
 }
 
 function resolveDocument(host: HTMLElement): Document | undefined {
-  const owner = host.ownerDocument;
-  if (owner !== undefined && owner !== null) return owner;
-  return (globalThis as UiGlobals).document;
+  const owner: Document | null = host.ownerDocument;
+  if (owner !== null) return owner;
+  const fallback: Document | undefined = (globalThis as UiGlobals).document ?? undefined;
+  return fallback;
 }
 
 function focusHost(doc: Document, screen: Screen, screens: ScreensHandle): void {

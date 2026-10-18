@@ -32,19 +32,28 @@ function seedFromId(id: string): number {
   return hash;
 }
 
-function seedProps(human: Entity): void {
+function seedProps(human: Entity): number {
   const seed = seedFromId(human.id);
   human.props.driftDirX = seed % 2 === 0 ? 1 : -1;
   human.props.driftDirY = ((seed >>> 1) % 2 === 0 ? 1 : -1) * 0.35;
-  human.props.driftSpeed =
+  const speed =
     HUMAN.minSpeed + ((seed >>> 2) % 1000) / 1000 * (HUMAN.maxSpeed - HUMAN.minSpeed);
+  human.props.driftSpeed = speed;
   human.props.bumpedMs = 0;
   human.props.bumpCd = 0;
+  return speed;
+}
+
+/** Seed the pet on its first step and return its drift speed in px per second. */
+function driftSpeedOf(human: Entity): number {
+  const speed = human.props.driftSpeed;
+  if (speed === undefined) return seedProps(human);
+  return speed;
 }
 
 export function updateHuman(human: Entity, ctx: BehaviourContext): void {
   const dt = ctx.dt;
-  if (human.props.driftSpeed === undefined) seedProps(human);
+  const speed = driftSpeedOf(human);
 
   const bumpedLeft = Math.max(0, (human.props.bumpedMs ?? 0) - dt * 1000);
   human.props.bumpedMs = bumpedLeft;
@@ -60,7 +69,6 @@ export function updateHuman(human: Entity, ctx: BehaviourContext): void {
     dirY /= heading;
   }
 
-  const speed = human.props.driftSpeed ?? HUMAN.minSpeed;
   // The nudge from a bump decays with the same exponential drag the player uses.
   const pushX = (human.props.pushX ?? 0) * Math.exp(-2.6 * dt);
   const pushY = (human.props.pushY ?? 0) * Math.exp(-2.6 * dt);
