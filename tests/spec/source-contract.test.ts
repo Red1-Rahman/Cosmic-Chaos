@@ -244,8 +244,7 @@ describe("source of truth files", () => {
       expect(command, stage).toBe(`npm run ${script}`);
     }
     const entryScript = techStack.ci.entry.replace(/^npm run /, "");
-    expect(pkg.scripts[entryScript], techStack.ci.entry).toBe(techStack.ci.entry);
-    expect(pkg.scripts[entryScript]).toContain("scripts/run-gates.mjs");
+    expect(pkg.scripts[entryScript], techStack.ci.entry).toContain("scripts/run-gates.mjs");
   });
 
   it("keeps every pin exact and shared with tech-stack.json", () => {
