@@ -213,8 +213,6 @@ describe("createRenderer", () => {
   });
 
   it("scales entities with depth", () => {
-    const fake = createFakeCanvas();
-    const renderer = createRenderer(manifest, testAtlas(), { backgrounds: backgroundImages() });
     const far = createFakeCanvas();
     const near = createFakeCanvas();
     renderer.render(

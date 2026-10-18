@@ -47,23 +47,37 @@ describe("flash rate limit", () => {
   });
 
   it("quantizes a flash into a handful of levels", () => {
-    expect(quantizeFlash(0.1, 0)).toBeCloseTo(0, 6);
-    expect(quantizeFlash(1, 0)).toBeCloseTo(1, 6);
-    expect(quantizeFlash(2, 0)).toBe(1);
-    expect(quantizeFlash(-1, 0)).toBe(0);
-    // Quantized, so a wobbling signal inside one step cannot flicker.
-    expect(quantizeFlash(0.4, 0)).toBe(quantizeFlash(0.6, 0));
+    expect(quantizeFlash(0.1)).toBeCloseTo(0, 6);
+    expect(quantizeFlash(1)).toBeCloseTo(1, 6);
+    expect(quantizeFlash(2)).toBe(1);
+    expect(quantizeFlash(-1)).toBe(0);
+  });
+
+  it("holds the level for a whole flash step", () => {
+    const limiter = createFlashLimiter();
+    const first = limiter.push(0.9, 0);
+    expect(limiter.push(0.2, 100)).toBe(first);
+    expect(limiter.push(0.2, FLASH_STEP_MS - 1)).toBe(first);
+    expect(limiter.push(0.2, FLASH_STEP_MS)).not.toBe(first);
   });
 
   it("cannot change more than three times a second as time moves", () => {
+    const limiter = createFlashLimiter();
     let changes = 0;
-    let previous = quantizeFlash(0.9, 0);
+    let previous = limiter.push(0.9, 0);
     for (let ms = 1; ms <= 1000; ms += 1) {
-      const value = quantizeFlash(0.9, ms);
+      const value = limiter.push(0.9, ms);
       if (value !== previous) changes += 1;
       previous = value;
     }
     expect(changes).toBeLessThanOrEqual(MAX_FLASH_HZ);
+  });
+
+  it("forgets its level on reset", () => {
+    const limiter = createFlashLimiter();
+    limiter.push(1, 0);
+    limiter.reset();
+    expect(limiter.push(0, 0)).toBe(0);
   });
 });
 

@@ -17,8 +17,7 @@ import {
 } from "./dom.js";
 
 /** Font size of the HUD, as a fraction of the letterboxed area height. */
-export const DOM_RATIO = 1 / 34;
-export const FONT_RATIO = DOM_RATIO;
+export const FONT_RATIO = 1 / 34;
 export const FONT_MIN = 11;
 export const FONT_MAX = 26;
 

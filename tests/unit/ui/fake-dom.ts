@@ -68,6 +68,10 @@ export class FakeElement {
     return this.children[0] ?? null;
   }
 
+  get parentElement(): FakeElement | null {
+    return this.parent;
+  }
+
   readonly classList = {
     add: (name: string): void => {
       this.classes.add(name);
