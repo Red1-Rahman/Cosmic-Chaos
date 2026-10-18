@@ -1,0 +1,108 @@
+/* Virtual touch controls for the Capybara waterbike. Owned by src/input/.
+   The overlay never swallows a tap: only the buttons take pointer events. */
+
+.cc-touch {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: none;
+  pointer-events: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: inherit;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.cc-touch.cc-touch-on {
+  display: block;
+}
+
+.cc-touch-pad {
+  position: absolute;
+  left: calc(env(safe-area-inset-left, 0px) + 16px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  width: 156px;
+  height: 156px;
+  pointer-events: none;
+}
+
+.cc-touch-key {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid rgb(190 232 255 / 55%);
+  border-radius: 10px;
+  background: rgb(12 22 40 / 45%);
+  color: rgb(226 244 255 / 90%);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.cc-touch-key:active,
+.cc-touch-key[data-pressed="true"] {
+  background: rgb(90 190 235 / 60%);
+  border-color: rgb(235 250 255 / 95%);
+}
+
+.cc-touch-up {
+  top: 0;
+  left: 52px;
+}
+
+.cc-touch-down {
+  bottom: 0;
+  left: 52px;
+}
+
+.cc-touch-left {
+  top: 52px;
+  left: 0;
+}
+
+.cc-touch-right {
+  top: 52px;
+  right: 0;
+}
+
+.cc-touch-button {
+  position: absolute;
+  right: calc(env(safe-area-inset-right, 0px) + 20px);
+  width: 76px;
+  height: 76px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid rgb(190 232 255 / 55%);
+  border-radius: 50%;
+  background: rgb(12 22 40 / 45%);
+  color: rgb(226 244 255 / 90%);
+  font: inherit;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.cc-touch-jump {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 104px);
+}
+
+.cc-touch-action {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+}
+
+.cc-touch-button:active,
+.cc-touch-button[data-pressed="true"] {
+  background: rgb(90 190 235 / 60%);
+  border-color: rgb(235 250 255 / 95%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cc-touch-key,
+  .cc-touch-button {
+    transition: background-color 90ms linear;
+  }
+}
