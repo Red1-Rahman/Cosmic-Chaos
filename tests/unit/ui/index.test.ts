@@ -187,7 +187,9 @@ describe("title screen", () => {
     const { host } = setup();
     expect(host.findByAttribute("data-cc-overlay", "screens")).not.toBeNull();
     expect(host.findByClass("cc-screen--title")?.classList.contains("cc-screen-active")).toBe(true);
-    expect(host.findByClass("cc-screen--pause")?.classList.contains("cc-screen-active")).toBe(false);
+    expect(host.findByClass("cc-screen--pause")?.classList.contains("cc-screen-active")).toBe(
+      false,
+    );
     expect(host.findByClass("cc-hud")?.classList.contains("cc-hud-playing")).toBe(false);
   });
 });
@@ -203,9 +205,13 @@ describe("screens", () => {
       expect(active.length).toBe(screen === "playing" ? 0 : 1);
       const names = host
         .findAllByClass("cc-screen-active")
-        .map((node) => node.classList.contains("cc-screen--title") ? "title"
-          : node.classList.contains("cc-screen--pause") ? "paused"
-          : "defeat");
+        .map((node) =>
+          node.classList.contains("cc-screen--title")
+            ? "title"
+            : node.classList.contains("cc-screen--pause")
+              ? "paused"
+              : "defeat",
+        );
       expect(names[0] ?? "").toBe(screen === "playing" ? "" : screen);
       expect(host.findByClass("cc-hud")?.classList.contains("cc-hud-playing")).toBe(
         screen === "playing" || screen === "paused",
@@ -285,12 +291,15 @@ describe("console", () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
     const doc = new FakeDocument();
     const host = doc.createElement("div");
-    const ui = createUi({
-      onStart: (): void => undefined,
-      onRestart: (): void => undefined,
-      onTogglePause: (): void => undefined,
-      onToggleMute: (): void => undefined,
-    }, { debug: true });
+    const ui = createUi(
+      {
+        onStart: (): void => undefined,
+        onRestart: (): void => undefined,
+        onTogglePause: (): void => undefined,
+        onToggleMute: (): void => undefined,
+      },
+      { debug: true },
+    );
 
     ui.show("title");
     ui.update(model());
@@ -312,7 +321,9 @@ describe("console", () => {
 
 describe("debug overlay visibility", () => {
   const overlays = (host: FakeElement): string[] =>
-    host.findAllByAttribute("data-cc-overlay").map((node) => node.getAttribute("data-cc-overlay") ?? "");
+    host
+      .findAllByAttribute("data-cc-overlay")
+      .map((node) => node.getAttribute("data-cc-overlay") ?? "");
 
   it("is absent without the flag, down to the DOM node", () => {
     const { host, ui } = setup();
@@ -350,9 +361,9 @@ describe("debug overlay visibility", () => {
 });
 
 function host_overlays(instance: { host: FakeElement }): string[] {
-  return instance.host.findAllByAttribute("data-cc-overlay").map(
-    (node) => node.getAttribute("data-cc-overlay") ?? "",
-  );
+  return instance.host
+    .findAllByAttribute("data-cc-overlay")
+    .map((node) => node.getAttribute("data-cc-overlay") ?? "");
 }
 
 describe("document handling", () => {

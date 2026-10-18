@@ -168,7 +168,7 @@ describe("applyFrame", () => {
     expect(root.style.getPropertyValue("--cc-font-size")).toBe(`${String(FONT_MIN)}px`);
 
     applyFrame(root as unknown as HTMLElement, { x: 0, y: 0, w: 1408, h: 792 });
-    const fraction = Number((root.style.getPropertyValue("--cc-font-size").replace("px", "")));
+    const fraction = Number(root.style.getPropertyValue("--cc-font-size").replace("px", ""));
     expect(fraction).toBeGreaterThan(FONT_MIN);
     expect(fraction).toBeLessThan(FONT_MAX);
     expect(fraction).toBeCloseTo(Number((792 * (1 / 34)).toFixed(3)), 6);

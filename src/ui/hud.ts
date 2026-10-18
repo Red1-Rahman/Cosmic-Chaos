@@ -42,7 +42,11 @@ export function applyFrame(root: HTMLElement, frame: HudModel["frame"]): void {
   cssVar(root, "--cc-frame-y", px(y));
   cssVar(root, "--cc-frame-w", px(w));
   cssVar(root, "--cc-frame-h", px(h));
-  cssVar(root, "--cc-font-size", `${String(Number(clamp(h * FONT_RATIO, FONT_MIN, FONT_MAX).toFixed(3)))}px`);
+  cssVar(
+    root,
+    "--cc-font-size",
+    `${String(Number(clamp(h * FONT_RATIO, FONT_MIN, FONT_MAX).toFixed(3)))}px`,
+  );
 }
 
 interface Cached {

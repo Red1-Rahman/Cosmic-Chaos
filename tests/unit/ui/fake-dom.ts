@@ -176,9 +176,7 @@ export class FakeElement {
 
   /** The single descendant with the attribute value, or null. */
   findByAttribute(name: string, value: string): FakeElement | null {
-    return (
-      [...this.walk()].find((node) => node.getAttribute(name) === value) ?? null
-    );
+    return [...this.walk()].find((node) => node.getAttribute(name) === value) ?? null;
   }
 
   /** The first descendant carrying the attribute, or null. */
