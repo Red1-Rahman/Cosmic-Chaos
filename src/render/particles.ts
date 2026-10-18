@@ -27,15 +27,44 @@ export function flashStep(timeMs: number): number {
 }
 
 /**
- * Snap a flash strength to a small set of levels inside the current flash step.
- * A flash can therefore only take `MAX_FLASH_HZ` distinct values per second no
- * matter how the underlying signal moves.
+ * Snap a flash strength to a small set of levels. A flash therefore only takes
+ * `MAX_FLASH_HZ + 1` distinct values, and `createFlashLimiter` holds each one
+ * for a whole flash step, so the value can change at most `MAX_FLASH_HZ` times
+ * per second no matter how the underlying signal moves.
  */
-export function quantizeFlash(alpha: number, timeMs: number): number {
+export function quantizeFlash(alpha: number): number {
   const clamped = alpha < 0 ? 0 : alpha > 1 ? 1 : alpha;
-  const levels = MAX_FLASH_HZ;
-  const step = Math.round(clamped * levels) / levels;
+  const step = Math.round(clamped * MAX_FLASH_HZ) / MAX_FLASH_HZ;
   return step < 0 ? 0 : step;
+}
+
+export interface FlashLimiter {
+  /** Level to draw this frame. Constant inside a flash step. */
+  push(alpha: number, timeMs: number): number;
+  reset(): void;
+}
+
+/**
+ * Rate limiter for flashes. Holds the previous quantized level until the next
+ * flash step begins, which caps the change rate at `MAX_FLASH_HZ` per second.
+ */
+export function createFlashLimiter(): FlashLimiter {
+  let step = -1;
+  let level = 0;
+  return {
+    push(alpha: number, timeMs: number): number {
+      const next = flashStep(timeMs);
+      if (next !== step) {
+        step = next;
+        level = quantizeFlash(alpha);
+      }
+      return level;
+    },
+    reset(): void {
+      step = -1;
+      level = 0;
+    },
+  };
 }
 
 /** Colours used for hit sparks. Cosmetic only, no manifest entry exists. */

@@ -44,11 +44,10 @@ export function parseColor(color: string): Rgba {
   }
   const fn = RGB_FN.exec(color);
   if (fn !== null) {
-    const parts = (fn[1] ?? "").split(",").map((part) => Number.parseFloat(part.trim()));
-    const r = parts[0];
-    const g = parts[1];
-    const b = parts[2];
-    const a = parts[3];
+    const parts = (fn[1] ?? "")
+      .split(",")
+      .map((part) => Number.parseFloat(part.trim()));
+    const [r = 0, g = 0, b = 0, a = 1] = parts;
     return {
       r: Number.isFinite(r) ? r : 0,
       g: Number.isFinite(g) ? g : 0,
