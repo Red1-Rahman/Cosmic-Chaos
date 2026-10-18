@@ -23,13 +23,18 @@ export const SHARK = {
   hitCooldownMs: 1100,
 } as const;
 
+/** Squared reach, computed once: squared comparisons avoid the square root. */
+const CONTACT_RADIUS_SQ = SHARK.contactRadius * SHARK.contactRadius;
+
 export type SharkState = "circle" | "pause" | "dash";
 
 export function updateShark(shark: Entity, ctx: BehaviourContext): void {
   const dt = ctx.dt;
   let dirX = shark.props.dirX ?? 1;
   let dirY = shark.props.dirY ?? 1;
-  const state = (shark.state as SharkState) ?? "circle";
+  if (shark.props.timer === undefined) shark.props.timer = SHARK.circleMs;
+  const raw = shark.state as SharkState;
+  const state: SharkState = raw === "dash" || raw === "pause" ? raw : "circle";
 
   if (state === "circle") {
     shark.anim = "swim";
@@ -63,7 +68,7 @@ export function updateShark(shark: Entity, ctx: BehaviourContext): void {
   const cd = Math.max(0, (shark.props.hitCd ?? 0) - ctx.fixedDt * 1000);
   shark.props.hitCd = cd;
   const player = ctx.world.entities.find((e) => e.kind === "player");
-  if (player && cd <= 0 && dist2(shark.x, shark.y, player.x, player.y) < SHARK.contactRadius ** 2) {
+  if (player && cd <= 0 && dist2(shark.x, shark.y, player.x, player.y) < CONTACT_RADIUS_SQ) {
     shark.props.hitCd = SHARK.hitCooldownMs;
     hitPlayer(ctx.world, player, SHARK.hitPower, shark.x, shark.y);
   }

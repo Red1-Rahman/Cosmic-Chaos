@@ -30,31 +30,6 @@ export const DEFEAT_COPY = {
   restart: "Restart with the same seed",
 } as const;
 
-export const ACTION_ATTRIBUTE = "data-cc-action";
-
-export type ActionId = "start" | "pause" | "mute" | "resume" | "restart";
-
-export interface ButtonOptions {
-  action: ActionId;
-  label: string;
-  className: string;
-  onClick: () => void;
-}
-
-/** A real <button>, so Enter and Space work without any key handling of our own. */
-export function createButton(doc: Document, options: ButtonOptions): HTMLButtonElement {
-  const button = doc.createElement("button");
-  button.type = "button";
-  button.className = options.className;
-  button.setAttribute(ACTION_ATTRIBUTE, options.action);
-  button.setAttribute("aria-label", options.label);
-  text(button, options.label);
-  button.addEventListener("click", (): void => {
-    options.onClick();
-  });
-  return button;
-}
-
 export interface ScreenHandle {
   readonly root: HTMLElement;
   /** The action a keyboard, gamepad or touch user hits first. */
