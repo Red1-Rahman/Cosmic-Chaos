@@ -33,7 +33,12 @@ interface HookHost {
   __cosmic?: unknown;
 }
 
-const freezeEntity = (entity: Entity, fieldRadius: number, fieldX: number, fieldY: number): CosmicEntitySnapshot => {
+const freezeEntity = (
+  entity: Entity,
+  fieldRadius: number,
+  fieldX: number,
+  fieldY: number,
+): CosmicEntitySnapshot => {
   const dx = entity.x - fieldX;
   const dy = entity.y - fieldY;
   const insideField = dx * dx + dy * dy <= fieldRadius * fieldRadius;
@@ -66,7 +71,9 @@ export function snapshotWorld(world: World): CosmicSnapshot {
     fieldRadius,
     fieldX,
     fieldY,
-    entities: Object.freeze(world.entities.map((entity) => freezeEntity(entity, fieldRadius, fieldX, fieldY))),
+    entities: Object.freeze(
+      world.entities.map((entity) => freezeEntity(entity, fieldRadius, fieldX, fieldY)),
+    ),
   });
 }
 
