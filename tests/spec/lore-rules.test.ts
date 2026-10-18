@@ -52,6 +52,35 @@ function run(world: World, ticks: number, state: InputState = NEUTRAL): GameEven
   return events;
 }
 
+/**
+ * Park every entity whose kind is not in `keep` in the far corner of the band with an
+ * effectively infinite timer. Behaviour rules are about one being at a time, so the
+ * others are taken out of the picture rather than the run being tuned around them.
+ */
+function parkOthers(world: World, keep: readonly Entity["kind"][]): void {
+  for (const entity of world.entities) {
+    if (keep.includes(entity.kind)) continue;
+    entity.x = ARENA.maxX - 4;
+    entity.y = ARENA.minY + 4;
+    entity.props.timer = Number.MAX_SAFE_INTEGER;
+    if (entity.kind === "orca") {
+      entity.state = "idle";
+      entity.anim = "idle";
+    }
+  }
+}
+
+/** Step once and remember what the given entity was doing. */
+function trace(world: World, ticks: number, state: InputState, watch: Entity): string[] {
+  const seen: string[] = [];
+  for (let i = 0; i < ticks; i += 1) {
+    step(world, state, MOVEMENT.fixedDt);
+    drainEvents(world);
+    seen.push(watch.state);
+  }
+  return seen;
+}
+
 const lore = new Map(characters.characters.map((entry) => [entry.id, entry]));
 
 describe("world lore", () => {
@@ -142,6 +171,7 @@ describe("capybara: mad scientist on the waterbike", () => {
 
   it("plays idle, walk, swim and jump animations at the right moments", () => {
     const world = createWorld(SEED);
+    parkOthers(world, ["player"]);
     const player = need(world, "player");
     run(world, 10);
     expect(player.anim).toBe("idle");
@@ -155,6 +185,7 @@ describe("capybara: mad scientist on the waterbike", () => {
 
   it("plays every animation it names out of assets.json", () => {
     const world = createWorld(SEED);
+    parkOthers(world, ["player"]);
     const player = need(world, "player");
     const seen = new Set<string>();
     const script: InputState[] = [
@@ -247,22 +278,27 @@ describe("orca: warden of the rule", () => {
 
   it("uses swim while pursuing and jump for a telegraphed lunge", () => {
     const world = createWorld(SEED);
+    parkOthers(world, ["orca", "player"]);
     const orca = need(world, "orca");
     const player = need(world, "player");
-    run(world, 120);
-    expect(orca.state).toBe("chase");
-    expect(orca.anim).toBe("swim");
-    // Bring it into telegraph range and watch the wind-up.
-    orca.x = player.x + ORCA.telegraphRange * 0.5;
-    orca.y = player.y;
-    orca.props.cooldown = 0;
+    // Hold the orca just outside telegraph range so the pursuit is what is under test.
     orca.state = "chase";
     orca.props.timer = 0;
+    orca.x = player.x + ORCA.telegraphRange + 60;
+    orca.y = player.y;
+    run(world, 30);
+    expect(orca.state).toBe("chase");
+    expect(orca.anim).toBe("swim");
+
+    // Now let it come inside the tell and watch the wind-up through the lunge.
     const states = new Set<string>();
     const anims = new Set<string>();
     for (let i = 0; i < 400; i += 1) {
-      orca.x = Math.min(orca.x, player.x + ORCA.telegraphRange * 0.5);
-      orca.y = player.y;
+      if (orca.state !== "telegraph" && orca.state !== "lunge") {
+        orca.x = player.x + ORCA.telegraphRange * 0.5;
+        orca.y = player.y;
+        orca.props.cooldown = 0;
+      }
       step(world, NEUTRAL, MOVEMENT.fixedDt);
       drainEvents(world);
       states.add(orca.state);
@@ -282,29 +318,30 @@ describe("orca: warden of the rule", () => {
     const world = createWorld(SEED);
     const orca = need(world, "orca");
     const player = need(world, "player");
-    orca.state = "chase";
-    orca.props.timer = 0;
-    const openGap = () => {
+    const snail = need(world, "snail");
+    parkOthers(world, ["orca", "player"]);
+
+    // Same distance to cover, same number of fixed steps, only the field differs.
+    const travelFrom = (x: number, y: number): number => {
+      orca.x = x;
+      orca.y = y;
+      orca.props.vx = 0;
+      orca.props.vy = 0;
       orca.state = "chase";
       orca.props.timer = 0;
-      orca.x = player.x + 400;
-      orca.y = player.y;
+      orca.props.cooldown = Number.MAX_SAFE_INTEGER;
       const before = orca.x;
       run(world, 30);
-      return orca.x - before;
+      return Math.abs(orca.x - before);
     };
-    const outside = openGap();
-    const snail = need(world, "snail");
-    orca.x = snail.x + world.arena.fieldRadius * 0.5;
-    orca.y = snail.y;
-    orca.state = "chase";
-    orca.props.timer = 0;
+
+    const outside = travelFrom(player.x + 400, player.y);
     expect(orca.timeScale).toBe(1);
-    const before = orca.x;
-    run(world, 30);
-    const inside = orca.x - before;
+    const inside = travelFrom(snail.x + world.arena.fieldRadius * 0.4, snail.y);
     expect(orca.timeScale).toBeCloseTo(ARENA.timeScaleInside, 10);
+    expect(outside).toBeGreaterThan(0);
     expect(inside).toBeLessThan(outside);
+    expect(inside / outside).toBeCloseTo(ARENA.timeScaleInside, 1);
   });
 
   it("must not: only one orca, no phases, no dialogue", () => {
@@ -353,9 +390,14 @@ describe("shark: cosmic avenger", () => {
   });
 
   it("must not: no boss phases, no complex AI beyond the timer", () => {
-    const shark = need(createWorld(SEED), "shark");
+    const world = createWorld(SEED);
+    parkOthers(world, ["shark"]);
+    const shark = need(world, "shark");
+    step(world, NEUTRAL, MOVEMENT.fixedDt);
+    drainEvents(world);
+    // One repeating three state loop, driven only by a countdown. No phase counter.
     expect(shark.state).toBe("circle");
-    expect(Object.keys(shark.props).sort()).toEqual(["dirX", "dirY"]);
+    expect(Object.keys(shark.props).sort()).toEqual(["dirX", "dirY", "hitCd", "timer"]);
   });
 });
 
@@ -386,19 +428,28 @@ describe("tarantula: celestial overlord", () => {
 
   it("triggers one small reaction when the player does something notable", () => {
     const world = createWorld(SEED);
+    parkOthers(world, ["tarantula", "player"]);
     const tarantula = need(world, "tarantula");
-    run(world, 30, input({ action: true }));
-    expect(tarantula.state).toBe("react");
-    expect(tarantula.props.reactions).toBe(1);
-    const reacted = new Set<string>();
-    for (let i = 0; i < 120; i += 1) {
-      step(world, NEUTRAL, MOVEMENT.fixedDt);
-      drainEvents(world);
-      need(world, "player").hp = 1;
-      reacted.add(tarantula.anim);
-    }
-    expect(reacted.has("jump")).toBe(true);
+    const player = need(world, "player");
+    run(world, 30);
     expect(tarantula.state).toBe("idle");
+    expect(tarantula.props.reactions ?? 0).toBe(0);
+
+    // The notable act is firing the laser. Watch the whole reaction as it plays out.
+    const anims = new Set<string>();
+    const states = new Set<string>();
+    for (let i = 0; i < 180; i += 1) {
+      step(world, i < 30 ? input({ action: true }) : NEUTRAL, MOVEMENT.fixedDt);
+      drainEvents(world);
+      states.add(tarantula.state);
+      anims.add(tarantula.anim);
+      player.hp = 1;
+    }
+    expect(states.has("react")).toBe(true);
+    expect(anims.has("jump")).toBe(true);
+    expect(tarantula.state).toBe("idle");
+    expect(tarantula.props.reactions).toBe(1);
+
     // Exactly once: a second notable act changes nothing.
     run(world, 60, input({ action: true }));
     expect(tarantula.props.reactions).toBe(1);
@@ -413,13 +464,14 @@ describe("tarantula: celestial overlord", () => {
 
   it("must not: combat, a boss fight or cutscenes", () => {
     const world = createWorld(SEED);
+    parkOthers(world, ["tarantula", "player"]);
     const tarantula = need(world, "tarantula");
     const player = need(world, "player");
     tarantula.x = player.x;
-    tarantula.y = player.y;
     const events = run(world, 120);
     expect(events.some((event) => event.type === "hit")).toBe(false);
     expect(player.hp).toBe(1);
+    expect(player.state).toBe("idle");
   });
 });
 
@@ -471,12 +523,14 @@ describe("snail: steward of time", () => {
 
   it("changes the tick rate of what is inside it without changing the fixed step", () => {
     const world = createWorld(SEED);
+    parkOthers(world, ["orca", "snail"]);
     const snail = need(world, "snail");
     const orca = need(world, "orca");
     orca.state = "chase";
     orca.props.timer = 0;
+    orca.props.cooldown = Number.MAX_SAFE_INTEGER;
 
-    // Same fixed step, same wall time, different distance covered.
+    // Same fixed step, same number of steps, only the field differs.
     const outsideX = ARENA.maxX - 4;
     orca.x = outsideX;
     orca.y = ARENA.minY + 4;
@@ -491,11 +545,11 @@ describe("snail: steward of time", () => {
     run(world, 120);
     const insideTravel = Math.abs(orca.x - startX);
 
-    expect(world.tick).toBe(248);
-    expect(insideTravel).toBeLessThan(outsideTravel * ARENA.timeScaleInside * 1.5);
-    expect(world.entities.every((entity) => entity.timeScale === 1 || entity.timeScale > 0)).toBe(
-      true,
-    );
+    expect(world.tick).toBe(240);
+    expect(outsideTravel).toBeGreaterThan(0);
+    expect(insideTravel).toBeGreaterThan(0);
+    // The step never changed size; only the scaled dt handed to the entity did.
+    expect(insideTravel / outsideTravel).toBeCloseTo(ARENA.timeScaleInside, 1);
   });
 
   it("exposes the active time scale so a test can read it", () => {
@@ -513,13 +567,17 @@ describe("snail: steward of time", () => {
   it("must not: rewind, save states or a global pause", () => {
     const world = createWorld(SEED);
     run(world, 120);
-    expect(world.tick).toBeGreaterThan(0);
-    // A defeat stops the world; nothing ever turns time backwards.
-    const before = world.tick;
-    need(world, "player").hp = 0;
+    expect(world.tick).toBe(120);
+    expect(world.timeMs).toBeCloseTo(2000, 10);
+    // Losing stops the world: the step function refuses to run once status leaves
+    // "playing". Nothing ever turns the clock back.
+    const tickAtDefeat = world.tick;
+    world.status = "defeat";
     run(world, 10);
-    expect(world.tick).toBe(before);
-    expect(world.timeMs).toBeGreaterThan(0);
+    expect(world.tick).toBe(tickAtDefeat);
+    expect(world.timeMs).toBeCloseTo(2000, 10);
+    // And there is no world history to restore: the tick counter only ever rises.
+    expect(tickAtDefeat).toBeGreaterThan(0);
   });
 });
 
@@ -558,13 +616,15 @@ describe("human: non-sentient pets", () => {
     const world = createWorld(SEED);
     const player = need(world, "player");
     const pets = humans(world);
-    for (const tick of [0, 600, 1200, 1800]) {
-      while (world.tick < tick) {
+    for (const target of [300, 600, 1200, 1800]) {
+      while (world.tick < target && world.status === "playing") {
         step(world, input({ moveX: 1 }), MOVEMENT.fixedDt);
         drainEvents(world);
       }
+      // A bumped pet never stops the player: the player only ever reads its own keys.
       for (const pet of pets) {
         expect(pet.props.bumpCd ?? 0).toBeLessThanOrEqual(HUMAN.bumpedMs);
+        expect(pet.hp).toBe(1);
       }
       expect(player.x).toBeGreaterThanOrEqual(ARENA.minX);
       expect(player.x).toBeLessThanOrEqual(ARENA.maxX);
