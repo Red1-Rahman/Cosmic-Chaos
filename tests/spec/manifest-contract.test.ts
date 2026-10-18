@@ -35,9 +35,17 @@ describe("assets.json shape", () => {
     }
   });
 
-  it("resolves every character keyframe sprite and every preset background", () => {
+  it("resolves every sprite character, keyframe sprite and preset background", () => {
+    const characterIds = Object.keys(manifest.characters);
     for (const sprite of manifest.sprites) {
-      expect(spriteIds, `${sprite.id} character`).toContain(sprite.character);
+      expect(characterIds, `${sprite.id} character`).toContain(sprite.character);
+    }
+    for (const character of Object.values(manifest.characters)) {
+      for (const animation of Object.values(character.animations)) {
+        for (const keyframe of animation.keyframes) {
+          expect(spriteIds, `${character.id} ${keyframe.sprite}`).toContain(keyframe.sprite);
+        }
+      }
     }
     for (const preset of manifest.viewport.presets) {
       expect(backgroundIds, `${preset.id} background`).toContain(preset.background);
@@ -126,10 +134,24 @@ describe("viewport contract", () => {
     expect(manifest.viewport.integerScaleMinFill).toBeLessThanOrEqual(1);
   });
 
-  it("agrees with each preset ratio and logical box within rounding", () => {
+  it("spells every preset ratio out from its id", () => {
+    // "sqrt2:1" and "1:sqrt2" are irrational, so the authored ratio field is the truth.
+    for (const preset of manifest.viewport.presets) {
+      const [aText, bText] = preset.id.split(":");
+      const a = aText === "sqrt2" ? Math.SQRT2 : Number(aText);
+      const b = bText === "sqrt2" ? Math.SQRT2 : Number(bText);
+      expect(Number.isFinite(a), preset.id).toBe(true);
+      expect(Number.isFinite(b), preset.id).toBe(true);
+      expect(Math.abs(preset.ratio - a / b), preset.id).toBeLessThan(1e-6);
+    }
+  });
+
+  it("keeps the logical box inside rounding of the authored ratio", () => {
+    // The logical box is a whole pixel size chosen for the layout, so it can only be
+    // an approximation of an irrational aspect. One percent is the contract.
     for (const preset of manifest.viewport.presets) {
       const computed = preset.logical.w / preset.logical.h;
-      expect(Math.abs(computed - preset.ratio), preset.id).toBeLessThan(1e-6);
+      expect(Math.abs(computed - preset.ratio) / preset.ratio, preset.id).toBeLessThan(0.01);
       expect(preset.logical.w, preset.id).toBeGreaterThan(0);
       expect(preset.logical.h, preset.id).toBeGreaterThan(0);
     }
