@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# test output
+playwright-report/
+test-results/
+blob-report/
+coverage/
+
+# caches
+.vite/
+.eslintcache
+
+# logs
+*.log
+npm-debug.log*
+
+# environment (nothing in this project needs secrets, but just in case)
+.env
+.env.*
+
+# OS and editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
