@@ -29,6 +29,9 @@ export interface HudHandle {
   update(model: HudModel): void;
 }
 
+/** Last frame written per node, so the 60 Hz update() does not touch the style every tick. */
+const lastFrame = new WeakMap<HTMLElement, string>();
+
 /**
  * Place the overlay on the letterboxed canvas rect and size the type off it, so the HUD
  * scales with the arena instead of sitting at fixed screen pixels. Letterboxes stay empty.
@@ -38,6 +41,9 @@ export function applyFrame(root: HTMLElement, frame: HudModel["frame"]): void {
   const y = finite(frame.y, 0);
   const w = finite(frame.w, 0);
   const h = finite(frame.h, 0);
+  const key = `${String(x)},${String(y)},${String(w)},${String(h)}`;
+  if (lastFrame.get(root) === key) return;
+  lastFrame.set(root, key);
   cssVar(root, "--cc-frame-x", px(x));
   cssVar(root, "--cc-frame-y", px(y));
   cssVar(root, "--cc-frame-w", px(w));

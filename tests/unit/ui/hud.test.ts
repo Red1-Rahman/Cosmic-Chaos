@@ -175,5 +175,12 @@ describe("applyFrame", () => {
 
     applyFrame(root as unknown as HTMLElement, { x: Number.NaN, y: 0, w: 100, h: 100 });
     expect(root.style.getPropertyValue("--cc-frame-x")).toBe("0px");
+
+    // Re-applying the same rect writes nothing new, and a different one does.
+    applyFrame(root as unknown as HTMLElement, { x: 5, y: 5, w: 200, h: 200 });
+    applyFrame(root as unknown as HTMLElement, { x: 5, y: 5, w: 200, h: 200 });
+    expect(root.style.getPropertyValue("--cc-frame-x")).toBe("5px");
+    applyFrame(root as unknown as HTMLElement, { x: 6, y: 5, w: 200, h: 200 });
+    expect(root.style.getPropertyValue("--cc-frame-x")).toBe("6px");
   });
 });
