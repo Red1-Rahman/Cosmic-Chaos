@@ -26,7 +26,7 @@ function jsonResponse(body: unknown, ok = true, status = 200): Response {
 }
 
 function fetchReturning(response: Response): typeof fetch {
-  return (() => Promise.resolve(response)) as typeof fetch;
+  return () => Promise.resolve(response);
 }
 
 describe("listAssetReferences", () => {
@@ -58,10 +58,10 @@ describe("loadManifest", () => {
     const seen: string[] = [];
     const loaded = await loadManifest({
       manifestUrl: "assets/assets.json",
-      fetchImpl: ((input: RequestInfo | URL) => {
+      fetchImpl: (input: RequestInfo | URL) => {
         seen.push(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
         return Promise.resolve(jsonResponse(rawManifest));
-      }) as typeof fetch,
+      },
     });
     expect(seen).toEqual(["assets/assets.json"]);
     expect(loaded.sprites).toHaveLength(12);

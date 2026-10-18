@@ -197,8 +197,7 @@ export function createFakeCanvas(options: FakeCanvasOptions = {}): FakeCanvas {
     },
     names: (): string[] => calls.map((call) => call.name),
     countOf: (name: string): number => calls.filter((call) => call.name === name).length,
-    find: (name: string): RecordedCall | undefined =>
-      calls.find((call) => call.name === name),
+    find: (name: string): RecordedCall | undefined => calls.find((call) => call.name === name),
     findAll: (name: string): RecordedCall[] => calls.filter((call) => call.name === name),
     reset: (): void => {
       calls.length = 0;

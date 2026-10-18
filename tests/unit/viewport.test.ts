@@ -48,12 +48,7 @@ const assertLayoutIsSane = (layout: Layout, win: { w: number; h: number }): void
   expect(layout.css.h).toBeGreaterThan(0);
   expect(layout.css.w).toBeLessThanOrEqual(win.w + 1e-9);
   expect(layout.css.h).toBeLessThanOrEqual(win.h + 1e-9);
-  for (const bar of [
-    layout.bars.top,
-    layout.bars.bottom,
-    layout.bars.left,
-    layout.bars.right,
-  ]) {
+  for (const bar of [layout.bars.top, layout.bars.bottom, layout.bars.left, layout.bars.right]) {
     expect(bar.w).toBeGreaterThanOrEqual(0);
     expect(bar.h).toBeGreaterThanOrEqual(0);
     expect(bar.x).toBeGreaterThanOrEqual(0);
@@ -158,7 +153,9 @@ describe("computeLayout over every window shape", () => {
   });
 
   it("reaches every preset at least once", () => {
-    const seen = new Set(WINDOWS.map((win) => computeLayout({ w: win.w, h: win.h }, presets).preset.id));
+    const seen = new Set(
+      WINDOWS.map((win) => computeLayout({ w: win.w, h: win.h }, presets).preset.id),
+    );
     expect([...seen].sort()).toEqual([...presets.map((p) => p.id)].sort());
   });
 

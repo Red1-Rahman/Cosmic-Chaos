@@ -36,7 +36,11 @@ export interface GamepadSource {
 }
 
 /** Radial deadzone with rescaling, so the stick still reaches full tilt at the stops. */
-export function applyDeadzone(x: number, y: number, deadzone = GAMEPAD_DEADZONE): {
+export function applyDeadzone(
+  x: number,
+  y: number,
+  deadzone = GAMEPAD_DEADZONE,
+): {
   x: number;
   y: number;
 } {

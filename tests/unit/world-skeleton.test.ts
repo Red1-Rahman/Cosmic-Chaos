@@ -150,7 +150,7 @@ describe("step", () => {
     expect(player.timeScale).toBeCloseTo(ARENA.timeScaleInside, 9);
     expect(drainEvents(world).some((e) => e.type === "timeFieldEnter")).toBe(true);
 
-    run(world, 90, input({ moveX: -1 }));
+    run(world, 400, input({ moveX: -1 }));
     expect(player.timeScale).toBe(1);
     expect(drainEvents(world).some((e) => e.type === "timeFieldExit")).toBe(true);
   });

@@ -97,9 +97,7 @@ const readPositiveNumber = (value: unknown, path: string): number =>
   isPositiveNumber(value) ? value : fail(`${path} must be a positive finite number.`);
 
 const readString = (value: unknown, path: string): string =>
-  typeof value === "string" && value !== ""
-    ? value
-    : fail(`${path} must be a non-empty string.`);
+  typeof value === "string" && value !== "" ? value : fail(`${path} must be a non-empty string.`);
 
 const readBoolean = (value: unknown, path: string): boolean =>
   typeof value === "boolean" ? value : fail(`${path} must be a boolean.`);
