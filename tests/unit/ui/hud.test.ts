@@ -193,7 +193,9 @@ describe("fontSizeFor", () => {
   });
 
   it("is orientation-agnostic: the same short side gives the same type size", () => {
-    expect(fontSizeFor({ x: 0, y: 0, w: 380, h: 844 })).toBe(fontSizeFor({ x: 0, y: 0, w: 844, h: 380 }));
+    expect(fontSizeFor({ x: 0, y: 0, w: 380, h: 844 })).toBe(
+      fontSizeFor({ x: 0, y: 0, w: 844, h: 380 }),
+    );
   });
 
   it("clamps both ends", () => {
