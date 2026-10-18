@@ -396,6 +396,18 @@ describe("createRenderer", () => {
     expect(JSON.stringify(world)).toBe(before);
   });
 
+  it("picks up a preset change on the next frame without an explicit resize", () => {
+    const fake = createFakeCanvas();
+    const renderer = createRenderer(manifest, testAtlas(), { backgrounds: backgroundImages() });
+    renderer.render(fake.ctx, makeWorld([]), layoutFor("16:9"), 0);
+    fake.reset();
+    const portrait = layoutFor("1:sqrt2", { w: 768, h: 1086 });
+    renderer.render(fake.ctx, makeWorld([]), portrait, 0);
+    const view = computeArenaView(manifest.arena.logical, portrait.logical);
+    expect(fake.find("translate")?.args).toEqual([view.offsetX, view.offsetY]);
+    expect(fake.find("scale")?.args).toEqual([view.scale, view.scale]);
+  });
+
   it("accepts a layout through resize and keeps drawing", () => {
     const fake = createFakeCanvas();
     const renderer = createRenderer(manifest, testAtlas(), { backgrounds: backgroundImages() });
