@@ -170,3 +170,27 @@ Alternatives: storing an RNG cursor on the world (rejected: the world is suppose
 Context: the reaction has to fire on something the player does, and the sim owns no direct link between entities.
 Decision: the tarantula scans this step's `world.events` for a `laser` from the player while `props.reactions` is below 1, then plays `jump` for 420 ms and looks toward the player for 900 ms. It hovers at `arena.minY - 74` with `scale` 1.75.
 Alternatives: reacting on proximity (rejected: the Orca drags the player past it constantly, so it would fire before the player did anything), a scheduled reaction on a timer (rejected: it would fire whether or not the player acted).
+
+## 2026-10-19 role: ui: DOM overlay inside the letterbox rect, sized in em
+
+Context: the arena is drawn on a canvas that is contain-fitted and letterboxed, and the HUD has to read at the same size whether the frame is a phone sliver or a 29.5:9 cinema strip.
+Decision: one `div.cc-ui` fixed over the window with `pointer-events: none`, one `div.cc-frame` positioned from `model.frame` (`{x, y, w, h}` in CSS pixels, written as `--cc-frame-*`), and every size inside it in `em` off `--cc-font-size`, which is `frame.h / 34` clamped to 11..26 px. Only buttons opt back into `pointer-events: auto`, so the touch D-pad and the jump/action buttons below keep every tap. The debug overlay sits bottom centre, clear of both the D-pad and the action buttons.
+Alternatives: drawing the HUD on the canvas (rejected: it would be unreadable at 1x integer scale on a phone), fixed screen pixels (rejected: the HUD would grow huge on an ultrawide and vanish on a portrait phone), a DOM node per letterbox bar (rejected: nothing to put there).
+
+## 2026-10-19 role: ui: the contract grew a frame rect and two optional debug extras
+
+Context: the app hands the UI one HudModel per frame. Without the letterbox rect the overlay cannot know where the arena is, and the debug overlay wants per-entity time scales and the canvas scale, which the HUD itself does not need.
+Decision: `HudModel` gains a required `frame: {x, y, w, h}` in CSS pixels, supplied from the viewport layout, plus optional `entityTimeScales?: Record<string, number>` and `canvasScale?: number`. The overlay renders `n/a` when the app sends neither. `createUi(callbacks, options?)` takes an optional `{ debug?: boolean }` that defaults to reading `?debug=` from the URL.
+Alternatives: reading `window.innerWidth` and re-deriving the letterbox (rejected: two sources of truth for one number), making the extras required (rejected: it would force the app to send data the HUD never shows).
+
+## 2026-10-19 role: ui: focus is how gamepad and touch reach the start action
+
+Context: the start button must be reachable by keyboard, gamepad and touch, and the UI contract has no input of its own. Adding a keydown listener would fight `src/input/keyboard.ts`, which already owns the game keys.
+Decision: every screen focuses its primary action when it becomes visible (`start`, `resume`, `restart`) and blurs back to the page when the game is playing. Keyboard Enter/Space work natively on a real `<button>`; touch works natively too; for gamepad confirm the app clicks `document.activeElement`. No key handling of our own.
+Alternatives: a gamepad polling loop inside the UI (rejected: the UI would own real time and duplicate `src/input`), a hidden invisible start target (rejected: unreachable by keyboard).
+
+## 2026-10-19 role: ui: the debug overlay is never created without the flag
+
+Context: `?debug=1` is a developer switch, and the game is stateless, so the flag has to come from the URL and nothing may be written to storage to remember it.
+Decision: `createDebugOverlay` is only called when `isDebugRequested` sees `debug` in the query string; otherwise no node exists in the DOM at all, not a hidden one. `?debug=1/true/on/yes`, `?debug` and `?debug=` all count; `?debug=0` does not.
+Alternatives: a hidden element toggled by a class (rejected: it would still ship markup and per-frame writes to every player), a keypress toggle (rejected: state that outlives the URL).
