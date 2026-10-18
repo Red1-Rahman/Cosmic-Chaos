@@ -397,7 +397,9 @@ describe("document handling", () => {
         onTogglePause: (): void => undefined,
         onToggleMute: (): void => undefined,
       });
-      expect(() => ui.mount({} as HTMLElement)).toThrow(/ownerDocument/);
+      expect(() => {
+        ui.mount({} as HTMLElement);
+      }).toThrow(/ownerDocument/);
     } finally {
       if (previous !== undefined) globals.document = previous;
     }

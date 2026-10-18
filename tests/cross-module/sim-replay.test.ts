@@ -84,10 +84,11 @@ describe("seeded 600 step replay", () => {
     const world = createWorld(1337);
     const snail = world.entities.find((e) => e.kind === "snail");
     const orca = world.entities.find((e) => e.kind === "orca");
+    const player = need(world, "player");
     if (!snail || !orca) throw new Error("missing entities");
     // Stand in the open water next to the field so the crossing happens fast.
-    world.entities[0].x = snail.x - world.arena.fieldRadius - 40;
-    world.entities[0].y = snail.y;
+    player.x = snail.x - world.arena.fieldRadius - 40;
+    player.y = snail.y;
     // Park the Orca: this test is about the field and the shark loop, not dying.
     orca.x = world.arena.maxX - 6;
     orca.y = world.arena.minY + 6;

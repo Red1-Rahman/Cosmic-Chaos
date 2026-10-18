@@ -58,10 +58,11 @@ interface UiGlobals {
 }
 
 function resolveDocument(host: HTMLElement): Document | undefined {
-  const owner: Document | null = host.ownerDocument;
-  if (owner !== null) return owner;
-  const fallback: Document | undefined = (globalThis as UiGlobals).document ?? undefined;
-  return fallback;
+  // Typed loosely on purpose: a host built by hand may hand back nothing at all.
+  const owner: Document | null | undefined = host.ownerDocument;
+  if (owner !== null && owner !== undefined) return owner;
+  const fallback: Document | null | undefined = (globalThis as UiGlobals).document;
+  return fallback ?? undefined;
 }
 
 function focusHost(doc: Document, screen: Screen, screens: ScreensHandle): void {
