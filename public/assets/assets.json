@@ -1,0 +1,652 @@
+{
+  "schemaVersion": 1,
+  "readme": "Sprite and background manifest for Cosmic Chaos. Sizes, byte counts and sha256 are written only by `npm run assets:lock` (human only). Agents may tune renderScale, anchor, keyframes, arena and viewport. Image files are read-only. All 'file' values are relative to this directory. Logical arena space is the canvas-03 native pixel grid, 1408x768, so world coordinates and image pixels line up 1:1.",
+  "conventions": {
+    "facing": "Sprites face right unless the entry says otherwise. Flip with scaleX = -1 to face left; never edit the image.",
+    "pixelArt": "Draw with imageSmoothingEnabled = false and image-rendering: pixelated.",
+    "anchor": "Normalized within the sprite box. {x: 0.5, y: 1} is bottom center and suits grounded sprites; flyers and swimmers use a centered anchor.",
+    "renderScale": "Multiplier from native pixels to arena pixels. Shark is authored about 6x larger than the cast, so its renderScale is much smaller.",
+    "keyframes": "t runs 0 to 1 inclusive, must not decrease. dx, dy are arena pixels, rot is radians, sx and sy scale the sprite, alpha is 0 to 1.",
+    "aliases": "Points an animation name at another defined animation, for poses that have no art of their own."
+  },
+  "sprites": [
+    {
+      "id": "capybara-idle",
+      "file": "Capybara-idle.png",
+      "locked": false,
+      "character": "capybara",
+      "pose": "idle",
+      "facing": "right",
+      "renderScale": 0.26,
+      "anchor": { "x": 0.5, "y": 0.92 },
+      "note": "Scarf trails to the left, so the body sits right of center. Anchor near the bottom because the waterbike deck is drawn underneath."
+    },
+    {
+      "id": "orca-idle",
+      "file": "Orca-idle.png",
+      "locked": false,
+      "character": "orca",
+      "pose": "idle",
+      "facing": "front",
+      "renderScale": 0.26,
+      "anchor": { "x": 0.5, "y": 0.8 },
+      "note": "Hovers upright, belly toward the viewer. Centered anchor, it hovers rather than stands."
+    },
+    {
+      "id": "orca-swim",
+      "file": "Orca-swim-right.png",
+      "locked": false,
+      "character": "orca",
+      "pose": "swim",
+      "facing": "right",
+      "renderScale": 0.26,
+      "anchor": { "x": 0.5, "y": 0.55 },
+      "note": "Wide 2:1 side profile. Only horizontal chase art that exists."
+    },
+    {
+      "id": "orca-jump",
+      "file": "Orca-jump-up-right-diagonal.png",
+      "locked": false,
+      "character": "orca",
+      "pose": "jump",
+      "facing": "up-right",
+      "renderScale": 0.26,
+      "anchor": { "x": 0.45, "y": 0.9 },
+      "note": "Breach pose used for the telegraphed lunge."
+    },
+    {
+      "id": "shark-slide",
+      "file": "Shark-slide-right-diagonal-slightly-down.png",
+      "locked": false,
+      "character": "shark",
+      "pose": "slide",
+      "facing": "down-right",
+      "renderScale": 0.085,
+      "anchor": { "x": 0.7, "y": 0.52 },
+      "note": "1095x976 with the nebula trail baked in. The body sits right of the image center, hence anchor x 0.7. The trail makes the drawn box much larger than the shark itself."
+    },
+    {
+      "id": "tarantula-idle",
+      "file": "Spider-Idle.png",
+      "locked": false,
+      "character": "tarantula",
+      "pose": "idle",
+      "facing": "front",
+      "renderScale": 0.4,
+      "anchor": { "x": 0.5, "y": 0.72 },
+      "note": "Largest renderScale of the cast. The Celestial Overlord must dominate the frame. It hovers above the play band."
+    },
+    {
+      "id": "tarantula-jump",
+      "file": "Spider-jump-up-right-diagonal.png",
+      "locked": false,
+      "character": "tarantula",
+      "pose": "jump",
+      "facing": "up-right",
+      "renderScale": 0.4,
+      "anchor": { "x": 0.5, "y": 0.72 },
+      "note": "Used once, as a scripted show-off reaction."
+    },
+    {
+      "id": "snail-idle",
+      "file": "Snail-idle-facing-right.png",
+      "locked": false,
+      "character": "snail",
+      "pose": "idle",
+      "facing": "right",
+      "renderScale": 0.24,
+      "anchor": { "x": 0.5, "y": 0.82 },
+      "note": "Stays small and calm. The time field around it does the shouting."
+    },
+    {
+      "id": "snail-glide",
+      "file": "Snail-glide-right.png",
+      "locked": false,
+      "character": "snail",
+      "pose": "glide",
+      "facing": "right",
+      "renderScale": 0.24,
+      "anchor": { "x": 0.5, "y": 0.6 },
+      "note": "Wide glide pose with the glowing slime trail already in the art."
+    },
+    {
+      "id": "human-standing",
+      "file": "human-standing.png",
+      "locked": false,
+      "character": "human",
+      "pose": "standing",
+      "facing": "front",
+      "renderScale": 0.2,
+      "anchor": { "x": 0.5, "y": 0.9 },
+      "note": "Lowercase h in the filename. Lighter figure than the floating poses; treat it as a second pet variant."
+    },
+    {
+      "id": "human-float-high",
+      "file": "Human-floating-knee-bent-high.png",
+      "locked": false,
+      "character": "human",
+      "pose": "float-high",
+      "facing": "front",
+      "renderScale": 0.2,
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "note": "Drift loop frame A."
+    },
+    {
+      "id": "human-float-slight",
+      "file": "Human-floating-knee-bent-slight.png",
+      "locked": false,
+      "character": "human",
+      "pose": "float-slight",
+      "facing": "front",
+      "renderScale": 0.2,
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "note": "Drift loop frame B. The two float poses are near identical in size, so the swap reads as a gentle bob rather than a pop."
+    }
+  ],
+  "backgrounds": [
+    {
+      "id": "canvas-01",
+      "file": "canvas-01.jpeg",
+      "locked": false,
+      "theme": "spaceship bridge",
+      "fit": "contain",
+      "role": "unused-in-milestone-1",
+      "note": "The capybara's lab. Kept in the manifest for a later hub or title scene. Milestone 1 does not render it."
+    },
+    {
+      "id": "canvas-01-mobile",
+      "file": "canvas-01-mobile.png",
+      "locked": false,
+      "variantOf": "canvas-01",
+      "locked2": null,
+      "fit": "contain",
+      "orientation": "portrait"
+    },
+    {
+      "id": "canvas-02",
+      "file": "canvas-02.jpeg",
+      "locked": false,
+      "theme": "candy shoreline, day",
+      "fit": "contain",
+      "role": "unused-in-milestone-1",
+      "note": "Day counterpart of canvas-03. Same composition, warmer light."
+    },
+    {
+      "id": "canvas-02-mobile",
+      "file": "canvas-02-mobile.png",
+      "locked": false,
+      "variantOf": "canvas-02",
+      "fit": "contain",
+      "orientation": "portrait"
+    },
+    {
+      "id": "canvas-03",
+      "file": "canvas-03.jpeg",
+      "locked": false,
+      "theme": "cosmic shoreline, night",
+      "fit": "contain",
+      "role": "milestone-1-arena",
+      "note": "characters.json sets this as the arena. 1408x768 native, which is why the logical arena is 1408x768."
+    },
+    {
+      "id": "canvas-03-mobile",
+      "file": "canvas-03-mobile.png",
+      "locked": false,
+      "variantOf": "canvas-03",
+      "fit": "contain",
+      "orientation": "portrait",
+      "note": "Portrait 9:20 crop of the same shoreline. Chosen by the viewport handler for tall presets only."
+    },
+    {
+      "id": "title",
+      "file": "Cosmic Chaos.png",
+      "locked": false,
+      "theme": "title splash, all three canvases triptych with the wordmark",
+      "fit": "contain",
+      "role": "title-screen",
+      "note": "1440x1080. Already carries the wordmark, so the title screen adds UI over it and never re-renders text into the image."
+    }
+  ],
+  "proceduralProps": [
+    {
+      "id": "waterbike",
+      "character": "capybara",
+      "reason": "No waterbike art exists. Drawn in Canvas 2D under the capybara sprite.",
+      "anchorTo": "sprite-bottom",
+      "shape": {
+        "hull": { "w": 78, "h": 16, "radius": 8 },
+        "deck": { "w": 60, "h": 6, "radius": 3 },
+        "rail": { "w": 44, "h": 4, "radius": 2 }
+      },
+      "colors": {
+        "hull": "#d8d2c4",
+        "hullShade": "#8f9bb0",
+        "deck": "#2f9fb5",
+        "rail": "#c9d4e4",
+        "jet": "#7fe8ff"
+      },
+      "jets": {
+        "count": 2,
+        "offsetX": [-20, 20],
+        "length": 26,
+        "width": 7,
+        "spreadDeg": 12,
+        "pulseHz": 2.4
+      },
+      "wake": {
+        "trailLen": 46,
+        "width": 10,
+        "fade": 0.55,
+        "color": "#bfe9ff"
+      },
+      "rules": [
+        "Ride height follows the sim's y position, so the bike reads as floating on the water plane.",
+        "The jet flames lengthen with speed and are the main speed cue.",
+        "Tilt the hull by the sim's drift angle, clamped so it never looks broken."
+      ]
+    },
+    {
+      "id": "time-field",
+      "character": "snail",
+      "reason": "The time field has no art. Drawn as a pulsing ring plus a faint filled disc.",
+      "radius": 132,
+      "breathHz": 0.35,
+      "breathAmount": 14,
+      "colors": {
+        "ring": "#8fb8ff",
+        "fill": "#3a5cff",
+        "edge": "#d7e6ff"
+      },
+      "rules": [
+        "Radius breathes so the boundary is readable without a label.",
+        "Strokes and particles drift to the circumference to show inward pull."
+      ]
+    },
+    {
+      "id": "stardust",
+      "character": "shark",
+      "reason": "The shark image already carries one trail. Cosmetic particles add motion without editing the file.",
+      "count": 26,
+      "lifeMs": 520,
+      "size": 3,
+      "colors": ["#b98bff", "#7fe8ff", "#ffffff"]
+    },
+    {
+      "id": "crystal-glow",
+      "character": null,
+      "reason": "Shore crystals pulse faintly so the shore reads as part of the cosmic setting.",
+      "anchors": [
+        { "x": 1180, "y": 700 },
+        { "x": 1300, "y": 660 },
+        { "x": 60, "y": 690 }
+      ],
+      "radius": 54,
+      "pulseHz": 0.22,
+      "colors": { "core": "#9fe8ff", "halo": "#2f6cff" }
+    }
+  ],
+  "arena": {
+    "background": "canvas-03",
+    "logical": { "w": 1408, "h": 768 },
+    "origin": "top-left",
+    "water": {
+      "horizonY": 456,
+      "shoreY": 700,
+      "note": "Measured from canvas-03.jpeg. Everything between horizonY and the per-column shore edge is swimmable water."
+    },
+    "playBand": {
+      "minX": 74,
+      "maxX": 1334,
+      "minY": 486,
+      "maxY": 648,
+      "note": "The rectangle entities are clamped to. maxY stays above the near shore so nothing walks onto rock."
+    },
+    "depth": {
+      "note": "y doubles as depth. Farther up means smaller and slightly hazier.",
+      "scaleMin": 0.82,
+      "scaleMax": 1.12,
+      "tintFar": "rgba(120, 150, 220, 0.35)",
+      "tintNear": "rgba(0, 0, 0, 0)"
+    },
+    "spawn": {
+      "note": "Counts and ranges come from src/data/characters.json. Positions come from the seeded stream, and the spawner rejects any point inside the snail's time field or within spawnMinDistance of the player.",
+      "seedDefault": 1337,
+      "playerFraction": { "x": [0.3, 0.7], "y": [0.6, 0.9] },
+      "enemyFraction": { "x": [0.08, 0.92], "y": [0.25, 0.95] },
+      "ambientFraction": { "x": [0.1, 0.9], "y": [0.1, 0.9] },
+      "spawnMinDistance": 220,
+      "maxAttempts": 24
+    },
+    "fieldRadius": 132,
+    "timeScaleInside": 0.45
+  },
+  "characters": {
+    "capybara": {
+      "sprites": ["capybara-idle"],
+      "prop": "waterbike",
+      "animations": {
+        "idle": {
+          "loop": true,
+          "durationMs": 1700,
+          "keyframes": [
+            { "t": 0, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.5, "sprite": "capybara-idle", "dx": 0, "dy": -3, "rot": 0.01, "sx": 1.01, "sy": 0.99, "alpha": 1 },
+            { "t": 1, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "walk": {
+          "loop": true,
+          "durationMs": 420,
+          "keyframes": [
+            { "t": 0, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0.03, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.25, "sprite": "capybara-idle", "dx": 0, "dy": -5, "rot": 0, "sx": 1.05, "sy": 0.95, "alpha": 1 },
+            { "t": 0.5, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0.03, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.75, "sprite": "capybara-idle", "dx": 0, "dy": -5, "rot": 0, "sx": 0.97, "sy": 1.03, "alpha": 1 },
+            { "t": 1, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0.03, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "swim": {
+          "loop": true,
+          "durationMs": 900,
+          "keyframes": [
+            { "t": 0, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.35, "sprite": "capybara-idle", "dx": 2, "dy": -3, "rot": -0.03, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.7, "sprite": "capybara-idle", "dx": 0, "dy": 1, "rot": 0.02, "sx": 1.01, "sy": 0.99, "alpha": 1 },
+            { "t": 1, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "jump": {
+          "loop": false,
+          "durationMs": 760,
+          "keyframes": [
+            { "t": 0, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 0.94, "sy": 1.08, "alpha": 1 },
+            { "t": 0.22, "sprite": "capybara-idle", "dx": 0, "dy": -14, "rot": -0.12, "sx": 1.05, "sy": 0.96, "alpha": 1 },
+            { "t": 0.55, "sprite": "capybara-idle", "dx": 0, "dy": -34, "rot": -0.3, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.82, "sprite": "capybara-idle", "dx": 0, "dy": -8, "rot": 0.14, "sx": 0.98, "sy": 1.02, "alpha": 1 },
+            { "t": 1, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1.1, "sy": 0.86, "alpha": 1 }
+          ]
+        },
+        "defeat": {
+          "loop": false,
+          "durationMs": 900,
+          "keyframes": [
+            { "t": 0, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.45, "sprite": "capybara-idle", "dx": -6, "dy": 4, "rot": 0.5, "sx": 1, "sy": 1, "alpha": 0.85 },
+            { "t": 1, "sprite": "capybara-idle", "dx": -14, "dy": 12, "rot": 1.35, "sx": 1, "sy": 0.9, "alpha": 0.3 }
+          ]
+        }
+      },
+      "aliases": {}
+    },
+    "orca": {
+      "sprites": ["orca-idle", "orca-swim", "orca-jump"],
+      "animations": {
+        "idle": {
+          "loop": true,
+          "durationMs": 1500,
+          "keyframes": [
+            { "t": 0, "sprite": "orca-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.5, "sprite": "orca-idle", "dx": 0, "dy": -5, "rot": 0.03, "sx": 1, "sy": 1.02, "alpha": 1 },
+            { "t": 1, "sprite": "orca-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "swim": {
+          "loop": true,
+          "durationMs": 780,
+          "keyframes": [
+            { "t": 0, "sprite": "orca-swim", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.25, "sprite": "orca-swim", "dx": 0, "dy": -4, "rot": -0.05, "sx": 1.02, "sy": 0.98, "alpha": 1 },
+            { "t": 0.5, "sprite": "orca-swim", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.75, "sprite": "orca-swim", "dx": 0, "dy": -4, "rot": 0.05, "sx": 0.98, "sy": 1.02, "alpha": 1 },
+            { "t": 1, "sprite": "orca-swim", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "jump": {
+          "loop": false,
+          "durationMs": 820,
+          "keyframes": [
+            { "t": 0, "sprite": "orca-jump", "dx": 0, "dy": 4, "rot": 0.5, "sx": 0.86, "sy": 0.86, "alpha": 1 },
+            { "t": 0.45, "sprite": "orca-jump", "dx": 0, "dy": -46, "rot": 0.34, "sx": 1.06, "sy": 1.06, "alpha": 1 },
+            { "t": 0.75, "sprite": "orca-jump", "dx": 0, "dy": -14, "rot": 0.2, "sx": 0.98, "sy": 0.98, "alpha": 1 },
+            { "t": 1, "sprite": "orca-jump", "dx": 0, "dy": 0, "rot": 0.1, "sx": 1.14, "sy": 0.84, "alpha": 1 }
+          ]
+        },
+        "defeat": {
+          "loop": false,
+          "durationMs": 1000,
+          "keyframes": [
+            { "t": 0, "sprite": "orca-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.5, "sprite": "orca-idle", "dx": 0, "dy": 6, "rot": -0.7, "sx": 1, "sy": 0.96, "alpha": 0.8 },
+            { "t": 1, "sprite": "orca-idle", "dx": 0, "dy": 18, "rot": -1.5, "sx": 1, "sy": 0.86, "alpha": 0.2 }
+          ]
+        }
+      },
+      "aliases": {
+        "walk": "swim"
+      }
+    },
+    "shark": {
+      "sprites": ["shark-slide"],
+      "animations": {
+        "idle": {
+          "loop": true,
+          "durationMs": 1500,
+          "keyframes": [
+            { "t": 0, "sprite": "shark-slide", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.5, "sprite": "shark-slide", "dx": 0, "dy": -8, "rot": -0.03, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 1, "sprite": "shark-slide", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "swim": {
+          "loop": true,
+          "durationMs": 620,
+          "keyframes": [
+            { "t": 0, "sprite": "shark-slide", "dx": -6, "dy": 0, "rot": 0.05, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.5, "sprite": "shark-slide", "dx": 6, "dy": -10, "rot": -0.05, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 1, "sprite": "shark-slide", "dx": -6, "dy": 0, "rot": 0.05, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "jump": {
+          "loop": false,
+          "durationMs": 900,
+          "keyframes": [
+            { "t": 0, "sprite": "shark-slide", "dx": 0, "dy": 0, "rot": 0.15, "sx": 0.8, "sy": 0.8, "alpha": 1 },
+            { "t": 0.4, "sprite": "shark-slide", "dx": 0, "dy": -52, "rot": -0.18, "sx": 1.08, "sy": 1.08, "alpha": 1 },
+            { "t": 0.75, "sprite": "shark-slide", "dx": 0, "dy": -16, "rot": -0.05, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 1, "sprite": "shark-slide", "dx": 0, "dy": 0, "rot": 0.1, "sx": 1.2, "sy": 0.8, "alpha": 1 }
+          ]
+        },
+        "defeat": {
+          "loop": false,
+          "durationMs": 1100,
+          "keyframes": [
+            { "t": 0, "sprite": "shark-slide", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.55, "sprite": "shark-slide", "dx": 10, "dy": 8, "rot": 0.55, "sx": 1, "sy": 0.9, "alpha": 0.7 },
+            { "t": 1, "sprite": "shark-slide", "dx": 26, "dy": 22, "rot": 1.1, "sx": 0.9, "sy": 0.7, "alpha": 0.15 }
+          ]
+        }
+      },
+      "aliases": {
+        "walk": "swim"
+      }
+    },
+    "tarantula": {
+      "sprites": ["tarantula-idle", "tarantula-jump"],
+      "animations": {
+        "idle": {
+          "loop": true,
+          "durationMs": 2100,
+          "keyframes": [
+            { "t": 0, "sprite": "tarantula-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.5, "sprite": "tarantula-idle", "dx": 0, "dy": -7, "rot": 0.015, "sx": 1.01, "sy": 0.99, "alpha": 1 },
+            { "t": 1, "sprite": "tarantula-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "jump": {
+          "loop": false,
+          "durationMs": 1200,
+          "keyframes": [
+            { "t": 0, "sprite": "tarantula-jump", "dx": 0, "dy": 0, "rot": 0.05, "sx": 0.92, "sy": 0.92, "alpha": 1 },
+            { "t": 0.4, "sprite": "tarantula-jump", "dx": 14, "dy": -40, "rot": -0.28, "sx": 1.06, "sy": 1.06, "alpha": 1 },
+            { "t": 0.8, "sprite": "tarantula-jump", "dx": 20, "dy": -10, "rot": -0.1, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 1, "sprite": "tarantula-idle", "dx": 20, "dy": 0, "rot": 0, "sx": 1.02, "sy": 0.96, "alpha": 1 }
+          ]
+        },
+        "defeat": {
+          "loop": false,
+          "durationMs": 900,
+          "keyframes": [
+            { "t": 0, "sprite": "tarantula-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 1, "sprite": "tarantula-idle", "dx": 0, "dy": 16, "rot": 0.3, "sx": 1, "sy": 0.88, "alpha": 0.35 }
+          ]
+        }
+      },
+      "aliases": {
+        "walk": "idle",
+        "swim": "idle"
+      }
+    },
+    "snail": {
+      "sprites": ["snail-idle", "snail-glide"],
+      "animations": {
+        "idle": {
+          "loop": true,
+          "durationMs": 2300,
+          "keyframes": [
+            { "t": 0, "sprite": "snail-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.5, "sprite": "snail-idle", "dx": 0, "dy": -2, "rot": 0.01, "sx": 1, "sy": 1.01, "alpha": 1 },
+            { "t": 1, "sprite": "snail-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "swim": {
+          "loop": true,
+          "durationMs": 1700,
+          "keyframes": [
+            { "t": 0, "sprite": "snail-glide", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.5, "sprite": "snail-glide", "dx": 4, "dy": -2, "rot": -0.02, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 1, "sprite": "snail-glide", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "defeat": {
+          "loop": false,
+          "durationMs": 1200,
+          "keyframes": [
+            { "t": 0, "sprite": "snail-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 1, "sprite": "snail-idle", "dx": 0, "dy": 4, "rot": 0.2, "sx": 1, "sy": 0.9, "alpha": 0.4 }
+          ]
+        }
+      },
+      "aliases": {
+        "walk": "swim",
+        "jump": "swim"
+      }
+    },
+    "human": {
+      "sprites": ["human-standing", "human-float-high", "human-float-slight"],
+      "animations": {
+        "idle": {
+          "loop": true,
+          "durationMs": 1900,
+          "keyframes": [
+            { "t": 0, "sprite": "human-standing", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.5, "sprite": "human-standing", "dx": 0, "dy": -3, "rot": 0.02, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 1, "sprite": "human-standing", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "walk": {
+          "loop": true,
+          "durationMs": 1300,
+          "keyframes": [
+            { "t": 0, "sprite": "human-standing", "dx": 0, "dy": 0, "rot": 0.05, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.5, "sprite": "human-standing", "dx": 0, "dy": -2, "rot": -0.05, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 1, "sprite": "human-standing", "dx": 0, "dy": 0, "rot": 0.05, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "swim": {
+          "loop": true,
+          "durationMs": 1500,
+          "keyframes": [
+            { "t": 0, "sprite": "human-float-slight", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.5, "sprite": "human-float-high", "dx": 3, "dy": -6, "rot": 0.06, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 1, "sprite": "human-float-slight", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "jump": {
+          "loop": false,
+          "durationMs": 1100,
+          "keyframes": [
+            { "t": 0, "sprite": "human-float-high", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 0.5, "sprite": "human-float-high", "dx": 4, "dy": -26, "rot": 0.18, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 1, "sprite": "human-float-slight", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+          ]
+        },
+        "defeat": {
+          "loop": false,
+          "durationMs": 1300,
+          "keyframes": [
+            { "t": 0, "sprite": "human-float-high", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
+            { "t": 1, "sprite": "human-float-slight", "dx": 18, "dy": 14, "rot": 0.9, "sx": 1, "sy": 1, "alpha": 0.25 }
+          ]
+        }
+      },
+      "aliases": {}
+    }
+  },
+  "viewport": {
+    "readme": "The viewport handler picks the preset whose ratio is nearest the window ratio, contain-fits that preset's logical box inside the window, and letterboxes or pillarboxes the remainder. Background is the arena image to draw for that preset.",
+    "imageRendering": "pixelated",
+    "integerScalePreferred": true,
+    "integerScaleMinFill": 0.9,
+    "select": "nearest-ratio",
+    "presets": [
+      {
+        "id": "16:9",
+        "ratio": 1.7777777778,
+        "logical": { "w": 1408, "h": 792 },
+        "background": "canvas-03"
+      },
+      {
+        "id": "16:10",
+        "ratio": 1.6,
+        "logical": { "w": 1408, "h": 880 },
+        "background": "canvas-03"
+      },
+      {
+        "id": "4:3",
+        "ratio": 1.3333333333,
+        "logical": { "w": 1024, "h": 768 },
+        "background": "canvas-03"
+      },
+      {
+        "id": "20:9",
+        "ratio": 2.2222222222,
+        "logical": { "w": 1600, "h": 720 },
+        "background": "canvas-03"
+      },
+      {
+        "id": "29.5:9",
+        "ratio": 3.2777777778,
+        "logical": { "w": 1770, "h": 540 },
+        "background": "canvas-03"
+      },
+      {
+        "id": "sqrt2:1",
+        "ratio": 1.4142135624,
+        "logical": { "w": 1088, "h": 768 },
+        "background": "canvas-03"
+      },
+      {
+        "id": "1:sqrt2",
+        "ratio": 0.7071067812,
+        "logical": { "w": 768, "h": 1086 },
+        "background": "canvas-03-mobile"
+      },
+      {
+        "id": "9:20",
+        "ratio": 0.45,
+        "logical": { "w": 810, "h": 1800 },
+        "background": "canvas-03-mobile"
+      }
+    ]
+  }
+}
