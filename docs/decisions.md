@@ -128,3 +128,45 @@ Alternatives: dropping flashes past a threshold (rejected: the hit response woul
 Context: `proceduralProps` is a heterogeneous array and `shape`, `jets`, `wake` and `colors` are loosely typed dicts that may be absent.
 Decision: `readWaterbike`, `readTimeField`, `readCrystalGlow` and `readStardust` in `props.ts` parse field by field and fall back to the shipped values, so a missing or partial prop never throws mid frame and never silently draws a zero sized shape.
 Alternatives: casting the raw dicts (rejected: a missing field would reach Canvas as NaN), throwing on a bad prop (rejected: the renderer must never break the frame loop).
+
+## 2026-10-19 sim: behaviours live in src/sim/behaviours, one module per character
+
+Context: `src/sim/world.ts` already owned the tick, the fixed step, the time field and the waterbike momentum, and the brief asks for per-character behaviour modules.
+Decision: one module per character under `src/sim/behaviours/` (`player`, `orca`, `shark`, `tarantula`, `snail`, `human`) plus `shared.ts` for pure helpers. Each exports its tuning as a frozen const and a single `update*(entity, ctx)` entry point. `step` resolves every time scale first, then dispatches, then runs the player presentation and vitality pass, so a lunge that lands this step is reflected in the same frame.
+Alternatives: keeping everything in `world.ts` (rejected: it would become an unreadable 600 line switch), a behaviour registry keyed by kind string (rejected: dynamic dispatch buys nothing at six kinds and costs a lookup per entity per step). `codebase.txt` does not list the new folder yet; a human should add the line.
+
+## 2026-10-19 sim: orca chase aims at a predicted point, not the player position
+
+Context: a pursuit that only reads position glues itself to the player's tail and cannot be cut.
+Decision: the chase target is `player + clamp(playerVelocity * 0.55s, �180px)`. Distances are compared squared, and only the actual steering step normalises, so no trig reaches the hash.
+Alternatives: pure pursuit (rejected: reads as homing, not as a warden), full intercept solution (rejected: the Orca would be as fast as the player, which kills the dodge).
+
+## 2026-10-19 sim: orca damage, mercy window and regen
+
+Context: `hp` is a 0..1 fraction and the Orca is the only real threat, so the numbers decide whether Milestone 1 is playable or unfair.
+Decision: lunge contact takes 0.22, the Shark takes 0.12 on a 1.1 s cooldown. After any hit the player has 600 ms of mercy (`iFrameMs`), during which a lunge still visually lands but deals nothing. Health regenerates 0.06 per second once 3 s have passed without a hit. A full chase cycle is telegraph 420 ms + lunge 360 ms + recover 900 ms, so the Orca can land at most about one hit every 2.2 s.
+Alternatives: no mercy window (rejected: the scripted 600 step replay killed the player before the field was ever crossed), a fixed hp pool of 3 (rejected: the sim stores a 0..1 fraction and the HUD reads one number), longer telegraph only (rejected: the Orca already telegraphs, the problem was the chain rate).
+
+## 2026-10-19 sim: walk versus swim is an axis test, not a depth test
+
+Context: the Capybara must play idle, walk, swim and jump, and the waterbike skims in every direction.
+Decision: above 12 px/s the anim is `walk` when the movement is mostly horizontal (`|vy| <= 0.6 |vx|`), `swim` otherwise; `jump` while the hop arc runs; `idle` when parked. Humans use the same axis test, so both drift loops come from `assets.json`.
+Alternatives: depth bands (rejected: the player can sit still at any depth and the anim would flicker), always `swim` (rejected: `walk` would never play and the milestone list asks for it).
+
+## 2026-10-19 sim: splashes are throttled by a millisecond cooldown in props
+
+Context: the brief wants a wake splash when the bike lands hard or moves fast, but not one event per step.
+Decision: `props.splashCd` counts down on the time scaled dt; a landing (flagged by `props.justLanded`, set by the movement code on the one step the hop arc ends) splashes immediately at power 0.55, and a moving bike splashes at `speed / 190` capped at 1 once the 260 ms cooldown has cleared.
+Alternatives: splashing every step over a speed threshold (rejected: 60 events a second would flood the audio queue), a step counter instead of milliseconds (rejected: the cooldown would not slow with the time field).
+
+## 2026-10-19 sim: shark and snail use fixed headings instead of an RNG per step
+
+Context: the sim may not use `Math.random` and the world carries no RNG stream, but behaviour needs variety, and any `Math.sin` drift would leak engine dependent bits into the golden hash.
+Decision: the Shark keeps `props.dirX`/`dirY` from spawn and reflects them at the band edges; the Snail drifts along a fixed heading at 16 px/s. Humans derive heading and speed from an FNV-1a hash of their own id, which is stable and needs no stream.
+Alternatives: storing an RNG cursor on the world (rejected: the world is supposed to be plain serialisable data and the cursor would have to be hashed), trigonometric drift (rejected: cross engine ULP differences would break `hashWorld`).
+
+## 2026-10-19 sim: the tarantula reacts once, driven by scanning the step's events
+
+Context: the reaction has to fire on something the player does, and the sim owns no direct link between entities.
+Decision: the tarantula scans this step's `world.events` for a `laser` from the player while `props.reactions` is below 1, then plays `jump` for 420 ms and looks toward the player for 900 ms. It hovers at `arena.minY - 74` with `scale` 1.75.
+Alternatives: reacting on proximity (rejected: the Orca drags the player past it constantly, so it would fire before the player did anything), a scheduled reaction on a timer (rejected: it would fire whether or not the player acted).
