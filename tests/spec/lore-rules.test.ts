@@ -359,31 +359,30 @@ describe("orca: warden of the rule", () => {
   });
 
   it("slows down or speeds up inside the snail's time field", () => {
-    const world = createWorld(SEED);
-    const orca = need(world, "orca");
-    const player = need(world, "player");
-    const snail = need(world, "snail");
-    parkOthers(world, ["orca", "player"]);
-
-    // Same distance to cover, same number of fixed steps, only the field differs.
-    const travelFrom = (x: number, y: number): number => {
-      orca.x = x;
-      orca.y = y;
-      orca.props.vx = 0;
-      orca.props.vy = 0;
-      orca.state = "chase";
-      orca.props.timer = 0;
-      orca.props.cooldown = Number.MAX_SAFE_INTEGER;
-      const before = orca.x;
-      run(world, 30);
-      return Math.abs(orca.x - before);
-    };
-
-    const outside = travelFrom(player.x + 400, player.y);
-    expect(orca.timeScale).toBe(1);
-    const inside = travelFrom(snail.x + world.arena.fieldRadius * 0.4, snail.y);
-    expect(orca.timeScale).toBeCloseTo(ARENA.timeScaleInside, 10);
+    // Identical geometry either side of the field: a 240 px chase along one axis,
+    // where 240 stays inside the 132 px radius because both ends are on the rim.
+    const outside = measureChaseTravel(
+      createWorld(SEED),
+      {
+        snail: OPEN_WATER,
+        player: BAND_CENTRE,
+        orca: { x: BAND_CENTRE.x + 240, y: BAND_CENTRE.y },
+      },
+      60,
+    );
+    const insideWorld = createWorld(SEED);
+    const inside = measureChaseTravel(
+      insideWorld,
+      {
+        snail: FIELD_CENTRE,
+        player: { x: FIELD_CENTRE.x + 120, y: FIELD_CENTRE.y },
+        orca: { x: FIELD_CENTRE.x - 120, y: FIELD_CENTRE.y },
+      },
+      60,
+    );
+    expect(need(insideWorld, "orca").timeScale).toBeCloseTo(ARENA.timeScaleInside, 10);
     expect(outside).toBeGreaterThan(0);
+    expect(inside).toBeGreaterThan(0);
     expect(inside).toBeLessThan(outside);
     expect(inside / outside).toBeCloseTo(ARENA.timeScaleInside, 1);
   });
@@ -441,7 +440,13 @@ describe("shark: cosmic avenger", () => {
     drainEvents(world);
     // One repeating three state loop, driven only by a countdown. No phase counter.
     expect(shark.state).toBe("circle");
-    expect(Object.keys(shark.props).sort()).toEqual(["dirX", "dirY", "hitCd", "timer"]);
+    expect(Object.keys(shark.props).sort()).toEqual([
+      "dashPhase",
+      "dirX",
+      "dirY",
+      "hitCd",
+      "timer",
+    ]);
   });
 });
 
@@ -566,34 +571,35 @@ describe("snail: steward of time", () => {
   });
 
   it("changes the tick rate of what is inside it without changing the fixed step", () => {
-    const world = createWorld(SEED);
-    parkOthers(world, ["orca", "snail"]);
-    const snail = need(world, "snail");
-    const orca = need(world, "orca");
-    orca.state = "chase";
-    orca.props.timer = 0;
-    orca.props.cooldown = Number.MAX_SAFE_INTEGER;
+    const outsideWorld = createWorld(SEED);
+    const outside = measureChaseTravel(
+      outsideWorld,
+      {
+        snail: OPEN_WATER,
+        player: BAND_CENTRE,
+        orca: { x: BAND_CENTRE.x + 240, y: BAND_CENTRE.y },
+      },
+      60,
+    );
+    const insideWorld = createWorld(SEED);
+    const inside = measureChaseTravel(
+      insideWorld,
+      {
+        snail: FIELD_CENTRE,
+        player: { x: FIELD_CENTRE.x + 120, y: FIELD_CENTRE.y },
+        orca: { x: FIELD_CENTRE.x - 120, y: FIELD_CENTRE.y },
+      },
+      60,
+    );
 
-    // Same fixed step, same number of steps, only the field differs.
-    const outsideX = ARENA.maxX - 4;
-    orca.x = outsideX;
-    orca.y = ARENA.minY + 4;
-    run(world, 120);
-    const outsideTravel = Math.abs(orca.x - outsideX);
-
-    orca.x = snail.x + world.arena.fieldRadius * 0.4;
-    orca.y = snail.y;
-    orca.state = "chase";
-    orca.props.timer = 0;
-    const startX = orca.x;
-    run(world, 120);
-    const insideTravel = Math.abs(orca.x - startX);
-
-    expect(world.tick).toBe(240);
-    expect(outsideTravel).toBeGreaterThan(0);
-    expect(insideTravel).toBeGreaterThan(0);
-    // The step never changed size; only the scaled dt handed to the entity did.
-    expect(insideTravel / outsideTravel).toBeCloseTo(ARENA.timeScaleInside, 1);
+    // Both runs took exactly the same number of ticks of the same size: the step
+    // never changed. Only the scaled dt handed to the entity did.
+    expect(outsideWorld.tick).toBe(60);
+    expect(insideWorld.tick).toBe(60);
+    expect(outsideWorld.timeMs).toBeCloseTo(insideWorld.timeMs, 10);
+    expect(outside).toBeGreaterThan(0);
+    expect(inside).toBeGreaterThan(0);
+    expect(inside / outside).toBeCloseTo(ARENA.timeScaleInside, 1);
   });
 
   it("exposes the active time scale so a test can read it", () => {
