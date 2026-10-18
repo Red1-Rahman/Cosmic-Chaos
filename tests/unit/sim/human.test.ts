@@ -63,7 +63,9 @@ describe("humans", () => {
     expect(Math.abs(human.props.pushX) + Math.abs(human.props.pushY)).toBeGreaterThan(0);
     expect(human.hp).toBe(1);
     // A harmless bump emits no combat event for the pet.
-    expect(drainEvents(world).filter((e) => e.id === human.id && e.type === "hit")).toHaveLength(0);
+    expect(
+      drainEvents(world).filter((e) => e.type === "hit" && e.id === human.id),
+    ).toHaveLength(0);
   });
 
   it("never blocks the player and is never harmed", () => {

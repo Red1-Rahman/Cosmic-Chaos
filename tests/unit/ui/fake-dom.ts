@@ -50,7 +50,7 @@ export class FakeElement {
   readonly style = new FakeStyle();
   readonly dataset: Record<string, string> = {};
   readonly attributes = new Map<string, string>();
-  readonly children: FakeElement[] = [];
+  children: FakeElement[] = [];
   parent: FakeElement | null = null;
   removed = false;
   focused = 0;

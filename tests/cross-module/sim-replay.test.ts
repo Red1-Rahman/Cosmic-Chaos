@@ -114,8 +114,8 @@ describe("seeded 600 step replay", () => {
   it("lets the orca land a lunge and shows the player taking damage", () => {
     const world = createWorld(1337);
     const orca = world.entities.find((e) => e.kind === "orca");
-    const player = world.entities[0];
-    if (!orca || !player) throw new Error("missing entities");
+    const player = need(world, "player");
+    if (!orca) throw new Error("missing entities");
     orca.x = player.x - 150;
     orca.y = player.y;
     const events: GameEvent[] = [];

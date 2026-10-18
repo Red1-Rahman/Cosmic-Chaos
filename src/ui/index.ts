@@ -58,8 +58,8 @@ interface UiGlobals {
 }
 
 function resolveDocument(host: HTMLElement): Document | undefined {
-  // Typed loosely on purpose: a host built by hand may hand back nothing at all.
-  const owner: Document | null | undefined = host.ownerDocument;
+  // Widened on purpose: a host built by hand may hand back nothing at all.
+  const owner = host.ownerDocument as Document | null | undefined;
   if (owner !== null && owner !== undefined) return owner;
   const fallback: Document | null | undefined = (globalThis as UiGlobals).document;
   return fallback ?? undefined;
