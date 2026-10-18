@@ -1,6 +1,11 @@
 // Debug overlay, created only when the URL asks for it with ?debug=1. It is a plain
 // read-out of the model the app already hands the HUD, plus two optional extras.
 // Nothing here touches the sim, and nothing is created at all when the flag is absent.
+//
+// It is anchored to the TOP centre of the letterboxed frame, not the bottom: the arena's
+// play band is the lower half (manifest arena.playBand, y 486 to 648 of 768), so a panel
+// at the bottom sits on the capybara. Everything above the nebula horizon (y 456) is
+// empty sky in every viewport preset.
 import type { HudModel } from "./types.js";
 import { el, finite, formatCount, formatScale, text } from "./dom.js";
 
@@ -50,16 +55,45 @@ export function formatCounts(counts: Readonly<Record<string, number>>): string {
   return parts.length === 0 ? "none" : parts.join("  ");
 }
 
-/** Same shape as formatCounts, for the per-entity time scales. */
+/** Entity ids are the kind plus an index: "orca-1", "human-3", "player". */
+const INDEXED_ID = /-\d+$/;
+
+/** The kind part of an entity id. A bare id like "player" is its own kind. */
+export function entityKind(id: string): string {
+  return id.replace(INDEXED_ID, "");
+}
+
+/**
+ * One line per entity KIND while every entity of that kind shares one time scale, which is
+ * the normal case: six humans inside one snail field read as a single "human 0.35x".
+ * When a kind does have more than one distinct scale, the whole kind falls back to one line
+ * per entity, so the ids of the affected entities stay visible. Newlines, because the
+ * value node renders them with white-space: pre-line.
+ */
 export function formatEntityScales(scales: Readonly<Record<string, number>>): string {
-  const keys = Object.keys(scales).sort();
-  const parts: string[] = [];
-  for (const key of keys) {
-    const scale = scales[key];
-    if (scale === undefined) continue;
-    parts.push(`${key} ${formatScale(scale)}`);
+  const ids = Object.keys(scales).sort();
+  if (ids.length === 0) return "none";
+
+  const groups = new Map<string, string[]>();
+  for (const id of ids) {
+    const kind = entityKind(id);
+    const members = groups.get(kind);
+    if (members === undefined) groups.set(kind, [id]);
+    else members.push(id);
   }
-  return parts.length === 0 ? "none" : parts.join("  ");
+
+  const lines: string[] = [];
+  for (const kind of [...groups.keys()].sort()) {
+    const members = groups.get(kind) ?? [];
+    // Compared as text, so 0.35 and 0.3500004 are one scale, not two.
+    const shown = members.map((id): string => formatScale(scales[id] ?? 1));
+    if (new Set(shown).size === 1) {
+      lines.push(`${kind} ${shown[0]}`);
+      continue;
+    }
+    for (const [index, id] of members.entries()) lines.push(`${id} ${shown[index] ?? ""}`);
+  }
+  return lines.join("\n");
 }
 
 export function createDebugOverlay(doc: Document): DebugHandle {
@@ -80,6 +114,8 @@ export function createDebugOverlay(doc: Document): DebugHandle {
   const status = createRow(doc, root, "status", "data-cc-debug-status");
   const counts = createRow(doc, root, "entities", "data-cc-debug-counts");
   const scales = createRow(doc, root, "time scales", "data-cc-debug-timescales");
+  // One entry per line, so this value is the only row that needs pre-line.
+  scales.value.classList.add("cc-debug-list");
 
   const last: Cached = {
     tick: Number.NaN,

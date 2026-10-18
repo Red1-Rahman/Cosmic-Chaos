@@ -1,5 +1,7 @@
 /* Non-UI page chrome: the stage canvas, its letterbox bars and full-bleed body.
-   The HUD, title screen and touch D-pad styles live in src/styles/ui.css, owned by the ui role. */
+   The HUD and title screen styles live in src/styles/ui.css, owned by the ui
+   role. The virtual touch D-pad styles live in src/styles/touch.css, linked
+   from index.html because src/input/** belongs to the input role. */
 
 :root {
   /* Must match BAR_COLOR in src/render/viewport.ts. */

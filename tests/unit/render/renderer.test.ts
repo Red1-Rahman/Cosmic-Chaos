@@ -123,8 +123,6 @@ describe("drawSprite", () => {
       rot: 0,
       alpha: 1,
       scale: 1,
-      tintAlpha: 0,
-      tintColor: "#000000",
     });
     const call = fake.findAll("drawImage")[0];
     expect(call?.args.slice(0, 5)).toEqual([entry.bitmap, 0, 0, entry.tile.w, entry.tile.h]);
@@ -151,10 +149,25 @@ describe("drawSprite", () => {
       rot: 0,
       alpha: 1,
       scale: 1,
-      tintAlpha: 0,
-      tintColor: "#000000",
     });
     expect(fake.countOf("drawImage")).toBe(0);
+  });
+
+  it("never paints a haze veil over the sprite box", () => {
+    const fake = createFakeCanvas();
+    drawSprite(fake.ctx, testAtlas(), {
+      spriteId: "capybara-idle",
+      x: 400,
+      y: 500,
+      flipX: 1,
+      sx: 1,
+      sy: 1,
+      rot: 0,
+      alpha: 1,
+      scale: 1,
+    });
+    expect(fake.countOf("fillRect")).toBe(0);
+    expect(fake.countOf("fill")).toBe(0);
   });
 });
 

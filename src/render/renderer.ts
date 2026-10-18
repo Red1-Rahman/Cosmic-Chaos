@@ -22,12 +22,9 @@ import {
   drawCrystalGlows,
   drawTimeField,
   drawWaterbike,
-  mixColor,
-  parseColor,
   readCrystalGlow,
   readTimeField,
   readWaterbike,
-  withAlpha,
 } from "./props";
 import type { CrystalSpec, TimeFieldSpec, WaterbikeSpec } from "./props";
 import { MAX_FLASH_HZ, createFlashLimiter, createParticleSystem, readStardust } from "./particles";
@@ -140,18 +137,17 @@ export interface SpriteDraw {
   readonly alpha: number;
   /** Uniform depth multiplier, applied through the context transform. */
   readonly scale: number;
-  /** Haze alpha in [0, 1]. Zero means no haze. */
-  readonly tintAlpha: number;
-  readonly tintColor: string;
 }
 
 /**
- * Draw one sprite frame: anchored, rotated, flipped and hazed.
+ * Draw one sprite frame: anchored, rotated, flipped and depth scaled.
  *
  * The nine argument `drawImage` form keeps the source rect and the destination
  * rect declared, which is what the unit tests assert on. `scale` is applied
  * through the transform, never by resizing the destination rect, so the rect
- * stays exactly `drawSize` for every sprite at scale 1.
+ * stays exactly `drawSize` for every sprite at scale 1. Depth reads from that
+ * scale alone: there is no per entity haze veil, because a fill over the sprite
+ * bounding box shows up as a rectangle in the sky.
  */
 export function drawSprite(ctx: CanvasRenderingContext2D, atlas: Atlas, draw: SpriteDraw): void {
   if (!atlas.has(draw.spriteId)) return;
@@ -178,20 +174,6 @@ export function drawSprite(ctx: CanvasRenderingContext2D, atlas: Atlas, draw: Sp
     h,
   );
   ctx.restore();
-
-  // Haze veil over the drawn box. Every pose rotates only slightly, so an axis
-  // aligned rect keeps the veil cheap and free of transform bookkeeping.
-  if (draw.tintAlpha > 0.002) {
-    const boxW = Math.abs(w * kx);
-    const boxH = Math.abs(h * ky);
-    const left = kx < 0 ? draw.x + (1 - entry.anchor.x) * w * kx : draw.x - entry.anchor.x * w * kx;
-    const top = ky < 0 ? draw.y + (1 - entry.anchor.y) * h * ky : draw.y - entry.anchor.y * h * ky;
-    ctx.save();
-    ctx.globalAlpha = clamp01(draw.tintAlpha);
-    ctx.fillStyle = draw.tintColor;
-    ctx.fillRect(left, top, boxW, boxH);
-    ctx.restore();
-  }
   ctx.globalAlpha = 1;
 }
 
@@ -247,8 +229,6 @@ export function createRenderer(
   const timeField: TimeFieldSpec = readTimeField(findProp(manifest, "time-field"));
   const crystals: CrystalSpec = readCrystalGlow(findProp(manifest, "crystal-glow"));
   const stardust = readStardust(findProp(manifest, "stardust"));
-  const farTint = parseColor(manifest.arena.depth.tintFar);
-  const nearTint = parseColor(manifest.arena.depth.tintNear);
 
   let view: ArenaView | undefined;
   let appliedLogical: Size | undefined;
@@ -371,7 +351,6 @@ export function createRenderer(
 
     const depth = depthFactor(world, py);
     const depthScale = lerp(manifest.arena.depth.scaleMin, manifest.arena.depth.scaleMax, depth);
-    const haze = mixColor(farTint, nearTint, depth);
 
     if (entity.kind === "player") {
       drawWaterbike(ctx, waterbike, {
@@ -396,8 +375,6 @@ export function createRenderer(
       rot: sample.rot,
       alpha: sample.alpha * entity.alpha,
       scale: depthScale,
-      tintAlpha: reducedMotion ? 0 : haze.a,
-      tintColor: withAlpha(haze, 1),
     });
 
     if (entity.kind === "shark") emitStardustTrail(world, entity, px, py);

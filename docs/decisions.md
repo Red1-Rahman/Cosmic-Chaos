@@ -29,6 +29,18 @@ Context: golden replay hashes must not trip over float noise.
 Decision: `hashWorld` rounds every number to 1e-6 before FNV-1a hashing and serialises `props` with sorted keys, so the hash is independent of prop insertion order. Output is an 8 hex digit string.
 Alternatives: hashing raw floats was rejected because it is unstable across engines.
 
+## 2026-10-19 viewport-render: no per entity depth haze veil
+
+Context: a real browser smoke run showed every distant entity inside a visible lighter rectangle, because `drawSprite` filled an axis aligned rect over the sprite bounding box after restoring the transform (the tarantula read as a grey box in the sky).
+Decision: removed the veil entirely. `SpriteDraw` loses `tintAlpha`/`tintColor`, and `renderer.ts` stops computing `farTint`/`nearTint`/`mixColor`/`withAlpha` for it. Depth is carried by `scaleMin`/`scaleMax` alone, which the manifest background art already supports.
+Alternatives: keeping the veil with a smaller alpha or a per-pixel tint via `globalCompositeOperation` was rejected as it needs the sprite bounding box on screen and re-introduces the same artifact at any alpha.
+
+## 2026-10-19 viewport-render: touch.css linked from index.html
+
+Context: `src/styles/touch.css` was never referenced, so the built app shipped an unstyled D-pad. `src/ui/index.ts` solves the same problem for `ui.css` with an `import "../styles/ui.css"`.
+Decision: `<link rel="stylesheet" href="/src/styles/touch.css">` in `index.html`, next to the existing `arena.css` link, so both page level stylesheets are declared in one place.
+Alternatives: the matching `import "../styles/touch.css"` in `src/input/touch.ts` would have been tidier, but `src/input/**` is owned by the input role and out of this role's edit scope.
+
 ## 2026-10-19 viewport-render: letterbox bar colour
 
 Context: `assets.json` has no `barColor`, but the letterbox and pillarbox bars have to be
@@ -194,3 +206,9 @@ Alternatives: a gamepad polling loop inside the UI (rejected: the UI would own r
 Context: `?debug=1` is a developer switch, and the game is stateless, so the flag has to come from the URL and nothing may be written to storage to remember it.
 Decision: `createDebugOverlay` is only called when `isDebugRequested` sees `debug` in the query string; otherwise no node exists in the DOM at all, not a hidden one. `?debug=1/true/on/yes`, `?debug` and `?debug=` all count; `?debug=0` does not.
 Alternatives: a hidden element toggled by a class (rejected: it would still ship markup and per-frame writes to every player), a keypress toggle (rejected: state that outlives the URL).
+
+## 2026-10-19 fix: the debug overlay moved to the top centre, from the bottom centre
+
+Context: a browser smoke run with `?debug=1` hid the player completely. `assets.json` puts `arena.playBand` at y 486 to 648 of a 768 tall arena, so the panel at bottom centre was sitting straight on the capybara and the whole lower half of the play area.
+Decision: `.cc-debug` is anchored `top: 8.8em` (about 7em of frame type, past the top-left vitals block and its seed and preset chip row) and `left: 50%` with `translateX(-50%)`, capped at `max-width: 50%` and `max-height: 33%` with `overflow: auto`. Top offset plus the cap lands at 0.53 of the frame height, above the nebula horizon at y 456, and nothing gameplay related is ever drawn up there in any viewport preset.
+Alternatives: leaving it at the bottom and shrinking it (rejected: the play band fills the lower half, so any bottom anchored panel is on top of something), the top-left corner (rejected: the hull meter and time field readout are there), the top-right corner (rejected: the pause and mute buttons are there).
