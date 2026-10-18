@@ -90,14 +90,6 @@ for (const name of ["localStorage", "sessionStorage"]) {
     const original = store[method].bind(store);
     store[method] = (...args) => { record(name + "." + method, String(args[0])); return original(...args); };
   }
-  const descriptor = Object.getOwnPropertyDescriptor(Storage.prototype, name);
-  if (descriptor && descriptor.get) {
-    Object.defineProperty(window, name, {
-      configurable: true,
-      get: descriptor.get,
-      set: () => record(name + ".assign", "document.cookie"),
-    });
-  }
 }
 const cookieDescriptor = Object.getOwnPropertyDescriptor(Document.prototype, "cookie");
 if (cookieDescriptor && cookieDescriptor.set) {
@@ -112,6 +104,13 @@ if (window.indexedDB && typeof window.indexedDB.open === "function") {
   window.indexedDB.open = (...args) => { record("indexedDB.open", String(args[0])); return open(...args); };
 }
 `;
+
+/** Shape of the array the storage spy fills in. */
+declare global {
+  interface Window {
+    __storageWrites?: string[];
+  }
+}
 
 /** Installs the storage spy. Must run before the first navigation. */
 export async function installStorageSpy(page: Page): Promise<void> {
