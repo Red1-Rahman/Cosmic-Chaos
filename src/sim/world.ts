@@ -1,11 +1,17 @@
 // Deterministic world simulation. Pure: no DOM, no clocks, no Math.random.
 //
-// This is the Milestone 1 skeleton. The tick, the fixed timestep, the time
-// field, the player waterbike movement and event plumbing live here; the
-// per-character enemy behaviours (orca chase, shark dash, tarantula reaction,
-// human drift) are added on top by a later brief.
+// The tick, the fixed timestep, the time field and the player waterbike
+// movement live here. Per-character behaviour lives in `sim/behaviours/*` and
+// is dispatched from `step` once every entity has its time scale for this step.
 
 import { clamp, createRng } from "../util/rng";
+import { updateHuman } from "./behaviours/human";
+import { updateOrca } from "./behaviours/orca";
+import { updatePlayerPresentation, updatePlayerVitality } from "./behaviours/player";
+import { updateShark } from "./behaviours/shark";
+import type { BehaviourContext } from "./behaviours/shared";
+import { updateSnail } from "./behaviours/snail";
+import { updateTarantula } from "./behaviours/tarantula";
 import { ARENA, MOVEMENT } from "./game-config";
 import { createInitialEntities, distance } from "./spawn";
 import type { Arena, Entity, GameEvent, InputState, World } from "./types";
@@ -120,7 +126,6 @@ export function step(world: World, input: InputState, fixedDt: number): void {
 
   player.timeScale = timeScaleAt(world, player.x, player.y);
   world.fieldTimeScale = player.timeScale;
-  advancePlayer(world, player, input, fixedDt * player.timeScale);
 
   for (const entity of world.entities) {
     const scale = timeScaleAt(world, entity.x, entity.y);
@@ -134,6 +139,30 @@ export function step(world: World, input: InputState, fixedDt: number): void {
     }
     entity.animMs += fixedDt * 1000 * entity.timeScale;
   }
+
+  // Behaviours run after the time scales are resolved, so each one gets a dt
+  // that is already scaled by the field it is standing in.
+  advancePlayer(world, player, input, fixedDt * player.timeScale);
+  const arena = world.arena;
+  const ctxFor = (entity: Entity): BehaviourContext => ({
+    world,
+    arena,
+    dt: fixedDt * entity.timeScale,
+    fixedDt,
+  });
+
+  for (const entity of world.entities) {
+    if (entity.kind === "player") continue;
+    const ctx = ctxFor(entity);
+    if (entity.kind === "orca") updateOrca(entity, ctx);
+    else if (entity.kind === "shark") updateShark(entity, ctx);
+    else if (entity.kind === "tarantula") updateTarantula(entity, ctx);
+    else if (entity.kind === "snail") updateSnail(entity, ctx);
+    else updateHuman(entity, ctx);
+  }
+
+  updatePlayerPresentation(world, player, fixedDt * player.timeScale);
+  updatePlayerVitality(player, ctxFor(player));
 }
 
 export function drainEvents(world: World): GameEvent[] {

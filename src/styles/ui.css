@@ -1,0 +1,365 @@
+/* Screens, HUD and debug overlay for Cosmic Chaos. Owned by src/ui/.
+   The overlay is pointer-transparent by default so the touch D-pad below it keeps every
+   tap; only buttons opt back in. Everything is sized in em off --cc-font-size, which the
+   ui layer derives from the letterboxed area, so the HUD scales with the arena. */
+
+.cc-ui {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  font-size: var(--cc-font-size, 16px);
+  font-family:
+    ui-monospace, "SFMono-Regular", "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
+  color: rgb(232 246 255);
+  letter-spacing: 0.01em;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* The letterboxed canvas rect, written by applyFrame in src/ui/hud.ts. */
+.cc-frame {
+  position: absolute;
+  left: var(--cc-frame-x, 0px);
+  top: var(--cc-frame-y, 0px);
+  width: var(--cc-frame-w, 100%);
+  height: var(--cc-frame-h, 100%);
+}
+
+/* --- shared controls ---------------------------------------------------------- */
+
+.cc-btn {
+  pointer-events: auto;
+  margin: 0;
+  padding: 0.55em 1.1em;
+  border: 2px solid rgb(190 232 255 / 60%);
+  border-radius: 0.5em;
+  background: rgb(10 20 38 / 85%);
+  color: rgb(236 248 255);
+  font: inherit;
+  font-size: 1em;
+  line-height: 1.2;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.cc-btn:focus-visible {
+  outline: 3px solid rgb(140 224 255);
+  outline-offset: 2px;
+}
+
+.cc-btn-primary {
+  border-color: rgb(140 224 255 / 95%);
+  background: rgb(28 74 116 / 90%);
+  font-size: 1.15em;
+  padding: 0.6em 1.5em;
+}
+
+.cc-btn-icon {
+  padding: 0.35em 0.7em;
+  font-size: 0.85em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cc-btn:active,
+.cc-btn[data-pressed="true"] {
+  background: rgb(90 190 235 / 55%);
+  border-color: rgb(235 250 255 / 95%);
+}
+
+/* --- screens ------------------------------------------------------------------ */
+
+.cc-screens {
+  position: absolute;
+  inset: 0;
+}
+
+.cc-screen {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5em;
+  background: rgb(5 6 15 / 78%);
+  pointer-events: auto;
+  overflow: auto;
+}
+
+.cc-screen-active {
+  display: flex;
+}
+
+.cc-panel {
+  max-width: 34em;
+  padding: 1.4em 1.6em;
+  border: 2px solid rgb(120 178 224 / 45%);
+  border-radius: 0.9em;
+  background: rgb(7 12 26 / 90%);
+  box-shadow: 0 0.6em 2em rgb(0 0 0 / 55%);
+  text-align: center;
+}
+
+.cc-kicker {
+  margin: 0 0 0.5em;
+  font-size: 1em;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgb(150 214 246);
+}
+
+/* A headline, deliberately not a wordmark: the wordmark lives in the art. */
+.cc-headline {
+  margin: 0 0 0.7em;
+  font-size: 1.35em;
+  line-height: 1.3;
+  color: rgb(240 250 255);
+}
+
+.cc-copy {
+  margin: 0 0 0.7em;
+  font-size: 0.95em;
+  line-height: 1.55;
+  color: rgb(206 228 244);
+}
+
+.cc-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  justify-content: center;
+  margin-top: 0.9em;
+}
+
+.cc-hint {
+  margin: 0.8em 0 0;
+  font-size: 0.8em;
+  letter-spacing: 0.08em;
+  color: rgb(168 198 220);
+}
+
+/* --- HUD ---------------------------------------------------------------------- */
+
+.cc-hud {
+  display: none;
+  position: absolute;
+  inset: 0;
+  padding: 0.8em 0.9em;
+}
+
+.cc-hud-playing {
+  display: block;
+}
+
+.cc-hud-block {
+  position: absolute;
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cc-hud-vitals {
+  top: 0.8em;
+  left: 0.9em;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35em;
+}
+
+.cc-hud-meta {
+  top: 0.8em;
+  left: 0.9em;
+  transform: translateY(4.2em);
+  gap: 0.4em;
+}
+
+.cc-hud-actions {
+  top: 0.8em;
+  right: 0.9em;
+}
+
+/* Hull meter */
+
+.cc-meter {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.3em 0.6em;
+  border: 2px solid rgb(120 178 224 / 40%);
+  border-radius: 0.5em;
+  background: rgb(7 12 26 / 72%);
+}
+
+.cc-meter-label {
+  font-size: 0.75em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(178 214 238);
+}
+
+.cc-meter-track {
+  width: 7.5em;
+  height: 0.7em;
+  border-radius: 0.35em;
+  background: rgb(30 44 70 / 90%);
+  overflow: hidden;
+}
+
+.cc-meter-fill {
+  width: 100%;
+  height: 100%;
+  background: rgb(120 224 255);
+}
+
+.cc-meter-value {
+  min-width: 2.6em;
+  font-size: 0.85em;
+  text-align: right;
+  color: rgb(236 248 255);
+}
+
+.cc-meter.cc-meter-low .cc-meter-fill {
+  background: rgb(255 176 128);
+}
+
+/* Snail time field */
+
+.cc-field {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.3em 0.6em;
+  border: 2px solid rgb(120 178 224 / 40%);
+  border-radius: 0.5em;
+  background: rgb(7 12 26 / 72%);
+}
+
+.cc-field-dot {
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background: rgb(120 160 190);
+}
+
+.cc-field-name {
+  font-size: 0.75em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(178 214 238);
+}
+
+.cc-field-state {
+  font-size: 0.85em;
+  color: rgb(206 228 244);
+}
+
+.cc-field-scale {
+  font-size: 0.9em;
+  color: rgb(236 248 255);
+}
+
+.cc-field[data-cc-field="in"] {
+  border-color: rgb(160 240 255 / 90%);
+}
+
+.cc-field.cc-field-on .cc-field-dot {
+  background: rgb(160 240 255);
+}
+
+.cc-field.cc-field-on .cc-field-state {
+  color: rgb(180 246 255);
+}
+
+/* Seed and preset chips */
+
+.cc-hud-chip {
+  padding: 0.25em 0.55em;
+  border: 2px solid rgb(120 178 224 / 35%);
+  border-radius: 0.45em;
+  background: rgb(7 12 26 / 72%);
+  font-size: 0.75em;
+  letter-spacing: 0.08em;
+  color: rgb(200 226 244);
+}
+
+/* --- debug overlay ------------------------------------------------------------ */
+
+/* Only ever created when the URL carries ?debug=1. See src/ui/debug.ts. */
+
+.cc-debug {
+  position: absolute;
+  left: 0.9em;
+  bottom: 0.9em;
+  max-width: 24em;
+  padding: 0.5em 0.7em;
+  border: 2px solid rgb(126 232 176 / 45%);
+  border-radius: 0.5em;
+  background: rgb(5 12 12 / 82%);
+  font-size: 0.8em;
+  line-height: 1.45;
+}
+
+.cc-debug-heading {
+  margin-bottom: 0.3em;
+  font-size: 0.8em;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgb(126 232 176);
+}
+
+.cc-debug-row {
+  display: flex;
+  gap: 0.5em;
+  justify-content: space-between;
+}
+
+.cc-debug-key {
+  color: rgb(160 206 186);
+}
+
+.cc-debug-value {
+  color: rgb(226 250 238);
+  text-align: right;
+  word-break: break-word;
+}
+
+/* --- motion ------------------------------------------------------------------- */
+
+/* One slow pulse, well under three flashes a second, and only when motion is welcome. */
+@media (prefers-reduced-motion: no-preference) {
+  .cc-field.cc-field-on .cc-field-dot {
+    animation: cc-ui-pulse 1.6s ease-in-out infinite;
+  }
+
+  .cc-meter.cc-meter-low .cc-meter-value {
+    animation: cc-ui-pulse 1.2s ease-in-out infinite;
+  }
+
+  .cc-btn {
+    transition: background-color 110ms linear;
+  }
+}
+
+@keyframes cc-ui-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Small letterboxed areas: shrink the chrome so it never crowds the arena. */
+@media (max-height: 420px) {
+  .cc-hud-vitals {
+    gap: 0.25em;
+  }
+
+  .cc-hud-meta {
+    transform: translateY(3.4em);
+  }
+}

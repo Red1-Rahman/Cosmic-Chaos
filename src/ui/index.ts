@@ -91,71 +91,71 @@ export function createUi(callbacks: UiCallbacks, options: UiOptions = {}): Ui {
   let current: Screen = "title";
   let pendingModel: HudModel | null = null;
 
-  return {
-    mount(host: HTMLElement): void {
-      if (root !== null) return;
-      const ownerDocument = resolveDocument(host);
-      if (ownerDocument === undefined) {
-        throw new Error("ui: mount needs a host with an ownerDocument.");
-      }
-      doc = ownerDocument;
+  function show(screen: Screen): void {
+    current = screen;
+    if (root === null || screens === null || hud === null) return;
+    if (screen === "title") screens.title.activate();
+    else screens.title.deactivate();
+    if (screen === "paused") screens.paused.activate();
+    else screens.paused.deactivate();
+    if (screen === "defeat") screens.defeat.activate();
+    else screens.defeat.deactivate();
+    // The pause and mute buttons only make sense while a run is on screen or held.
+    hud.root.classList.toggle("cc-hud-playing", screen === "playing" || screen === "paused");
+    if (doc !== undefined) focusHost(doc, screen, screens);
+  }
 
-      const uiRoot = el(ownerDocument, "cc-ui");
-      uiRoot.setAttribute("data-cc-ui", "");
-      const frame = el(ownerDocument, "cc-frame");
+  function update(model: HudModel): void {
+    if (root === null || hud === null) {
+      pendingModel = model;
+      return;
+    }
+    applyFrame(root, model.frame);
+    hud.update(model);
+    debug?.update(model);
+  }
 
-      hud = createHud(ownerDocument, callbacks);
-      screens = createScreens(ownerDocument, callbacks);
-      frame.append(hud.root, screens.root);
+  function mount(host: HTMLElement): void {
+    if (root !== null) return;
+    const ownerDocument = resolveDocument(host);
+    if (ownerDocument === undefined) {
+      throw new Error("ui: mount needs a host with an ownerDocument.");
+    }
+    doc = ownerDocument;
 
-      if (debugEnabled) {
-        debug = createDebugOverlay(ownerDocument);
-        frame.append(debug.root);
-      }
+    const uiRoot = el(ownerDocument, "cc-ui");
+    uiRoot.setAttribute("data-cc-ui", "");
+    const frame = el(ownerDocument, "cc-frame");
 
-      uiRoot.append(frame);
-      host.append(uiRoot);
-      root = uiRoot;
+    hud = createHud(ownerDocument, callbacks);
+    screens = createScreens(ownerDocument, callbacks);
+    frame.append(hud.root, screens.root);
 
-      const buffered = pendingModel;
-      pendingModel = null;
-      this.show(current);
-      if (buffered !== null) this.update(buffered);
-    },
+    if (debugEnabled) {
+      debug = createDebugOverlay(ownerDocument);
+      frame.append(debug.root);
+    }
 
-    show(screen: Screen): void {
-      current = screen;
-      if (root === null || screens === null || hud === null) return;
-      if (screen === "title") screens.title.activate();
-      else screens.title.deactivate();
-      if (screen === "paused") screens.paused.activate();
-      else screens.paused.deactivate();
-      if (screen === "defeat") screens.defeat.activate();
-      else screens.defeat.deactivate();
-      // The pause and mute buttons only make sense while a run is on screen.
-      hud.root.classList.toggle("cc-hud-playing", screen === "playing");
-      if (doc !== undefined) focusHost(doc, screen, screens);
-    },
+    uiRoot.append(frame);
+    host.append(uiRoot);
+    root = uiRoot;
 
-    update(model: HudModel): void {
-      if (root === null || hud === null) {
-        pendingModel = model;
-        return;
-      }
-      applyFrame(root, model.frame);
-      hud.update(model);
-      debug?.update(model);
-    },
+    const buffered = pendingModel;
+    pendingModel = null;
+    show(current);
+    if (buffered !== null) update(buffered);
+  }
 
-    destroy(): void {
-      hud = null;
-      debug = null;
-      if (screens !== null) screens.dispose();
-      screens = null;
-      if (root !== null) root.remove();
-      root = null;
-      doc = undefined;
-      pendingModel = null;
-    },
-  };
+  function destroy(): void {
+    hud = null;
+    debug = null;
+    if (screens !== null) screens.dispose();
+    screens = null;
+    if (root !== null) root.remove();
+    root = null;
+    doc = undefined;
+    pendingModel = null;
+  }
+
+  return { mount, show, update, destroy };
 }
