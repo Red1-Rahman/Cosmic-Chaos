@@ -24,18 +24,29 @@ function run(world: World, ticks: number, state: InputState = NEUTRAL): void {
 }
 
 /** Distance travelled by an entity over `ticks` steps. */
-function travel(entity: Entity, ticks: number, state: InputState = NEUTRAL): number {
-  const world = entity.props.__world as World;
+function travel(world: World, entity: Entity, ticks: number, state: InputState = NEUTRAL): number {
   const x0 = entity.x;
   const y0 = entity.y;
   run(world, ticks, state);
   return Math.hypot(entity.x - x0, entity.y - y0);
 }
 
-function attach(world: World, entity: Entity): Entity {
-  // Tests are allowed to reach into props; the sim never reads this key.
-  entity.props.__world = world;
-  return entity;
+/** Put an Orca in a clean chasing setup with the player a fixed distance away. */
+function setupChase(world: World, gap: number): { orca: Entity; player: Entity } {
+  const orca = need(world, "orca");
+  const player = need(world, "player");
+  orca.state = "chase";
+  orca.anim = "swim";
+  orca.props.cooldown = 0;
+  orca.x = world.arena.minX + 20;
+  orca.y = world.arena.minY + 20;
+  orca.props.dirX = 1;
+  orca.props.dirY = 0;
+  player.x = orca.x + gap;
+  player.y = orca.y;
+  player.props.vx = 0;
+  player.props.vy = 0;
+  return { orca, player };
 }
 
 describe("orca state machine", () => {
@@ -52,19 +63,15 @@ describe("orca state machine", () => {
   });
 
   it("biases the approach by the player velocity so a lateral cut pulls it wide", () => {
-    const straight = createWorld(1337);
-    const cut = createWorld(1337);
-    const a = need(straight, "orca");
-    const b = need(cut, "orca");
-    // Both worlds place the Orca identically, only the input differs.
-    run(straight, 90, input({ moveX: 0 }));
-    run(cut, 90, input({ moveX: 1 }));
-    const playerA = need(straight, "player");
-    const playerB = need(cut, "player");
-    // The Orca aims at a predicted point, so it does not simply follow x.
-    expect(dist2(b.x, b.y, playerB.x, playerB.y)).toBeGreaterThan(
-      dist2(a.x, a.y, playerA.x, playerA.y) - 1e-6,
-    );
+    const still = createWorld(1337);
+    const cutting = createWorld(1337);
+    const a = setupChase(still, 500).orca;
+    const b = setupChase(cutting, 500).orca;
+    run(still, 12, input({ moveX: 0 }));
+    run(cutting, 12, input({ moveX: 1 }));
+    // Both Orcas start at the same x and cover the same distance, but the one
+    // aiming at a predicted point has committed further along the cut.
+    expect(b.x).toBeGreaterThan(a.x);
   });
 
   it("telegraphs with a fixed wind-up before the lunge", () => {
@@ -132,24 +139,19 @@ describe("orca inside the snail time field", () => {
   it("covers less ground with the same scaled dt because its speed is per second", () => {
     const outside = createWorld(1337);
     const inside = createWorld(1337);
-    const a = attach(outside, need(outside, "orca"));
-    const b = attach(inside, need(inside, "orca"));
+    const a = setupChase(outside, 500).orca;
+    const b = setupChase(inside, 500).orca;
     const snail = need(inside, "snail");
     b.x = snail.x;
     b.y = snail.y;
-    a.x = outside.arena.minX + 10;
-    a.y = outside.arena.minY + 10;
-    const playerA = need(outside, "player");
-    playerA.x = a.x + 400;
-    playerA.y = a.y;
+    // Keep the target inside the band whichever side of the snail has room.
+    const sign = snail.x - 500 >= inside.arena.minX ? 1 : -1;
     const playerB = need(inside, "player");
-    playerB.x = b.x + 400;
+    playerB.x = b.x + 500 * sign;
     playerB.y = b.y;
-    a.state = "chase";
-    b.state = "chase";
 
-    const movedOut = travel(a, 10);
-    const movedIn = travel(b, 10);
+    const movedOut = travel(outside, a, 10);
+    const movedIn = travel(inside, b, 10);
     expect(b.timeScale).toBeCloseTo(inside.arena.timeScaleInside, 9);
     expect(a.timeScale).toBe(1);
     expect(movedIn / movedOut).toBeCloseTo(inside.arena.timeScaleInside, 2);

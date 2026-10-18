@@ -5,6 +5,7 @@ import {
   DEFAULT_STARDUST,
   FLASH_STEP_MS,
   MAX_FLASH_HZ,
+  createFlashLimiter,
   createParticleSystem,
   flashStep,
   quantizeFlash,

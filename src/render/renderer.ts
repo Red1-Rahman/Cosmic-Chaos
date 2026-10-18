@@ -30,7 +30,7 @@ import {
   withAlpha,
 } from "./props";
 import type { CrystalSpec, TimeFieldSpec, WaterbikeSpec } from "./props";
-import { MAX_FLASH_HZ, createParticleSystem, quantizeFlash, readStardust } from "./particles";
+import { MAX_FLASH_HZ, createFlashLimiter, createParticleSystem, readStardust } from "./particles";
 import type { ParticleSystem } from "./particles";
 import type { Layout, Size } from "./viewport";
 
@@ -254,6 +254,7 @@ export function createRenderer(
   let flash = 0;
   let flashX = 0;
   let flashY = 0;
+  const flashLimiter = createFlashLimiter();
 
   const applyLayout = (layout: Layout): void => {
     view = computeArenaView(manifest.arena.logical, layout.logical);
@@ -380,7 +381,7 @@ export function createRenderer(
       alpha: sample.alpha * entity.alpha,
       scale: depthScale,
       tintAlpha: reducedMotion ? 0 : haze.a,
-      tintColor: withAlpha({ r: haze.r, g: haze.g, b: haze.b }, 1),
+      tintColor: withAlpha(haze, 1),
     });
 
     if (entity.kind === "shark") emitStardustTrail(world, entity, px, py);
@@ -411,7 +412,7 @@ export function createRenderer(
   /** Localized flash, rate limited to MAX_FLASH_HZ changes per second. */
   const paintFlash = (ctx: CanvasRenderingContext2D, timeMs: number): void => {
     if (flash <= 0.02) return;
-    const level = quantizeFlash(flash, timeMs);
+    const level = flashLimiter.push(flash, timeMs);
     if (level <= 0) return;
     ctx.globalAlpha = level * 0.28;
     ctx.fillStyle = "#ffffff";

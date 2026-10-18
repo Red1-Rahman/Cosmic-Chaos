@@ -185,9 +185,15 @@ export const DEFAULT_WATERBIKE: WaterbikeSpec = {
   wakeColor: "#bfe9ff",
 };
 
+const colorMap = (colors: ProceduralProp["colors"]): Readonly<Record<string, string>> | undefined => {
+  if (colors === undefined || Array.isArray(colors)) return undefined;
+  return colors as Readonly<Record<string, string>>;
+};
+
 const colorFrom = (colors: ProceduralProp["colors"], key: string, fallback: string): string => {
-  if (colors === undefined || Array.isArray(colors)) return fallback;
-  const value = colors[key];
+  const record = colorMap(colors);
+  if (record === undefined) return fallback;
+  const value = record[key];
   return typeof value === "string" && value !== "" ? value : fallback;
 };
 

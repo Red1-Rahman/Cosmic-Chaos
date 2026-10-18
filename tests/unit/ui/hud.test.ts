@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { applyFrame, createHud } from "../../../src/ui/hud.js";
-import { DOM_RATIO, FONT_MAX, FONT_MIN, LOW_HP } from "../../../src/ui/hud-metrics.js";
+import { FONT_MAX, FONT_MIN, LOW_HP, applyFrame, createHud } from "../../../src/ui/hud.js";
 import type { HudModel, UiCallbacks } from "../../../src/ui/types.js";
 import { asDocument, FakeDocument, type FakeElement } from "./fake-dom.js";
 
@@ -42,42 +41,41 @@ const read = (root: FakeElement, attribute: string): string =>
 describe("hull meter", () => {
   it("follows the health in the model", () => {
     const { root } = build();
-
     expect(read(root, "data-cc-hp")).toBe("100%");
     expect(root.find("data-cc-hp")?.parentElement?.getAttribute("aria-valuenow")).toBe("100%");
+    expect(root.findByClass("cc-meter-fill")?.style.getPropertyValue("width")).toBe("100%");
 
     // A changed HudModel changes the displayed health.
     const handle = createHud(asDocument(new FakeDocument()), NO_CALLBACKS);
-    handle.update(model({ hp: 1 }));
     handle.update(model({ hp: 0.42 }));
-    const node = handle.root.querySelector("[data-cc-hp]");
-    expect(node?.textContent).toBe("42%");
-    expect(node?.parentElement?.getAttribute("aria-valuenow")).toBe("42%");
-    expect(root.findByClass("cc-meter-fill")?.style.getPropertyValue("width")).toBe("100%");
+    const node = handle.root as unknown as FakeElement;
+    expect(read(node, "data-cc-hp")).toBe("42%");
+    expect(node.find("data-cc-hp")?.parentElement?.getAttribute("aria-valuenow")).toBe("42%");
+    expect(node.findByClass("cc-meter-fill")?.style.getPropertyValue("width")).toBe("42%");
   });
 
   it("clamps nonsense and marks a low hull", () => {
-    const { root } = build();
     const handle = createHud(asDocument(new FakeDocument()), NO_CALLBACKS);
+    const root = handle.root as unknown as FakeElement;
 
     handle.update(model({ hp: -4 }));
-    expect(handle.root.querySelector("[data-cc-hp]")?.textContent).toBe("0%");
-    expect(handle.root.querySelector(".cc-meter")?.classList.contains("cc-meter-low")).toBe(true);
+    expect(read(root, "data-cc-hp")).toBe("0%");
+    expect(root.findByClass("cc-meter")?.classList.contains("cc-meter-low")).toBe(true);
 
     handle.update(model({ hp: 0.5 }));
-    expect(handle.root.querySelector(".cc-meter")?.classList.contains("cc-meter-low")).toBe(false);
+    expect(root.findByClass("cc-meter")?.classList.contains("cc-meter-low")).toBe(false);
 
     handle.update(model({ hp: LOW_HP }));
-    expect(handle.root.querySelector(".cc-meter")?.classList.contains("cc-meter-low")).toBe(true);
+    expect(root.findByClass("cc-meter")?.classList.contains("cc-meter-low")).toBe(true);
 
     handle.update(model({ hp: Number.NaN }));
-    expect(handle.root.querySelector("[data-cc-hp]")?.textContent).toBe("0%");
+    expect(read(root, "data-cc-hp")).toBe("0%");
     expect(root.textDump).not.toContain("NaN");
   });
 });
 
 describe("time field readout", () => {
-  it("shows the active time scale and says whether the player is inside the field", () => {
+  it("shows the active time scale and whether the player is inside the field", () => {
     const handle = createHud(asDocument(new FakeDocument()), NO_CALLBACKS);
     handle.update(model());
     const root = handle.root as unknown as FakeElement;
@@ -100,13 +98,12 @@ describe("time field readout", () => {
   });
 
   it("never prints NaN when the model is malformed", () => {
-    const { root } = build();
     const handle = createHud(asDocument(new FakeDocument()), NO_CALLBACKS);
     handle.update(model({ timeScale: Number.NaN, seed: Number.NaN, presetId: "" }));
-    const node = handle.root as unknown as FakeElement;
-    expect(read(node, "data-cc-time-scale")).toBe("1.00x");
-    expect(read(node, "data-cc-seed")).toBe("seed 0");
-    expect(read(node, "data-cc-preset")).toBe("no preset");
+    const root = handle.root as unknown as FakeElement;
+    expect(read(root, "data-cc-time-scale")).toBe("1.00x");
+    expect(read(root, "data-cc-seed")).toBe("seed 0");
+    expect(read(root, "data-cc-preset")).toBe("no preset");
     expect(root.textDump).not.toContain("NaN");
   });
 });
@@ -142,6 +139,20 @@ describe("seed, preset and buttons", () => {
     expect(paused).toBe(1);
     expect(muted).toBe(1);
   });
+
+  it("mirrors the paused and muted state on the buttons", () => {
+    const handle = createHud(asDocument(new FakeDocument()), NO_CALLBACKS);
+    handle.update(model({ paused: true, muted: true }));
+    const root = handle.root as unknown as FakeElement;
+    expect(root.findByAttribute("data-cc-action", "pause")?.getAttribute("data-cc-paused")).toBe(
+      "true",
+    );
+    expect(root.findByAttribute("data-cc-action", "pause")?.textContent).toBe("Paused");
+    expect(root.findByAttribute("data-cc-action", "mute")?.getAttribute("data-cc-muted")).toBe(
+      "true",
+    );
+    expect(root.findByAttribute("data-cc-action", "mute")?.textContent).toBe("Muted");
+  });
 });
 
 describe("applyFrame", () => {
@@ -150,14 +161,17 @@ describe("applyFrame", () => {
     const root = doc.createElement("div");
 
     applyFrame(root as unknown as HTMLElement, { x: 10, y: 20, w: 1000, h: 900 });
+    expect(root.style.getPropertyValue("--cc-frame-x")).toBe("10px");
     expect(root.style.getPropertyValue("--cc-font-size")).toBe(`${String(FONT_MAX)}px`);
 
     applyFrame(root as unknown as HTMLElement, { x: 0, y: 0, w: 100, h: 100 });
     expect(root.style.getPropertyValue("--cc-font-size")).toBe(`${String(FONT_MIN)}px`);
 
     applyFrame(root as unknown as HTMLElement, { x: 0, y: 0, w: 1408, h: 792 });
-    const expected = Number((792 * DOM_RATIO).toFixed(3));
-    expect(root.style.getPropertyValue("--cc-font-size")).toBe(`${String(expected)}px`);
+    const fraction = Number((root.style.getPropertyValue("--cc-font-size").replace("px", "")));
+    expect(fraction).toBeGreaterThan(FONT_MIN);
+    expect(fraction).toBeLessThan(FONT_MAX);
+    expect(fraction).toBeCloseTo(Number((792 * (1 / 34)).toFixed(3)), 6);
 
     applyFrame(root as unknown as HTMLElement, { x: Number.NaN, y: 0, w: 100, h: 100 });
     expect(root.style.getPropertyValue("--cc-frame-x")).toBe("0px");
