@@ -88,7 +88,7 @@ export function formatEntityScales(scales: Readonly<Record<string, number>>): st
     // Compared as text, so 0.35 and 0.3500004 are one scale, not two.
     const shown = members.map((id): string => formatScale(scales[id] ?? 1));
     if (new Set(shown).size === 1) {
-      lines.push(`${kind} ${shown[0]}`);
+      lines.push(`${kind} ${shown[0] ?? ""}`);
       continue;
     }
     for (const [index, id] of members.entries()) lines.push(`${id} ${shown[index] ?? ""}`);

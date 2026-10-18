@@ -93,13 +93,7 @@ describe("debug overlay", () => {
     // human is split, so it names its ids. orca's two members agree with each other, so
     // orca stays on one line; snail has a single member and always does.
     expect(read(root, "data-cc-debug-timescales")).toBe(
-      [
-        "human-1 1.00x",
-        "human-2 0.35x",
-        "human-3 1.00x",
-        "orca 0.35x",
-        "snail 1.00x",
-      ].join("\n"),
+      ["human-1 1.00x", "human-2 0.35x", "human-3 1.00x", "orca 0.35x", "snail 1.00x"].join("\n"),
     );
   });
 
@@ -143,9 +137,7 @@ describe("placement", () => {
     expect(start).toBeGreaterThan(-1);
     const end = css.indexOf("}", start);
     expect(end).toBeGreaterThan(start);
-    return css
-      .slice(start, end)
-      .replace(/\/\*[\s\S]*?\*\//g, "");
+    return css.slice(start, end).replace(/\/\*[\s\S]*?\*\//g, "");
   }
 
   const panel = rule(".cc-debug");
@@ -184,7 +176,7 @@ describe("placement", () => {
     // panel can never reach the play band, which starts at y 486.
     const topEm = Number(/top: ([\d.]+)em/.exec(panel)?.[1] ?? "0");
     const fontRatio = 1 / 34; // FONT_RATIO in src/ui/hud.ts
-    const topFraction = (topEm * 0.8 * fontRatio);
+    const topFraction = topEm * 0.8 * fontRatio;
     expect(topFraction + 1 / 3).toBeLessThan(456 / 768);
     expect(456 / 768).toBeLessThan(486 / 768);
   });
