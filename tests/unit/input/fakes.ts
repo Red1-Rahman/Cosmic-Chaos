@@ -37,7 +37,7 @@ export class FakeElement {
   type = "";
   readonly attributes = new Map<string, string>();
   readonly dataset: Record<string, string> = {};
-  readonly children: FakeElement[] = [];
+  children: FakeElement[] = [];
   parent: FakeElement | null = null;
   removed = false;
   capturedPointers: number[] = [];

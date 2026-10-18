@@ -21,14 +21,14 @@ function sprites(draft: Dict): Section {
 function spriteAt(draft: Dict, index: number): Dict {
   const list = sprites(draft);
   const entry = list[index];
-  if (entry === undefined) throw new Error(`no sprite at index ${index}`);
+  if (entry === undefined) throw new Error(`no sprite at index ${String(index)}`);
   return entry;
 }
 
 function character(draft: Dict, id: string): Dict {
   const characters = draft["characters"] as Dict;
   const entry = characters[id];
-  if (entry === undefined) throw new Error(`no character ${id}`);
+  if (entry === undefined) throw new Error(`no character ${String(id)}`);
   return entry;
 }
 
@@ -46,14 +46,14 @@ function keyframes(draft: Dict, characterId: string, name: string): Section {
 function keyframeAt(draft: Dict, characterId: string, name: string, index: number): Dict {
   const list = keyframes(draft, characterId, name);
   const entry = list[index];
-  if (entry === undefined) throw new Error(`no keyframe at index ${index}`);
+  if (entry === undefined) throw new Error(`no keyframe at index ${String(index)}`);
   return entry;
 }
 
 function presetAt(draft: Dict, index: number): Dict {
   const presets = (draft["viewport"] as Dict)["presets"] as Section;
   const entry = presets[index];
-  if (entry === undefined) throw new Error(`no preset at index ${index}`);
+  if (entry === undefined) throw new Error(`no preset at index ${String(index)}`);
   return entry;
 }
 

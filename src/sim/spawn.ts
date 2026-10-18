@@ -20,9 +20,7 @@ function pointInFraction(rng: Rng, f: Fraction): Placement {
 }
 
 function inBand(p: Placement): boolean {
-  return (
-    p.x >= ARENA.minX && p.x <= ARENA.maxX && p.y >= ARENA.minY && p.y <= ARENA.maxY
-  );
+  return p.x >= ARENA.minX && p.x <= ARENA.maxX && p.y >= ARENA.minY && p.y <= ARENA.maxY;
 }
 
 export function distance(ax: number, ay: number, bx: number, by: number): number {
@@ -41,11 +39,7 @@ export function insideField(p: Placement, field: Placement, radius: number): boo
  * candidate; after maxAttempts the last candidate is nudged toward the band
  * centre until it fits, so the function always returns a usable point.
  */
-function findSpot(
-  rng: Rng,
-  f: Fraction,
-  accept: (p: Placement) => boolean,
-): Placement {
+function findSpot(rng: Rng, f: Fraction, accept: (p: Placement) => boolean): Placement {
   for (let attempt = 0; attempt < SPAWN_RULES.maxAttempts; attempt += 1) {
     const candidate = pointInFraction(rng, f);
     if (accept(candidate)) return candidate;

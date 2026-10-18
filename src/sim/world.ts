@@ -93,7 +93,8 @@ function advancePlayer(world: World, player: Entity, input: InputState, dt: numb
     const remaining = Math.max(0, jumpMs - dt * 1000);
     player.props.jumpMs = remaining;
     player.y = clamp(
-      player.y - Math.sin((1 - remaining / MOVEMENT.jumpMs) * Math.PI) * MOVEMENT.jumpHeight * dt * 8,
+      player.y -
+        Math.sin((1 - remaining / MOVEMENT.jumpMs) * Math.PI) * MOVEMENT.jumpHeight * dt * 8,
       world.arena.minY,
       world.arena.maxY,
     );

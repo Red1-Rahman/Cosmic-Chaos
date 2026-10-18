@@ -18,8 +18,8 @@ export interface GamepadButtonLike {
 export interface GamepadLike {
   readonly axes: ArrayLike<number>;
   readonly buttons: ArrayLike<GamepadButtonLike>;
-  readonly connected?: boolean;
-  readonly mapping?: string;
+  readonly connected?: boolean | undefined;
+  readonly mapping?: string | undefined;
 }
 
 export interface GamepadHost {
