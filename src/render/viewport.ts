@@ -79,36 +79,30 @@ const isPositiveNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value > 0;
 
 const record = (value: unknown, path: string): Record<string, unknown> => {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    fail(`${path} must be an object.`);
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
   }
-  return value as Record<string, unknown>;
+  return fail(`${path} must be an object.`);
 };
 
 const readSize = (value: unknown, path: string): Size => {
   const raw = record(value, path);
   const w = raw["w"];
   const h = raw["h"];
-  if (!isPositiveNumber(w) || !isPositiveNumber(h)) {
-    fail(`${path}.w and ${path}.h must be positive finite numbers.`);
-  }
-  return { w, h };
+  if (isPositiveNumber(w) && isPositiveNumber(h)) return { w, h };
+  return fail(`${path}.w and ${path}.h must be positive finite numbers.`);
 };
 
-const readPositiveNumber = (value: unknown, path: string): number => {
-  if (!isPositiveNumber(value)) fail(`${path} must be a positive finite number.`);
-  return value;
-};
+const readPositiveNumber = (value: unknown, path: string): number =>
+  isPositiveNumber(value) ? value : fail(`${path} must be a positive finite number.`);
 
-const readString = (value: unknown, path: string): string => {
-  if (typeof value !== "string" || value === "") fail(`${path} must be a non-empty string.`);
-  return value;
-};
+const readString = (value: unknown, path: string): string =>
+  typeof value === "string" && value !== ""
+    ? value
+    : fail(`${path} must be a non-empty string.`);
 
-const readBoolean = (value: unknown, path: string): boolean => {
-  if (typeof value !== "boolean") fail(`${path} must be a boolean.`);
-  return value;
-};
+const readBoolean = (value: unknown, path: string): boolean =>
+  typeof value === "boolean" ? value : fail(`${path} must be a boolean.`);
 
 const presetPath = (index: number, field: string): string =>
   `manifest.viewport.presets[${String(index)}].${field}`;
@@ -131,7 +125,7 @@ export function readViewportConfig(manifest: unknown): ViewportConfig {
   if (!Array.isArray(rawPresets) || rawPresets.length === 0) {
     fail("manifest.viewport.presets must be a non-empty array.");
   }
-  const list: unknown[] = rawPresets;
+  const list: readonly unknown[] = rawPresets as readonly unknown[];
   return {
     imageRendering: readString(raw["imageRendering"], "viewport.imageRendering"),
     integerScalePreferred: readBoolean(
@@ -160,9 +154,9 @@ export function pickPreset(
     fail("window size must be positive finite numbers.");
   }
   const first = presets[0];
-  if (first === undefined) fail("preset list is empty.");
+  if (first === undefined) return fail("preset list is empty.");
   const windowLogAspect = Math.log(windowW / windowH);
-  let best = first;
+  let best: ViewportPreset = first;
   let bestDistance = Math.abs(windowLogAspect - Math.log(first.ratio));
   for (let i = 1; i < presets.length; i += 1) {
     const candidate = presets[i];

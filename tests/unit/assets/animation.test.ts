@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  AnimationSampleError,
   ease,
   isAnimationSampleError,
   normalizeTime,
@@ -9,6 +8,7 @@ import {
   resolveAnimationName,
   sampleAnimation,
 } from "../../../src/assets/animation";
+import type { AnimationSampleError } from "../../../src/assets/animation";
 import { parseManifest } from "../../../src/assets/manifest-types";
 import type { Dict } from "../../../src/assets/manifest-types";
 import { draftManifest, manifest } from "./fixtures";
