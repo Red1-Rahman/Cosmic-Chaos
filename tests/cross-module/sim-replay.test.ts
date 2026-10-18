@@ -130,7 +130,7 @@ describe("seeded 600 step replay", () => {
     const world = createWorld(1337);
     for (const state of inputs) {
       step(world, state, MOVEMENT.fixedDt);
-      for (const entity of world.entities as Entity[]) {
+      for (const entity of world.entities) {
         expect(entity.x).toBeGreaterThanOrEqual(ARENA.minX - 1e-6);
         expect(entity.x).toBeLessThanOrEqual(ARENA.maxX + 1e-6);
         if (entity.kind !== "tarantula") {

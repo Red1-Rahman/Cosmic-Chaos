@@ -119,31 +119,35 @@ export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
     action: "pause",
     label: "Pause",
     className: "cc-btn cc-btn-icon",
-    onClick: (): void => callbacks.onTogglePause(),
+    onClick: (): void => {
+      callbacks.onTogglePause();
+    },
   });
   pauseButton.setAttribute("data-cc-paused", "false");
   const muteButton = createButton(doc, {
     action: "mute",
     label: "Sound on",
     className: "cc-btn cc-btn-icon",
-    onClick: (): void => callbacks.onToggleMute(),
+    onClick: (): void => {
+      callbacks.onToggleMute();
+    },
   });
   muteButton.setAttribute("data-cc-muted", "false");
   actions.append(pauseButton, muteButton);
   root.append(actions);
 
-  let last: Cached = { ...NOTHING };
+  const last: Cached = { ...NOTHING };
 
   return {
     root,
     update(model: HudModel): void {
       const hp = clamp01(model.hp);
       const timeScale = finite(model.timeScale, 1);
-      const inField = model.inTimeField === true;
+      const inField = model.inTimeField;
       const seedValue = finite(model.seed, 0);
       const presetId = model.presetId;
-      const muted = model.muted === true;
-      const paused = model.paused === true;
+      const muted = model.muted;
+      const paused = model.paused;
 
       if (hp !== last.hp) {
         cssVar(fill, "width", formatPercent(hp));

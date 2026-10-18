@@ -53,7 +53,7 @@ export function updateTarantula(tarantula: Entity, ctx: BehaviourContext): void 
     }
   } else {
     tarantula.anim = "idle";
-    const dirX = (tarantula.props.driftDir ?? 1) as number;
+    const dirX = tarantula.props.driftDir ?? 1;
     tarantula.x = clamp(
       tarantula.x + dirX * TARANTULA.driftSpeed * dt,
       ctx.arena.minX,

@@ -60,7 +60,7 @@ describe("humans", () => {
     step(world, NEUTRAL, MOVEMENT.fixedDt);
     expect(human.state).toBe("bumped");
     expect(human.props.bumpedMs).toBeGreaterThan(0);
-    expect(Math.abs(human.props.pushX ?? 0) + Math.abs(human.props.pushY ?? 0)).toBeGreaterThan(0);
+    expect(Math.abs(human.props.pushX) + Math.abs(human.props.pushY)).toBeGreaterThan(0);
     expect(human.hp).toBe(1);
     // A harmless bump emits no combat event for the pet.
     expect(drainEvents(world).filter((e) => e.id === human.id && e.type === "hit")).toHaveLength(0);

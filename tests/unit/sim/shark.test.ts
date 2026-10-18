@@ -8,10 +8,6 @@ import type { Entity, InputState, World } from "../../../src/sim/types";
 
 const NEUTRAL: InputState = { moveX: 0, moveY: 0, jump: false, action: false };
 
-function input(patch: Partial<InputState> = {}): InputState {
-  return { ...NEUTRAL, ...patch };
-}
-
 function need(world: World, kind: Entity["kind"]): Entity {
   const found = world.entities.find((e) => e.kind === kind);
   if (!found) throw new Error(`no ${kind}`);

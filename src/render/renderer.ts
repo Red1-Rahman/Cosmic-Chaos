@@ -251,6 +251,7 @@ export function createRenderer(
   const nearTint = parseColor(manifest.arena.depth.tintNear);
 
   let view: ArenaView | undefined;
+  let appliedLogical: Size | undefined;
   let reducedMotion = options.reducedMotion ?? false;
   let seed = options.seed ?? 0;
   let seedKnown = options.seed !== undefined;
@@ -268,6 +269,7 @@ export function createRenderer(
 
   const applyLayout = (layout: Layout): void => {
     view = computeArenaView(manifest.arena.logical, layout.logical);
+    appliedLogical = layout.logical;
   };
 
   const ensureSeed = (world: World): void => {
@@ -443,7 +445,13 @@ export function createRenderer(
     alpha: number,
   ): void => {
     ensureSeed(world);
-    if (view === undefined) applyLayout(layout);
+    // The view follows the layout handed to render, so a preset change lands on
+    // the very next frame even when resize was never called.
+    const logicalChanged =
+      appliedLogical === undefined ||
+      appliedLogical.w !== layout.logical.w ||
+      appliedLogical.h !== layout.logical.h;
+    if (view === undefined || logicalChanged) applyLayout(layout);
     const arenaView = view;
     if (arenaView === undefined) return;
 

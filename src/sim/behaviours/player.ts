@@ -129,7 +129,7 @@ export function updatePlayerVitality(player: Entity, ctx: BehaviourContext): voi
   const dt = ctx.dt;
   const flashMs = Math.max(0, (player.props.flashMs ?? 0) - dt * 1000);
   player.props.flashMs = flashMs;
-  const flash = PLAYER.flashMs > 0 ? flashMs / PLAYER.flashMs : 0;
+  const flash = flashMs / PLAYER.flashMs;
   player.scale = 1 + PLAYER.flashScale * flash;
   player.alpha = 1 - PLAYER.flashAlpha * flash;
 

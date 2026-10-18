@@ -81,7 +81,7 @@ export function createDebugOverlay(doc: Document): DebugHandle {
   const counts = createRow(doc, root, "entities", "data-cc-debug-counts");
   const scales = createRow(doc, root, "time scales", "data-cc-debug-timescales");
 
-  let last: Cached = {
+  const last: Cached = {
     tick: Number.NaN,
     seed: Number.NaN,
     presetId: "",
