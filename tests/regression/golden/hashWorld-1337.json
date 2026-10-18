@@ -1,0 +1,83 @@
+{
+  "readme": "Golden hashWorld checkpoints for the scripted replay in tests/regression/script.ts. Regenerate only for an intended simulation change, and record why in docs/decisions.md.",
+  "seed": 1337,
+  "fixedDt": 0.016666666666666666,
+  "totalTicks": 840,
+  "checkpoints": [
+    60,
+    150,
+    210,
+    255,
+    300,
+    420,
+    570,
+    660,
+    720,
+    840
+  ],
+  "phases": [
+    {
+      "name": "idle on the water",
+      "ticks": 60
+    },
+    {
+      "name": "accelerate right",
+      "ticks": 90
+    },
+    {
+      "name": "dive forward",
+      "ticks": 60
+    },
+    {
+      "name": "waterbike hop",
+      "ticks": 45
+    },
+    {
+      "name": "fire the laser",
+      "ticks": 45
+    },
+    {
+      "name": "run left and up",
+      "ticks": 120
+    },
+    {
+      "name": "strafe across the field",
+      "ticks": 150
+    },
+    {
+      "name": "leave the field",
+      "ticks": 90
+    },
+    {
+      "name": "settle",
+      "ticks": 60
+    },
+    {
+      "name": "coast",
+      "ticks": 120
+    }
+  ],
+  "finalHash": "9b930875",
+  "hashes": {
+    "0": "e7d4ca7f",
+    "60": "01c52002",
+    "150": "c765682a",
+    "210": "7b51d4e6",
+    "255": "72c9c402",
+    "300": "f93a14c3",
+    "420": "0aaaff2e",
+    "570": "57c71bc3",
+    "660": "24ee8628",
+    "720": "d533e9ca",
+    "840": "9b930875"
+  },
+  "eventTypes": [
+    "hit",
+    "jump",
+    "laser",
+    "spawn",
+    "splash",
+    "timeFieldEnter",
+    "timeFieldExit"
+  ]
+}
