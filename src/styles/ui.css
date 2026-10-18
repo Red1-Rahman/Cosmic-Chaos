@@ -215,6 +215,8 @@
   display: flex;
   align-items: center;
   gap: 0.5em;
+  min-width: 0;
+  max-width: 100%;
   padding: 0.3em 0.6em;
   border: 2px solid rgb(120 178 224 / 40%);
   border-radius: 0.5em;
@@ -262,6 +264,8 @@
   display: flex;
   align-items: center;
   gap: 0.45em;
+  min-width: 0;
+  max-width: 100%;
   padding: 0.3em 0.6em;
   border: 2px solid rgb(120 178 224 / 40%);
   border-radius: 0.5em;
@@ -406,13 +410,14 @@
   }
 }
 
-/* Small letterboxed areas: shrink the chrome so it never crowds the arena. */
+/* Small letterboxed areas: shrink the chrome so it never crowds the arena. The rows no
+   longer sit at a fixed em offset, so only the vertical rhythm needs tightening here. */
 @media (max-height: 420px) {
-  .cc-hud-vitals {
+  .cc-hud-stack {
     gap: 0.25em;
   }
 
-  .cc-hud-meta {
-    transform: translateY(3.4em);
+  .cc-hud-vitals {
+    gap: 0.25em;
   }
 }
