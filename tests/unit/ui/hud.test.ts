@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { FONT_MAX, FONT_MIN, LOW_HP, applyFrame, createHud } from "../../../src/ui/hud.js";
+import {
+  FONT_MAX,
+  FONT_MIN,
+  FONT_RATIO,
+  LOW_HP,
+  applyFrame,
+  createHud,
+  fontSizeFor,
+  frameShortSide,
+} from "../../../src/ui/hud.js";
 import type { HudModel, UiCallbacks } from "../../../src/ui/types.js";
 import { asDocument, FakeDocument, type FakeElement } from "./fake-dom.js";
 
@@ -155,8 +164,53 @@ describe("seed, preset and buttons", () => {
   });
 });
 
+describe("frameShortSide", () => {
+  it("is the smaller of the two sides, and collapses on junk", () => {
+    expect(frameShortSide({ x: 0, y: 0, w: 1408, h: 792 })).toBe(792);
+    expect(frameShortSide({ x: 0, y: 0, w: 792, h: 1408 })).toBe(792);
+    expect(frameShortSide({ x: 0, y: 0, w: 900, h: 900 })).toBe(900);
+    // Non-finite and negative sides must not produce a negative divisor.
+    expect(frameShortSide({ x: 0, y: 0, w: Number.NaN, h: 1408 })).toBe(0);
+    expect(frameShortSide({ x: 0, y: 0, w: -5, h: 1408 })).toBe(0);
+    expect(frameShortSide({ x: 0, y: 0, w: Number.POSITIVE_INFINITY, h: 792 })).toBe(792);
+  });
+});
+
+describe("fontSizeFor", () => {
+  it("divides the SHORT side by the divisor, not the height", () => {
+    // The landscape 16:9 frame and the portrait 9:20 frame of the same window class.
+    const landscape = fontSizeFor({ x: 0, y: 0, w: 1280, h: 720 });
+    expect(landscape).toBeCloseTo(Number((720 * FONT_RATIO).toFixed(3)), 6);
+
+    // 380x844 is the 9:20 contain-fit of a 390x844 phone. Driving this off the height gave
+    // roughly 24.8 px, which overflowed the title panel and hid the start button.
+    const portrait = fontSizeFor({ x: 0, y: 0, w: 380, h: 844 });
+    expect(portrait).toBeCloseTo(Number((380 * FONT_RATIO).toFixed(3)), 6);
+    expect(portrait).toBeGreaterThanOrEqual(11);
+    expect(portrait).toBeLessThanOrEqual(14);
+    // The old height-driven size, for the record, so the regression cannot come back.
+    expect(844 * FONT_RATIO).toBeGreaterThan(23);
+  });
+
+  it("is orientation-agnostic: the same short side gives the same type size", () => {
+    expect(fontSizeFor({ x: 0, y: 0, w: 380, h: 844 })).toBe(fontSizeFor({ x: 0, y: 0, w: 844, h: 380 }));
+  });
+
+  it("clamps both ends", () => {
+    expect(fontSizeFor({ x: 0, y: 0, w: 4000, h: 4000 })).toBe(FONT_MAX);
+    expect(fontSizeFor({ x: 0, y: 0, w: 0, h: 0 })).toBe(FONT_MIN);
+    expect(fontSizeFor({ x: 0, y: 0, w: 100, h: 4000 })).toBe(FONT_MIN);
+  });
+
+  it("never grows when a portrait frame gets taller", () => {
+    const narrow = fontSizeFor({ x: 0, y: 0, w: 380, h: 844 });
+    const taller = fontSizeFor({ x: 0, y: 0, w: 380, h: 1800 });
+    expect(taller).toBe(narrow);
+  });
+});
+
 describe("applyFrame", () => {
-  it("sizes the type off the letterboxed height and clamps both ends", () => {
+  it("sizes the type off the letterboxed short side and clamps both ends", () => {
     const doc = new FakeDocument();
     const root = doc.createElement("div");
 
@@ -171,7 +225,13 @@ describe("applyFrame", () => {
     const fraction = Number(root.style.getPropertyValue("--cc-font-size").replace("px", ""));
     expect(fraction).toBeGreaterThan(FONT_MIN);
     expect(fraction).toBeLessThan(FONT_MAX);
-    expect(fraction).toBeCloseTo(Number((792 * (1 / 34)).toFixed(3)), 6);
+    expect(fraction).toBeCloseTo(Number((792 * FONT_RATIO).toFixed(3)), 6);
+
+    // The portrait bug: a tall, narrow letterbox must land near the floor, not near the cap.
+    applyFrame(root as unknown as HTMLElement, { x: 0, y: 0, w: 380, h: 844 });
+    const portrait = Number(root.style.getPropertyValue("--cc-font-size").replace("px", ""));
+    expect(portrait).toBeCloseTo(Number((380 * FONT_RATIO).toFixed(3)), 6);
+    expect(portrait).toBeLessThanOrEqual(14);
 
     applyFrame(root as unknown as HTMLElement, { x: Number.NaN, y: 0, w: 100, h: 100 });
     expect(root.style.getPropertyValue("--cc-frame-x")).toBe("0px");

@@ -8,6 +8,7 @@ import {
   formatCounts,
   formatEntityScales,
 } from "../../../src/ui/debug.js";
+import { FONT_RATIO } from "../../../src/ui/hud.js";
 import type { HudModel } from "../../../src/ui/types.js";
 import { asDocument, FakeDocument, type FakeElement } from "./fake-dom.js";
 
@@ -175,10 +176,57 @@ describe("placement", () => {
     // Top offset plus the cap has to stay above the nebula horizon, y 456 of 768, so the
     // panel can never reach the play band, which starts at y 486.
     const topEm = Number(/top: ([\d.]+)em/.exec(panel)?.[1] ?? "0");
-    const fontRatio = 1 / 34; // FONT_RATIO in src/ui/hud.ts
-    const topFraction = topEm * 0.8 * fontRatio;
+    const topFraction = topEm * 0.8 * FONT_RATIO;
     expect(topFraction + 1 / 3).toBeLessThan(456 / 768);
     expect(456 / 768).toBeLessThan(486 / 768);
+
+    // In portrait the type is a fraction of the frame WIDTH, so the panel's top offset
+    // shrinks against the frame height rather than growing. The same em value therefore
+    // clears the vitals block by at least as much room, in both orientations.
+    const portraitTop = topEm * 0.8 * FONT_RATIO * (380 / 844);
+    expect(portraitTop).toBeLessThanOrEqual(topFraction);
+    expect(portraitTop + 1 / 3).toBeLessThan(456 / 768);
+  });
+});
+
+describe("panel fit", () => {
+  const css = readFileSync(new URL("../../../src/styles/ui.css", import.meta.url), "utf8");
+
+  /** The body of one top level rule, comments stripped. */
+  function rule(selector: string): string {
+    const start = css.indexOf(`\n${selector} {`);
+    expect(start).toBeGreaterThan(-1);
+    const end = css.indexOf("}", start);
+    expect(end).toBeGreaterThan(start);
+    return css.slice(start, end).replace(/\/\*[\s\S]*?\*\//g, "");
+  }
+
+  it("never grows wider than its screen, so 9:20 cannot scroll sideways", () => {
+    const panel = rule(".cc-panel");
+    expect(panel).toContain("max-width: min(34em, 100%)");
+    expect(panel).toMatch(/overflow-wrap: anywhere/);
+  });
+
+  it("stays inside the frame height and stays reachable when it does not", () => {
+    const screen = rule(".cc-screen");
+    expect(screen).toContain("overflow: auto");
+
+    const panel = rule(".cc-panel");
+    // margin: auto rather than align-items alone: flex centring clips the top edge of an
+    // over-tall item in a scroll container, so the button could become unreachable.
+    expect(panel).toContain("max-height: 100%");
+    expect(panel).toContain("margin: auto");
+    expect(panel).toContain("overflow: auto");
+  });
+
+  it("keeps the HUD rows and buttons in em, so they track the frame short side", () => {
+    // Every HUD offset is in em off --cc-font-size, which the ui layer derives from the
+    // letterboxed short side. Nothing may reintroduce a raw pixel or vh offset.
+    for (const selector of [".cc-hud-vitals", ".cc-hud-meta", ".cc-hud-actions"]) {
+      const body = rule(selector);
+      expect(body).not.toMatch(/\d(px|vh|vw)/);
+    }
+    expect(css).toContain("font-size: var(--cc-font-size, 16px)");
   });
 });
 

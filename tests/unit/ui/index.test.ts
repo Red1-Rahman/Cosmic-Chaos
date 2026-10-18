@@ -79,7 +79,7 @@ describe("createUi mounting", () => {
     expect(root?.style.getPropertyValue("--cc-frame-y")).toBe("45px");
     expect(root?.style.getPropertyValue("--cc-frame-w")).toBe("1600px");
     expect(root?.style.getPropertyValue("--cc-frame-h")).toBe("900px");
-    // Type scales off the arena height, clamped so it stays readable.
+    // Type scales off the arena's SHORT side, clamped so it stays readable.
     expect(root?.style.getPropertyValue("--cc-font-size")).toBe("26px");
   });
 
@@ -90,6 +90,22 @@ describe("createUi mounting", () => {
     const root = host.find("data-cc-ui");
     expect(root?.style.getPropertyValue("--cc-frame-w")).toBe("0px");
     expect(root?.style.getPropertyValue("--cc-font-size")).toBe("11px");
+  });
+
+  it("keeps the type small on a portrait letterbox so the title panel fits", () => {
+    const { host, ui } = setup();
+    // The 9:20 contain-fit of a 390x844 phone. The old height-driven rule gave about
+    // 24.8 px here and pushed the start button off the bottom of the screen.
+    ui.update(model({ frame: { x: 5, y: 0, w: 380, h: 844 }, presetId: "9:20" }));
+
+    const root = host.find("data-cc-ui");
+    const size = Number((root?.style.getPropertyValue("--cc-font-size") ?? "").replace("px", ""));
+    expect(size).toBeCloseTo(Number((380 / 34).toFixed(3)), 6);
+    expect(size).toBeGreaterThanOrEqual(11);
+    expect(size).toBeLessThanOrEqual(14);
+
+    // The title screen is mounted and its primary action exists, so a click can start it.
+    expect(host.find("data-cc-action", "start")).not.toBeNull();
   });
 
   it("buffers update calls made before mount and applies them on mount", () => {

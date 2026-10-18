@@ -16,10 +16,28 @@ import {
   text,
 } from "./dom.js";
 
-/** Font size of the HUD, as a fraction of the letterboxed area height. */
+/**
+ * Font size of the HUD, as a fraction of the letterboxed area's SHORT side. The short side
+ * is the dimension that both layouts share: in landscape it is the height, in portrait the
+ * width. Driving it off the height instead made every portrait preset render 9:20 text in a
+ * 380 px wide frame, which wrapped the title panel to several lines per sentence and pushed
+ * the start button off the bottom of the screen. Logged in docs/decisions.md.
+ */
 export const FONT_RATIO = 1 / 34;
 export const FONT_MIN = 11;
 export const FONT_MAX = 26;
+
+/** The letterboxed area's short side, in CSS pixels. Degenerate rects collapse to zero. */
+export function frameShortSide(frame: HudModel["frame"]): number {
+  const w = finite(frame.w, 0);
+  const h = finite(frame.h, 0);
+  return Math.min(Math.max(0, w), Math.max(0, h));
+}
+
+/** The base type size for one letterboxed rect, clamped to the readable 11..26 px band. */
+export function fontSizeFor(frame: HudModel["frame"]): number {
+  return clamp(frameShortSide(frame) * FONT_RATIO, FONT_MIN, FONT_MAX);
+}
 
 /** Below this hull fraction the meter pulses. One slow pulse, never a strobe. */
 export const LOW_HP = 0.34;
@@ -51,7 +69,7 @@ export function applyFrame(root: HTMLElement, frame: HudModel["frame"]): void {
   cssVar(
     root,
     "--cc-font-size",
-    `${String(Number(clamp(h * FONT_RATIO, FONT_MIN, FONT_MAX).toFixed(3)))}px`,
+    `${String(Number(fontSizeFor({ x, y, w, h }).toFixed(3)))}px`,
   );
 }
 
