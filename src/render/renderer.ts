@@ -149,7 +149,7 @@ export interface SpriteDraw {
  * Draw one sprite frame: anchored, rotated, flipped and hazed.
  *
  * The nine argument `drawImage` form keeps the source rect and the destination
- * rect explicit, which is what the unit tests assert on. `scale` is applied
+ * rect declared, which is what the unit tests assert on. `scale` is applied
  * through the transform, never by resizing the destination rect, so the rect
  * stays exactly `drawSize` for every sprite at scale 1.
  */
@@ -332,7 +332,7 @@ export function createRenderer(
     return artFacesLeft === facing < 0 ? 1 : -1;
   };
 
-  /** Hull tilt: an explicit `drift` prop wins, else it follows vx. */
+  /** Hull tilt: a declared `drift` prop wins, else it follows vx. */
   const tiltFor = (entity: Entity): number => {
     const drift = entity.props["drift"];
     if (typeof drift === "number" && Number.isFinite(drift)) return clampTilt(drift);
