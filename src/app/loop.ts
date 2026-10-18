@@ -49,10 +49,10 @@ export function createLoop(options: LoopOptions): LoopHandle {
   let disposed = false;
 
   const runFrame = (): void => {
-    if (disposed || handle === undefined) return;
+    if (disposed) return;
     handle = undefined;
     tick();
-    if (!disposed && handle === undefined) schedule();
+    if (!disposed) schedule();
   };
 
   const schedule = (): void => {

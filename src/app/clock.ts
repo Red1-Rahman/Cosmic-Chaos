@@ -18,7 +18,7 @@ interface ClockSource {
  * Real clock. `performance.now()` is monotonic and unaffected by the wall clock, so a
  * mid-session NTP correction can never make the accumulator jump backwards.
  */
-export function createRealClock(source: ClockSource = globalThis as ClockSource): Clock {
+export function createRealClock(source: ClockSource = globalThis): Clock {
   return {
     nowMs(): number {
       const perf = source.performance;
