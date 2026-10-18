@@ -105,7 +105,7 @@ describe("createUi mounting", () => {
     expect(size).toBeLessThanOrEqual(14);
 
     // The title screen is mounted and its primary action exists, so a click can start it.
-    expect(host.find("data-cc-action", "start")).not.toBeNull();
+    expect(host.findByAttribute("data-cc-action", "start")).not.toBeNull();
   });
 
   it("buffers update calls made before mount and applies them on mount", () => {
