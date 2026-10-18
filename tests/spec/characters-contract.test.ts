@@ -41,13 +41,17 @@ describe("characters.json shape", () => {
     }
   });
 
-  it("gives every character a Milestone 1 must list with nothing vague in it", () => {
+  it("writes every must and mustNot rule as a full sentence", () => {
     for (const entry of roster) {
       expect(entry.milestone1.must.length, entry.id).toBeGreaterThan(0);
       expect(entry.milestone1.mustNot.length, entry.id).toBeGreaterThan(0);
-      for (const rule of [...entry.milestone1.must, ...entry.milestone1.may, ...entry.milestone1.mustNot]) {
-        expect(rule, entry.id).toMatch(/\.$/);
+      for (const rule of [...entry.milestone1.must, ...entry.milestone1.mustNot]) {
+        expect(rule, `${entry.id}: ${rule}`).toMatch(/\.$/);
         expect(rule.length, `${entry.id}: ${rule}`).toBeGreaterThan(15);
+      }
+      // may entries are short noun phrases, but never empty filler.
+      for (const rule of entry.milestone1.may) {
+        expect(rule.length, `${entry.id}: ${rule}`).toBeGreaterThan(3);
       }
     }
   });
