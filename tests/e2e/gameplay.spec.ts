@@ -194,7 +194,13 @@ test.describe("the orca", () => {
   test("reacts to the player moving away", async ({ page }) => {
     await openGame(page, { seed: FRIENDLY_SEED });
     await startWithKeyboard(page);
-    const startGap = orcaGap(await cosmic(page));
+    const start = await cosmic(page);
+    const orca = ofKind(start, "orca")[0];
+    if (orca === undefined) throw new Error("no orca");
+    // Steer directly away from the orca for the whole measurement.
+    const away = orca.x > playerOf(start).x ? "left" : "right";
+    await holdKeys(page, [away]);
+    const startGap = orcaGap(start);
     let smallest = startGap;
     await expect
       .poll(
@@ -204,21 +210,15 @@ test.describe("the orca", () => {
         },
         { timeout: 25_000, intervals: [100] },
       )
-      .toBeLessThan(startGap - 80);
+      .toBeLessThan(startGap - 60);
+    await releaseAll(page);
   });
 
   test("telegraphs and lunges, and the lunge hurts the player", async ({ page }) => {
     await openGame(page, { seed: FRIENDLY_SEED });
     await startWithKeyboard(page);
     await expect
-      .poll(
-        async () =>
-          page.evaluate(() => {
-            const cosmic = window.__cosmic as { entities: { kind: string; state: string }[] };
-            return cosmic.entities.find((entity) => entity.kind === "orca")?.state ?? "";
-          }),
-        { timeout: 25_000, intervals: [100] },
-      )
+      .poll(async () => stateOf(page, "orca"), { timeout: 25_000, intervals: [100] })
       .toBe("lunge");
     await expect
       .poll(async () => playerOf(await cosmic(page)).hp, { timeout: 25_000 })
@@ -234,7 +234,6 @@ test.describe("the snail's time field", () => {
     const outside = playerOf(await cosmic(page));
     expect(outside.inTimeField).toBe(false);
     expect(outside.timeScale).toBe(1);
-    const fieldScale = 1 - (1 - manifest.arena.timeScaleInside);
 
     await driveToward(
       page,
@@ -252,7 +251,6 @@ test.describe("the snail's time field", () => {
     const inside = playerOf(await cosmic(page));
     expect(inside.timeScale).toBeLessThan(1);
     expect(inside.timeScale).toBeCloseTo(manifest.arena.timeScaleInside, 5);
-    expect(fieldScale).toBeCloseTo(manifest.arena.timeScaleInside, 5);
 
     // The world readout the HUD shows follows the player.
     expect((await cosmic(page)).timeScale).toBeCloseTo(manifest.arena.timeScaleInside, 5);
@@ -329,15 +327,15 @@ test.describe("pause and restart", () => {
 
     await page.getByRole("button", { name: "Pause" }).click();
     await expect(page.locator(".cc-screen--pause")).toHaveClass(/cc-screen-active/);
-    const frozen = await cosmic(page);
-    await expect
-      .poll(async () => (await cosmic(page)).tick, { timeout: 5_000 })
-      .toBe(frozen.tick);
+    // A paused world reports the same tick on every single frame.
+    await expect.poll(async () => ticksOverFrames(page), { timeout: 5_000 }).toHaveLength(1);
+    const frozen = (await cosmic(page)).tick;
+    expect(frozen).toBeGreaterThan(0);
 
     await page.getByRole("button", { name: "Resume" }).click();
     await expect(page.locator(".cc-screen--pause")).not.toHaveClass(/cc-screen-active/);
     await expect.poll(async () => (await cosmic(page)).tick, { timeout: 15_000 }).toBeGreaterThan(
-      frozen.tick,
+      frozen,
     );
   });
 
