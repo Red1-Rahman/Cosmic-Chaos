@@ -132,7 +132,7 @@ export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
   actions.append(pauseButton, muteButton);
   root.append(actions);
 
-  let last: Cached = NOTHING;
+  let last: Cached = { ...NOTHING };
 
   return {
     root,
@@ -147,7 +147,6 @@ export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
 
       if (hp !== last.hp) {
         cssVar(fill, "width", formatPercent(hp));
-        cssVar(fill, "background-color", hp > LOW_HP ? "var(--cc-ok)" : "var(--cc-warn)");
         meter.setAttribute("aria-valuenow", formatPercent(hp));
         text(meterValue, formatPercent(hp));
         meter.classList.toggle("cc-meter-low", hp <= LOW_HP);

@@ -6,21 +6,19 @@
 // that transform. Because the fit is always contain, the whole arena is on
 // screen at every preset, and the play band is therefore always fully visible.
 //
-// Rules: this file holds none. It reads positions, the animation name and a
-// handful of `entity.props` scratch numbers the sim publishes for the HUD, and
-// it never writes to the world or its entities.
+// Rules: this file holds none. It reads positions, the animation name and the
+// handful of `entity.props` scratch numbers the sim already publishes, and it
+// never writes to the world or its entities.
 
-import { Atlas } from "../assets/atlas";
 import { sampleAnimation, isAnimationSampleError } from "../assets/animation";
+import type { Atlas } from "../assets/atlas";
 import { pickBackground } from "../assets/backgrounds";
 import type { BackgroundChoice } from "../assets/backgrounds";
 import type { DecodedImage } from "../assets/loader";
 import type { Manifest, ProceduralProp } from "../assets/manifest-types";
 import type { Entity, GameEvent, World } from "../sim/types";
-import type { Layout, Size } from "./viewport";
 import {
   clamp01,
-  crystalRadius,
   drawCrystalGlows,
   drawTimeField,
   drawWaterbike,
@@ -32,8 +30,9 @@ import {
   withAlpha,
 } from "./props";
 import type { CrystalSpec, TimeFieldSpec, WaterbikeSpec } from "./props";
-import { MAX_FLASH_HZ, createParticleSystem, quantizeFlash } from "./particles";
+import { MAX_FLASH_HZ, createParticleSystem, quantizeFlash, readStardust } from "./particles";
 import type { ParticleSystem } from "./particles";
+import type { Layout, Size } from "./viewport";
 
 /** Which manifest character draws a given sim entity kind. */
 export const KIND_TO_CHARACTER: Readonly<Record<Entity["kind"], string>> = {
@@ -45,11 +44,11 @@ export const KIND_TO_CHARACTER: Readonly<Record<Entity["kind"], string>> = {
   human: "human",
 };
 
-/** Pixels per 0..1 lift. `y` is depth, so a jump is drawn as a vertical lift. */
+/** Pixels per 0.1 of jump lift. `y` is depth, so a jump is drawn as a lift. */
 export const LIFT_PIXELS = 44;
 
 /**
- * Reference speed for prop effects, in the same units as `entity.props.vx`.
+ * Reference speed for prop effects, in the units of `entity.props.vx`.
  * Display only: the renderer never reads the sim movement constants.
  */
 export const PROP_SPEED_REFERENCE = 260;
@@ -57,8 +56,14 @@ export const PROP_SPEED_REFERENCE = 260;
 /** Maximum hull tilt in radians, so the bike never looks broken. */
 export const MAX_TILT_RAD = 0.28;
 
-/** Entities further away than this fraction of the play band are fully hazed. */
-const HALF_LIFT_ALPHA = 0.9;
+/** Radius of the localized hit flash, in arena pixels. */
+export const HIT_FLASH_RADIUS = 64;
+
+/** Flat fill used when no background image is available. */
+export const FALLBACK_BACKGROUND_COLOR = "#0b1024";
+
+/** Longest cosmetic delta a single frame may advance the particle pool. */
+const MAX_PARTICLE_STEP_MS = 50;
 
 export interface ArenaView {
   /** Arena box mapped into the canvas box. */
@@ -95,7 +100,8 @@ export interface CoverRect {
 
 /**
  * Cover fit of a source image into a box, anchored on a normalized focal point.
- * Cover is fine here because the background is art, not a coordinate space.
+ * Cover is fine here because the background is art, not a coordinate space: it
+ * must never leave a gap, and nothing is positioned in canvas coordinates.
  */
 export function coverFit(
   imageW: number,
@@ -111,14 +117,7 @@ export function coverFit(
   const scale = Math.max(boxW / imageW, boxH / imageH);
   const w = imageW * scale;
   const h = imageH * scale;
-  const fx = clamp01(focalX);
-  const fy = clamp01(focalY);
-  return {
-    x: (boxW - w) * fx,
-    y: (boxH - h) * fy,
-    w,
-    h,
-  };
+  return { x: (boxW - w) * clamp01(focalX), y: (boxH - h) * clamp01(focalY), w, h };
 }
 
 /** Depth factor in [0, 1] for a y position: 0 at the far edge, 1 at the near. */
@@ -139,56 +138,48 @@ export interface SpriteDraw {
   readonly sy: number;
   readonly rot: number;
   readonly alpha: number;
-  /** Depth multiplier from the arena depth band. */
+  /** Uniform depth multiplier, applied through the context transform. */
   readonly scale: number;
-  /** Haze alpha in [0, 1]. 0 means no haze. */
+  /** Haze alpha in [0, 1]. Zero means no haze. */
   readonly tintAlpha: number;
   readonly tintColor: string;
 }
 
 /**
- * Draw one sprite frame, anchored, rotated, flipped and hazed.
+ * Draw one sprite frame: anchored, rotated, flipped and hazed.
  *
  * The nine argument `drawImage` form keeps the source rect and the destination
- * rect explicit, which is what the unit tests assert on.
+ * rect explicit, which is what the unit tests assert on. `scale` is applied
+ * through the transform, never by resizing the destination rect, so the rect
+ * stays exactly `drawSize` for every sprite at scale 1.
  */
 export function drawSprite(ctx: CanvasRenderingContext2D, atlas: Atlas, draw: SpriteDraw): void {
   if (!atlas.has(draw.spriteId)) return;
   const entry = atlas.get(draw.spriteId);
-  const w = entry.drawSize.w * draw.scale;
-  const h = entry.drawSize.h * draw.scale;
-  const ox = -entry.anchor.x * w;
-  const oy = -entry.anchor.y * h;
+  const w = entry.drawSize.w;
+  const h = entry.drawSize.h;
+  const kx = draw.flipX * draw.sx * draw.scale;
+  const ky = draw.sy * draw.scale;
 
   ctx.save();
   ctx.translate(draw.x, draw.y);
-  ctx.scale(draw.flipX * draw.sx * draw.scale, draw.sy * draw.scale);
+  ctx.scale(kx, ky);
   ctx.rotate(draw.rot);
   ctx.globalAlpha = clamp01(draw.alpha);
-  ctx.drawImage(
-    entry.bitmap,
-    0,
-    0,
-    entry.tile.w,
-    entry.tile.h,
-    ox,
-    oy,
-    w,
-    h,
-  );
+  ctx.drawImage(entry.bitmap, 0, 0, entry.tile.w, entry.tile.h, -entry.anchor.x * w, -entry.anchor.y * h, w, h);
   ctx.restore();
 
-  // Haze: an axis aligned veil over the drawn box. Rotation is tiny for every
-  // pose in the manifest, so an unrotated rect keeps the veil cheap and stable.
+  // Haze veil over the drawn box. Every pose rotates only slightly, so an axis
+  // aligned rect keeps the veil cheap and free of transform bookkeeping.
   if (draw.tintAlpha > 0.002) {
-    const halfScale = draw.scale;
-    const signedW = w * draw.flipX * draw.sx;
-    const boxX = draw.x - entry.anchor.x * signedW;
-    const boxY = draw.y - entry.anchor.y * h * draw.sy;
+    const boxW = Math.abs(w * kx);
+    const boxH = Math.abs(h * ky);
+    const left = kx < 0 ? draw.x + (1 - entry.anchor.x) * w * kx : draw.x - entry.anchor.x * w * kx;
+    const top = ky < 0 ? draw.y + (1 - entry.anchor.y) * h * ky : draw.y - entry.anchor.y * h * ky;
     ctx.save();
     ctx.globalAlpha = clamp01(draw.tintAlpha);
     ctx.fillStyle = draw.tintColor;
-    ctx.fillRect(boxX, boxY, Math.abs(signedW) * halfScale, Math.abs(h * draw.sy * halfScale));
+    ctx.fillRect(left, top, boxW, boxH);
     ctx.restore();
   }
   ctx.globalAlpha = 1;
@@ -198,19 +189,19 @@ export interface RendererOptions {
   /**
    * Decoded background images keyed by manifest background id. Optional so the
    * two argument `createRenderer(manifest, atlas)` call still works; without it
-   * the renderer paints a flat water colour instead of the art.
+   * the renderer paints a flat colour instead of the arena art.
    */
   readonly backgrounds?: ReadonlyMap<string, DecodedImage> | undefined;
-  /** Initial reduced motion state. `setReducedMotion` can change it later. */
+  /** Initial reduced motion state. `setReducedMotion` changes it later. */
   readonly reducedMotion?: boolean | undefined;
-  /** Cosmetic seed fallback before the first world is seen. */
+  /** Cosmetic seed. The first rendered world seed overrides it. */
   readonly seed?: number | undefined;
 }
 
 export interface Renderer {
   render(ctx: CanvasRenderingContext2D, world: World, layout: Layout, alpha: number): void;
   resize(layout: Layout): void;
-  /** Queue one cosmetic one-shot. The app drains `world.events`, not this. */
+  /** Queue one cosmetic one shot. The app drains `world.events`, not this. */
   pushEvent(event: GameEvent): void;
   setReducedMotion(reduced: boolean): void;
   reducedMotion(): boolean;
@@ -219,87 +210,186 @@ export interface Renderer {
   dispose(): void;
 }
 
-/** Flat fill used when no background image is available. */
-export const FALLBACK_BACKGROUND_COLOR = "#0b1024";
-
 const findProp = (manifest: Manifest, id: string): ProceduralProp | undefined =>
   manifest.proceduralProps.find((prop) => prop.id === id);
+
+interface BackgroundSlot {
+  readonly choice: BackgroundChoice;
+  readonly image: DecodedImage | undefined;
+}
 
 interface PreviousFrame {
   readonly tick: number;
   readonly positions: ReadonlyMap<string, { readonly x: number; readonly y: number }>;
 }
 
-export function createRenderer(manifest: Manifest, atlas: Atlas, options: RendererOptions = {}): Renderer {
+const lerp = (from: number, to: number, t: number): number => from + (to - from) * t;
+
+const clampTilt = (value: number): number =>
+  value < -MAX_TILT_RAD ? -MAX_TILT_RAD : value > MAX_TILT_RAD ? MAX_TILT_RAD : value;
+
+export function createRenderer(
+  manifest: Manifest,
+  atlas: Atlas,
+  options: RendererOptions = {},
+): Renderer {
   const waterbike: WaterbikeSpec = readWaterbike(findProp(manifest, "waterbike"));
   const timeField: TimeFieldSpec = readTimeField(findProp(manifest, "time-field"));
   const crystals: CrystalSpec = readCrystalGlow(findProp(manifest, "crystal-glow"));
-  const stardustProp = findProp(manifest, "stardust");
+  const stardust = readStardust(findProp(manifest, "stardust"));
+  const farTint = parseColor(manifest.arena.depth.tintFar);
+  const nearTint = parseColor(manifest.arena.depth.tintNear);
 
-  let layout: Layout | undefined;
   let view: ArenaView | undefined;
   let reducedMotion = options.reducedMotion ?? false;
   let seed = options.seed ?? 0;
   let seedKnown = options.seed !== undefined;
-  let particles: ParticleSystem = createParticleSystem(seed, {
-    stardust: stardustProp === undefined ? undefined : readStardustSpec(stardustProp),
-    reducedMotion,
-  });
+  let particles: ParticleSystem = createParticleSystem(seed, { stardust, reducedMotion });
 
-  const backgrounds = new Map<string, { readonly choice: BackgroundChoice; readonly image: DecodedImage | undefined }>();
+  const backgroundSlots = new Map<string, BackgroundSlot>();
   const queued: GameEvent[] = [];
-
   let previous: PreviousFrame | undefined;
+  let lastTimeMs = 0;
   let dustCarry = 0;
   let flash = 0;
   let flashX = 0;
   let flashY = 0;
 
-  const choiceFor = (presetId: string): { readonly choice: BackgroundChoice; readonly image: DecodedImage | undefined } => {
-    const cached = backgrounds.get(presetId);
-    if (cached !== undefined) return cached;
-    const choice = pickBackground(manifest, manifest.arena.background, presetId);
-    const image = options.backgrounds?.get(choice.id);
-    const entry = { choice, image };
-    backgrounds.set(presetId, entry);
-    return entry;
-  };
+  const sameLayout = (a: Layout, b: Layout): boolean =>
+    a.preset.id === b.preset.id && a.logical.w === b.logical.w && a.logical.h === b.logical.h;
 
-  const applyLayout = (next: Layout): void => {
-    layout = next;
-    view = computeArenaView(manifest.arena.logical, next.logical);
+  const applyLayout = (layout: Layout): void => {
+    view = computeArenaView(manifest.arena.logical, layout.logical);
   };
 
   const ensureSeed = (world: World): void => {
     if (seedKnown && world.seed === seed) return;
     seed = world.seed;
     seedKnown = true;
-    particles = createParticleSystem(seed, {
-      stardust: stardustProp === undefined ? undefined : readStardustSpec(stardustProp),
-      reducedMotion,
-    });
+    particles = createParticleSystem(seed, { stardust, reducedMotion });
     dustCarry = 0;
   };
 
-  const paintBackground = (ctx: CanvasRenderingContext2D, current: Layout): void => {
-    const { choice, image } = choiceFor(current.preset.id);
+  const backgroundFor = (presetId: string): BackgroundSlot => {
+    const cached = backgroundSlots.get(presetId);
+    if (cached !== undefined) return cached;
+    const choice = pickBackground(manifest, manifest.arena.background, presetId);
+    const slot: BackgroundSlot = { choice, image: options.backgrounds?.get(choice.id) };
+    backgroundSlots.set(presetId, slot);
+    return slot;
+  };
+
+  const paintBackground = (ctx: CanvasRenderingContext2D, layout: Layout): void => {
+    const slot = backgroundFor(layout.preset.id);
+    const image = slot.image;
     if (image === undefined) {
       ctx.fillStyle = FALLBACK_BACKGROUND_COLOR;
-      ctx.fillRect(0, 0, current.logical.w, current.logical.h);
+      ctx.fillRect(0, 0, layout.logical.w, layout.logical.h);
       return;
     }
     const rect = coverFit(
       image.width,
       image.height,
-      current.logical.w,
-      current.logical.h,
-      choice.focalX,
-      choice.focalY,
+      layout.logical.w,
+      layout.logical.h,
+      slot.choice.focalX,
+      slot.choice.focalY,
     );
     ctx.drawImage(image.source, rect.x, rect.y, rect.w, rect.h);
   };
 
-  const emitForEvents = (): void => {
+  /** Sample the entity animation, falling back to `idle` on a bad name. */
+  const sampleSafely = (
+    entity: Entity,
+    characterId: string,
+  ): ReturnType<typeof sampleAnimation> | undefined => {
+    try {
+      return sampleAnimation(manifest, characterId, entity.anim, entity.animMs);
+    } catch (error) {
+      if (!isAnimationSampleError(error) || entity.anim === "idle") return undefined;
+      try {
+        return sampleAnimation(manifest, characterId, "idle", entity.animMs);
+      } catch {
+        return undefined;
+      }
+    }
+  };
+
+  /** -1 when the art has to be mirrored to match the entity facing. */
+  const flipFor = (spriteId: string, facing: number): number => {
+    const authored = atlas.has(spriteId) ? atlas.get(spriteId).facing : "right";
+    const artFacesLeft = authored.includes("left");
+    return artFacesLeft === facing < 0 ? 1 : -1;
+  };
+
+  /** Hull tilt: an explicit `drift` prop wins, else it follows vx. */
+  const tiltFor = (entity: Entity): number => {
+    const drift = entity.props["drift"];
+    if (typeof drift === "number" && Number.isFinite(drift)) return clampTilt(drift);
+    const vx = entity.props["vx"] ?? 0;
+    return clampTilt((clamp01((vx + PROP_SPEED_REFERENCE) / (PROP_SPEED_REFERENCE * 2)) * 2 - 1) * MAX_TILT_RAD);
+  };
+
+  const emitStardustTrail = (world: World, entity: Entity, x: number, y: number): void => {
+    const intensity = clamp01((entity.props["speed"] ?? PROP_SPEED_REFERENCE * 0.6) / PROP_SPEED_REFERENCE);
+    const rate = reducedMotion ? 0 : 26 * intensity;
+    const step = Math.min(MAX_PARTICLE_STEP_MS, Math.max(0, world.timeMs - lastTimeMs));
+    dustCarry = Math.min(dustCarry + (rate * step) / 1000, 24);
+    const whole = Math.floor(dustCarry);
+    dustCarry -= whole;
+    if (whole > 0) particles.emitStardust(x, y, whole, intensity);
+  };
+
+  const drawEntity = (
+    ctx: CanvasRenderingContext2D,
+    world: World,
+    entity: Entity,
+    alpha: number,
+    interpolate: boolean,
+  ): void => {
+    const characterId = KIND_TO_CHARACTER[entity.kind];
+    const sample = sampleSafely(entity, characterId);
+    if (sample === undefined) return;
+
+    const cached = previous?.positions.get(entity.id);
+    const px = interpolate && cached !== undefined ? lerp(cached.x, entity.x, alpha) : entity.x;
+    const py = interpolate && cached !== undefined ? lerp(cached.y, entity.y, alpha) : entity.y;
+
+    const depth = depthFactor(world, py);
+    const depthScale = lerp(manifest.arena.depth.scaleMin, manifest.arena.depth.scaleMax, depth);
+    const haze = mixColor(farTint, nearTint, depth);
+
+    if (entity.kind === "player") {
+      drawWaterbike(ctx, waterbike, {
+        x: px,
+        y: py,
+        tilt: tiltFor(entity),
+        speed: clamp01((entity.props["speed"] ?? 0) / PROP_SPEED_REFERENCE),
+        facing: entity.facing,
+        scale: depthScale,
+        timeMs: world.timeMs,
+        reducedMotion,
+      });
+    }
+
+    drawSprite(ctx, atlas, {
+      spriteId: sample.spriteId,
+      x: px + sample.dx,
+      y: py - (entity.props["lift"] ?? 0) * LIFT_PIXELS + sample.dy,
+      flipX: flipFor(sample.spriteId, entity.facing),
+      sx: sample.sx * entity.scale,
+      sy: sample.sy * entity.scale,
+      rot: sample.rot,
+      alpha: sample.alpha * entity.alpha,
+      scale: depthScale,
+      tintAlpha: reducedMotion ? 0 : haze.a,
+      tintColor: withAlpha({ r: haze.r, g: haze.g, b: haze.b }, 1),
+    });
+
+    if (entity.kind === "shark") emitStardustTrail(world, entity, px, py);
+  };
+
+  const drainEvents = (): void => {
     for (const event of queued) {
       switch (event.type) {
         case "hit":
@@ -321,27 +411,35 @@ export function createRenderer(manifest: Manifest, atlas: Atlas, options: Render
     queued.length = 0;
   };
 
-  const render = (ctx: CanvasRenderingContext2D, world: World, current: Layout, alpha: number): void => {
+  /** Localized flash, rate limited to MAX_FLASH_HZ changes per second. */
+  const paintFlash = (ctx: CanvasRenderingContext2D, timeMs: number): void => {
+    if (flash <= 0.02) return;
+    const level = quantizeFlash(flash, timeMs);
+    if (level <= 0) return;
+    ctx.globalAlpha = level * 0.28;
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(flashX, flashY, HIT_FLASH_RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  };
+
+  const render = (ctx: CanvasRenderingContext2D, world: World, layout: Layout, alpha: number): void => {
     ensureSeed(world);
-    if (layout === undefined || layout.preset.id !== current.preset.id || layout.logical.w !== current.logical.w || layout.logical.h !== current.logical.h) {
-      applyLayout(current);
-    }
+    if (view === undefined) applyLayout(layout);
     const arenaView = view;
     if (arenaView === undefined) return;
 
     const t = Number.isFinite(alpha) ? (alpha < 0 ? 0 : alpha > 1 ? 1 : alpha) : 1;
-    const currentTick = world.tick;
-    const previousTick = previous?.tick;
-    const interpolate = previousTick === currentTick - 1;
+    const interpolate = previous !== undefined && previous.tick === world.tick - 1;
 
-    // Background first, over the whole canvas, using this preset's variant.
-    paintBackground(ctx, current);
+    paintBackground(ctx, layout);
 
     ctx.save();
     ctx.translate(arenaView.offsetX, arenaView.offsetY);
     ctx.scale(arenaView.scale, arenaView.scale);
 
-    // Shore props sit behind everything because they are on the shore.
+    // Shore props sit behind everything: they are on the shore, not in the water.
     drawCrystalGlows(ctx, crystals, world.timeMs, reducedMotion);
 
     const snail = world.entities.find((entity) => entity.kind === "snail");
@@ -349,152 +447,24 @@ export function createRenderer(manifest: Manifest, atlas: Atlas, options: Render
       drawTimeField(ctx, timeField, snail.x, snail.y, world.timeMs, reducedMotion);
     }
 
-    // Sort by depth, stable on the world's entity order.
     const ordered = world.entities
       .map((entity, index) => ({ entity, index }))
       .sort((a, b) => (a.entity.y === b.entity.y ? a.index - b.index : a.entity.y - b.entity.y));
+    for (const entry of ordered) drawEntity(ctx, world, entry.entity, t, interpolate);
 
-    for (const { entity } of ordered) {
-      const drawOne = drawEntity(ctx, world, entity, t, interpolate);
-      if (drawOne) dustCarry += drawOne;
-    }
-    emitCosmeticBursts(world, t);
+    drainEvents();
     particles.draw(ctx);
-
     paintFlash(ctx, world.timeMs);
     ctx.restore();
 
-    previous = {
-      tick: currentTick,
-      positions: new Map(world.entities.map((e) => [e.id, { x: e.x, y: e.y }])),
-    };
-    particles.update(0);
-  };
-
-  const lerp = (from: number, to: number, t: number): number => from + (to - from) * t;
-
-  const drawEntity = (
-    ctx: CanvasRenderingContext2D,
-    world: World,
-    entity: Entity,
-    alpha: number,
-    interpolate: boolean,
-  ): number => {
-    const characterId = KIND_TO_CHARACTER[entity.kind];
-    const cached = previous?.positions.get(entity.id);
-    const px = interpolate && cached !== undefined ? lerp(cached.x, entity.x, alpha) : entity.x;
-    const py = interpolate && cached !== undefined ? lerp(cached.y, entity.y, alpha) : entity.y;
-
-    const depth = depthFactor(world, py);
-    const depthScale = lerp(manifest.arena.depth.scaleMin, manifest.arena.depth.scaleMax, depth);
-
-    const sample = sampleSafely(entity, characterId);
-    if (sample === undefined) return 0;
-
-    const lift = (entity.props["lift"] ?? 0) * LIFT_PIXELS;
-    const drawY = py - lift;
-    const haze = mixColor(parseColor(manifest.arena.depth.tintFar), parseColor(manifest.arena.depth.tintNear), depth);
-    const tintAlpha = haze.a * (reducedMotion ? 0 : 1);
-    const tintColor = withAlpha({ r: haze.r, g: haze.g, b: haze.b }, 1);
-
-    if (entity.kind === "player") {
-      drawWaterbike(ctx, waterbike, {
-        x: px,
-        y: py,
-        tilt: clampTilt(entity),
-        speed: clamp01((entity.props["speed"] ?? 0) / PROP_SPEED_REFERENCE),
-        facing: entity.facing,
-        scale: depthScale,
-        timeMs: world.timeMs,
-        reducedMotion,
-      });
-    }
-
-    drawSprite(ctx, atlas, {
-      spriteId: sample.spriteId,
-      x: px + sample.dx,
-      y: drawY + sample.dy,
-      flipX: flipFor(sample.spriteId, entity.facing),
-      sx: sample.sx * entity.scale,
-      sy: sample.sy * entity.scale,
-      rot: sample.rot,
-      alpha: sample.alpha * entity.alpha * HALF_LIFT_ALPHA + entity.alpha * (1 - HALF_LIFT_ALPHA),
-      scale: depthScale,
-      tintAlpha,
-      tintColor,
-    });
-
-    return entity.kind === "shark" ? sharkDust(world, entity, px, py) : 0;
-  };
-
-  const sampleSafely = (entity: Entity, characterId: string) => {
-    try {
-      return sampleAnimation(manifest, characterId, entity.anim, entity.animMs);
-    } catch (error) {
-      if (isAnimationSampleError(error)) {
-        if (entity.anim === "idle") return undefined;
-        try {
-          return sampleAnimation(manifest, characterId, "idle", entity.animMs);
-        } catch {
-          return undefined;
-        }
-      }
-      throw error;
-    }
-  };
-
-  const flipFor = (spriteId: string, facing: number): number => {
-    const entry = atlas.has(spriteId) ? atlas.get(spriteId) : undefined;
-    const authored = entry?.facing ?? "right";
-    const artFacesLeft = authored.includes("left");
-    const wantsLeft = facing < 0;
-    return artFacesLeft === wantsLeft ? 1 : -1;
-  };
-
-  const clampTilt = (entity: Entity): number => {
-    const drift = entity.props["drift"];
-    if (typeof drift === "number" && Number.isFinite(drift)) {
-      return drift < -MAX_TILT_RAD ? -MAX_TILT_RAD : drift > MAX_TILT_RAD ? MAX_TILT_RAD : drift;
-    }
-    const vx = entity.props["vx"] ?? 0;
-    return clamp01((vx + PROP_SPEED_REFERENCE) / (PROP_SPEED_REFERENCE * 2)) * MAX_TILT_RAD * 2 - MAX_TILT_RAD;
-  };
-
-  const sharkDust = (world: World, entity: Entity, px: number, py: number): number => {
-    const speed = entity.props["speed"] ?? PROP_SPEED_REFERENCE * 0.6;
-    const intensity = clamp01(speed / PROP_SPEED_REFERENCE);
-    const rate = intensity * (reducedMotion ? 0 : 26);
-    const dt = world.timeMs - lastTimeMs;
+    const step = Math.min(MAX_PARTICLE_STEP_MS, Math.max(0, world.timeMs - lastTimeMs));
+    particles.update(step);
     lastTimeMs = world.timeMs;
-    if (dt <= 0) return rate;
-    dustCarry = Math.min(dustCarry + (rate * dt) / 1000, 24);
-    const whole = Math.floor(dustCarry);
-    dustCarry -= whole;
-    if (whole > 0) particles.emitStardust(px, py, whole, intensity);
-    return 0;
-  };
-
-  let lastTimeMs = 0;
-
-  const emitCosmeticBursts = (world: World, alpha: number): void => {
-    emitForEvents();
-    const stepped = world.timeMs + alpha;
-    flash = flash > 0 ? flash * 0.86 : 0;
-    if (stepped > lastTimeMs) lastTimeMs = stepped;
-  };
-
-  const paintFlash = (ctx: CanvasRenderingContext2D, timeMs: number): void => {
-    if (flash <= 0.01) return;
-    const level = quantizeFlash(flash, timeMs);
-    if (level <= 0) return;
-    const viewNow = view;
-    if (viewNow === undefined) return;
-    ctx.globalAlpha = level * 0.28;
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(flashX, flashY, 46 * manifest.arena.fieldRadius * 0.4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
+    flash = flash > 0 ? flash * 0.82 : 0;
+    previous = {
+      tick: world.tick,
+      positions: new Map(world.entities.map((entity) => [entity.id, { x: entity.x, y: entity.y }])),
+    };
   };
 
   return {
@@ -517,12 +487,4 @@ export function createRenderer(manifest: Manifest, atlas: Atlas, options: Render
   };
 }
 
-/** Re-exported so the app can keep the flash rate in one place. */
 export { MAX_FLASH_HZ };
-
-function readStardustSpec(prop: ProceduralProp) {
-  // Local import kept at the call site to avoid a cycle with particles.ts.
-  return readStardustFromProp(prop);
-}
-
-import { readStardust as readStardustFromProp } from "./particles";
