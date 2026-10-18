@@ -96,7 +96,7 @@
   },
   "viewport": {
     "source": "public/assets/assets.json#viewport",
-    "presets": ["16:9", "16:10", "4:3", "20:9", "29.5:9", "sqrt2:1", "1:sqrt2"],
+    "presets": ["16:9", "16:10", "4:3", "20:9", "29.5:9", "sqrt2:1", "1:sqrt2", "9:20"],
     "behavior": "Contain-fit with letterboxing or pillarboxing, image-rendering: pixelated, integer upscaling preferred when it keeps at least 90 percent of the fit size."
   },
   "inputs": [

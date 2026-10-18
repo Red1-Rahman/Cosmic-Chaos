@@ -11,6 +11,37 @@ Decision: what was chosen
 Alternatives: what was rejected and why
 ```
 
+## 2026-10-19 viewport-render: letterbox bar colour
+Context: `assets.json` has no `barColor`, but the letterbox and pillarbox bars have to be
+some colour, and the same value must exist in CSS and in Canvas 2D so the debug overlay
+matches the page.
+Decision: `#05060f`, a near-black with a blue cast, exposed as `BAR_COLOR` in
+`src/render/viewport.ts` and mirrored as `--bar-color` in `src/styles/arena.css`.
+Alternatives: pure `#000000` (dead flat, harsher on OLED), and `#0b1026` from the arena
+horizon (too light, reads as part of the scene).
+
+## 2026-10-19 viewport-render: contain-fit, integer scale and device pixels
+Context: the manifest locks the canvas internal size to the preset logical size, so
+devicePixelRatio cannot change the render resolution.
+Decision: contain-fit only. `scale = min(winW/logicalW, winH/logicalH)`, rounded down to a
+whole number when that whole number keeps at least `integerScaleMinFill` (0.9) of the fit
+and is at least 1. CSS size is then snapped to whole device pixels and clamped to the
+window, so the pixelated upscale stays crisp on HiDPI and can never overflow.
+Alternatives: stretching to fill (rejected, distorts every sprite), rendering at
+window times devicePixelRatio (rejected, changes the logical size the sim works in).
+
+## 2026-10-19 viewport-render: eight presets and the computeLayout signature
+Context: `assets.json` lists eight viewport presets. The last two, `1:sqrt2` and `9:20`,
+are portrait and name `canvas-03-mobile`; the rest name `canvas-03`. `tech-stack.json`
+only listed seven.
+Decision: handle all eight, and add `"9:20"` to `tech-stack.json#viewport.presets` so the
+source of truth matches the manifest. `computeLayout(win, presets, devicePixelRatio?)`
+picks the preset internally and delegates to `computeLayoutForPreset(win, preset)`, which
+is the escape hatch when a caller already knows the preset.
+Alternatives: hardcoding a seven preset list in TypeScript (rejected, it drifts), and
+picking the nearest preset by raw ratio difference (rejected, log distance treats wide and
+narrow gaps equally, which matches how the presets are spaced).
+
 ## 2026-10-19 role: audio: schedule events instead of node graphs
 Context: voice specs must be assertable in node, but `src/audio/web-audio-backend.ts` needs real Web Audio types and the AudioContext may only be created inside `unlock()`.
 Decision: `voices/*.ts` are plain data using locally declared `WaveKind`/`FilterKind` unions; `schedule.ts` expands a spec plus a start time into absolute-time parameter events (`gain`, `frequency`, `filterFrequency`, `detune`) with linear ramps and a quantized detune wobble. Only the backend touches DOM types.
