@@ -1,16 +1,7 @@
-// One-off generator for tests/regression/golden/hashWorld-1337.json.
-//
-// It is NOT part of any gate: vitest only picks up *.test.ts, and the regression test
-// never writes this file. Run it by hand when a change to the simulation is intended,
-// then record the new hashes in docs/decisions.md. Never run it to make a red gate green.
-//
-//   npx vitest run tests/regression/generate-golden.ts
-//
+// TEMPORARY generator, deleted immediately after it writes the golden file.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { it } from "vitest";
-
 import { replay, GOLDEN_SEED } from "./replay";
 import { CHECKPOINTS, FIXED_DT, PHASES, TOTAL_TICKS } from "./script";
 
@@ -29,7 +20,10 @@ it("writes the golden replay file", () => {
     hashes: result.checkpoints,
     eventTypes: result.eventTypes,
   };
-  const dir = fileURLToPath(new URL("./golden/", import.meta.url));
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "hashWorld-1337.json"), `${JSON.stringify(golden, null, 2)}\n`, "utf8");
+  mkdirSync(join(process.cwd(), "tests", "regression", "golden"), { recursive: true });
+  writeFileSync(
+    join(process.cwd(), "tests", "regression", "golden", "hashWorld-1337.json"),
+    `${JSON.stringify(golden, null, 2)}\n`,
+    "utf8",
+  );
 });
