@@ -333,10 +333,11 @@
    grow over the horizon either. */
 .cc-debug {
   position: absolute;
-  /* em here is the panel's own 0.8em, so 9.8em lands about 7.8em below the frame top in
-     HUD units. The stack is at most about 7em tall at the type floor, and the cap still
-     keeps the panel above the horizon in every preset. */
-  top: 9.8em;
+  /* em here is the panel's own 0.8em, so 10.8em lands about 8.6em below the frame top in
+     HUD units. The stack is at most about 8em tall at the type floor on the narrowest
+     preset, and the 33% cap still keeps the panel above the horizon in every preset:
+     8.6/34 + 1/3 is 0.587, under the horizon at 456/768. */
+  top: 10.8em;
   left: 50%;
   transform: translateX(-50%);
   max-width: 50%;

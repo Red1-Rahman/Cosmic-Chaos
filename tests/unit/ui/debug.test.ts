@@ -162,9 +162,10 @@ describe("placement", () => {
     expect(stack).toContain("position: absolute");
     expect(stack).toContain("flex-direction: column");
     const stackTopEm = Number(/top: ([\d.]+)em/.exec(stack)?.[1] ?? "0");
-    // Three rows at roughly 2.1em each plus the two 0.35em gaps is about 7em, which is the
-    // worst case at the type floor. The panel must start below all of it.
-    expect(topFrameEm).toBeGreaterThan(stackTopEm + 7);
+    // Three rows at roughly 2.1em each plus the two gaps is about 7em, and the time field
+    // row wraps to two lines on the narrowest preset, so about 8em is the worst case at the
+    // type floor. The panel must start below all of it.
+    expect(topFrameEm).toBeGreaterThan(stackTopEm + 8);
 
     // The panel is centred and capped at half the frame width, so it cannot reach the
     // right-hand pause and mute row, which is anchored to the frame's right edge.
