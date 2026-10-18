@@ -327,15 +327,16 @@
 /* Top centre, not bottom centre. The arena play band is the lower half
    (manifest arena.playBand, y 486 to 648 of 768), so a bottom panel covers the
    capybara. Above the nebula horizon (y 456) there is only empty sky in every
-   preset. The offset clears the top-left vitals block and its seed/preset chip
-   row; centring clears the top-right pause and mute buttons. Capped at half the
-   frame width and a third of its height, and scrollable, so it can never grow
-   over the horizon either. */
+   preset. The offset clears the whole top-left HUD stack (two vitals rows plus the
+   seed/preset chip row); centring clears the top-right pause and mute buttons. Capped
+   at half the frame width and a third of its height, and scrollable, so it can never
+   grow over the horizon either. */
 .cc-debug {
   position: absolute;
-  /* em here is the panel's own 0.8em, so 8.8em lands about 7em below the frame
-     top in HUD units: past the vitals block and its seed/preset chip row. */
-  top: 8.8em;
+  /* em here is the panel's own 0.8em, so 9.8em lands about 7.8em below the frame top in
+     HUD units. The stack is at most about 7em tall at the type floor, and the cap still
+     keeps the panel above the horizon in every preset. */
+  top: 9.8em;
   left: 50%;
   transform: translateX(-50%);
   max-width: 50%;

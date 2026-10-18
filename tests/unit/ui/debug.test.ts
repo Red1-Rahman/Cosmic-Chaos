@@ -151,20 +151,48 @@ describe("placement", () => {
     expect(panel).toContain("transform: translateX(-50%)");
   });
 
-  it("sits below the top-left vitals block and clear of the top-right buttons", () => {
+  it("sits below the top-left HUD stack and clear of the top-right buttons", () => {
     // The panel's em is its own 0.8em font, the HUD blocks are in frame em.
     const topEm = Number(/top: ([\d.]+)em/.exec(panel)?.[1] ?? "0");
     const topFrameEm = topEm * 0.8;
-    const meta = rule(".cc-hud-meta");
-    const metaOffset = Number(/translateY\(([\d.]+)em\)/.exec(meta)?.[1] ?? "0");
 
-    // Vitals start at 0.8em, the chip row is pushed down by its own translate.
-    expect(topFrameEm).toBeGreaterThan(0.8 + metaOffset);
+    // The vitals rows and the chip row are one flow column, so their total height is
+    // whatever it is at the current type size. The panel has to clear the whole stack.
+    const stack = rule(".cc-hud-stack");
+    expect(stack).toContain("position: absolute");
+    expect(stack).toContain("flex-direction: column");
+    const stackTopEm = Number(/top: ([\d.]+)em/.exec(stack)?.[1] ?? "0");
+    // Three rows at roughly 2.1em each plus the two 0.35em gaps is about 7em, which is the
+    // worst case at the type floor. The panel must start below all of it.
+    expect(topFrameEm).toBeGreaterThan(stackTopEm + 7);
 
     // The panel is centred and capped at half the frame width, so it cannot reach the
     // right-hand pause and mute row, which is anchored to the frame's right edge.
     expect(panel).toContain("max-width: 50%");
     expect(rule(".cc-hud-actions")).toContain("right: 0.9em");
+  });
+
+  it("keeps the vitals rows and the chip row in flow, so they cannot collide", () => {
+    // The chip row used to be offset from the frame by a fixed em translate, which only
+    // cleared the vitals at one type size. Both are now children of one flex column.
+    const stack = rule(".cc-hud-stack");
+    const vitals = rule(".cc-hud-vitals");
+    const meta = rule(".cc-hud-meta");
+    for (const body of [stack, vitals, meta]) {
+      expect(body).not.toContain("position: absolute");
+      expect(body).not.toContain("translateY");
+      expect(body).not.toContain("top:");
+    }
+    expect(stack).toContain("gap:");
+  });
+
+  it("keeps the HUD stack clear of the pause and mute row at the narrowest preset", () => {
+    // The actions row is about 10.5em wide at every size, because its font scales off the
+    // same base, so an em right-inset on the stack tracks it exactly.
+    const stack = rule(".cc-hud-stack");
+    const rightEm = Number(/right: ([\d.]+)em/.exec(stack)?.[1] ?? "0");
+    expect(rightEm).toBeGreaterThan(11.5);
+    expect(rule(".cc-meter-track")).toContain("flex: 0 1 7.5em");
   });
 
   it("never grows past a third of the frame height and cannot overflow it", () => {
@@ -182,7 +210,7 @@ describe("placement", () => {
 
     // In portrait the type is a fraction of the frame WIDTH, so the panel's top offset
     // shrinks against the frame height rather than growing. The same em value therefore
-    // clears the vitals block by at least as much room, in both orientations.
+    // clears the HUD stack by at least as much room, in both orientations.
     const portraitTop = topEm * 0.8 * FONT_RATIO * (380 / 844);
     expect(portraitTop).toBeLessThanOrEqual(topFraction);
     expect(portraitTop + 1 / 3).toBeLessThan(456 / 768);
