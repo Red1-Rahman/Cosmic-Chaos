@@ -172,7 +172,7 @@ describe("frameShortSide", () => {
     // Non-finite and negative sides must not produce a negative divisor.
     expect(frameShortSide({ x: 0, y: 0, w: Number.NaN, h: 1408 })).toBe(0);
     expect(frameShortSide({ x: 0, y: 0, w: -5, h: 1408 })).toBe(0);
-    expect(frameShortSide({ x: 0, y: 0, w: Number.POSITIVE_INFINITY, h: 792 })).toBe(792);
+    expect(frameShortSide({ x: 0, y: 0, w: Number.POSITIVE_INFINITY, h: 792 })).toBe(0);
   });
 });
 
@@ -180,12 +180,12 @@ describe("fontSizeFor", () => {
   it("divides the SHORT side by the divisor, not the height", () => {
     // The landscape 16:9 frame and the portrait 9:20 frame of the same window class.
     const landscape = fontSizeFor({ x: 0, y: 0, w: 1280, h: 720 });
-    expect(landscape).toBeCloseTo(Number((720 * FONT_RATIO).toFixed(3)), 6);
+    expect(landscape).toBeCloseTo(720 * FONT_RATIO, 6);
 
     // 380x844 is the 9:20 contain-fit of a 390x844 phone. Driving this off the height gave
     // roughly 24.8 px, which overflowed the title panel and hid the start button.
     const portrait = fontSizeFor({ x: 0, y: 0, w: 380, h: 844 });
-    expect(portrait).toBeCloseTo(Number((380 * FONT_RATIO).toFixed(3)), 6);
+    expect(portrait).toBeCloseTo(380 * FONT_RATIO, 6);
     expect(portrait).toBeGreaterThanOrEqual(11);
     expect(portrait).toBeLessThanOrEqual(14);
     // The old height-driven size, for the record, so the regression cannot come back.

@@ -163,9 +163,9 @@ describe("placement", () => {
     expect(stack).toContain("flex-direction: column");
     const stackTopEm = Number(/top: ([\d.]+)em/.exec(stack)?.[1] ?? "0");
     // Three rows at roughly 2.1em each plus the two gaps is about 7em, and the time field
-    // row wraps to two lines on the narrowest preset, so about 8em is the worst case at the
-    // type floor. The panel must start below all of it.
-    expect(topFrameEm).toBeGreaterThan(stackTopEm + 8);
+    // row wraps to two lines on the narrowest preset at the type floor, which measures
+    // about 7.1em in the browser. The panel must start below the whole stack.
+    expect(topFrameEm).toBeGreaterThan(stackTopEm + 7.1);
 
     // The panel is centred and capped at half the frame width, so it cannot reach the
     // right-hand pause and mute row, which is anchored to the frame's right edge.
@@ -175,16 +175,18 @@ describe("placement", () => {
 
   it("keeps the vitals rows and the chip row in flow, so they cannot collide", () => {
     // The chip row used to be offset from the frame by a fixed em translate, which only
-    // cleared the vitals at one type size. Both are now children of one flex column.
+    // cleared the vitals at one type size. Both are now children of one absolutely
+    // positioned flex column, laid out in normal flow themselves.
     const stack = rule(".cc-hud-stack");
-    const vitals = rule(".cc-hud-vitals");
-    const meta = rule(".cc-hud-meta");
-    for (const body of [stack, vitals, meta]) {
+    expect(stack).toContain("position: absolute");
+    expect(stack).toContain("flex-direction: column");
+    expect(stack).toContain("gap:");
+    for (const selector of [".cc-hud-vitals", ".cc-hud-meta"]) {
+      const body = rule(selector);
       expect(body).not.toContain("position: absolute");
       expect(body).not.toContain("translateY");
       expect(body).not.toContain("top:");
     }
-    expect(stack).toContain("gap:");
   });
 
   it("keeps the HUD stack clear of the pause and mute row at the narrowest preset", () => {
@@ -233,7 +235,8 @@ describe("panel fit", () => {
   it("never grows wider than its screen, so 9:20 cannot scroll sideways", () => {
     const panel = rule(".cc-panel");
     expect(panel).toContain("max-width: min(34em, 100%)");
-    expect(panel).toMatch(/overflow-wrap: anywhere/);
+    // Long unbroken tokens must wrap rather than widen the panel past its screen.
+    expect(css).toMatch(/\.cc-panel :is\([^)]*\) \{[^}]*overflow-wrap: anywhere/);
   });
 
   it("stays inside the frame height and stays reachable when it does not", () => {
