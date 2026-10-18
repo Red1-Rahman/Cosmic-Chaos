@@ -131,10 +131,18 @@ describe("asset guardrails", () => {
 
   it("names the audio cues tech-stack.json asks for", () => {
     for (const cue of AUDIO_CUES) {
-      expect(VOICES[cue], cue).toBeDefined();
-      expect(VOICES[cue].steps.length, cue).toBeGreaterThan(0);
+      const voice = VOICES[cue];
+      expect(voice, cue).toBeDefined();
+      expect(voice.cue, cue).toBe(cue);
+      expect(voice.durationSec, cue).toBeGreaterThan(0);
+      expect(voice.gain, cue).toBeGreaterThan(0);
+      expect(voice.tones.length + (voice.noise === undefined ? 0 : 1), cue).toBeGreaterThan(0);
+      for (const tone of voice.tones) {
+        expect(tone.envelope.length, cue).toBeGreaterThan(0);
+      }
     }
     expect(new Set(AUDIO_CUES).size).toBe(AUDIO_CUES.length);
+    expect(techStack.runtime.audio).toContain("synthesized at runtime");
   });
 
   it("references only images the manifest declares", () => {
@@ -189,12 +197,11 @@ describe("manifest driven animation names", () => {
     for (const file of sourceFilesIn(join(techStackRoot(), "src", "sim", "behaviours"))) {
       const owner = file.path.replace(/^src\/sim\/behaviours\//, "").replace(/\.ts$/, "");
       const names = new Set<string>();
-      for (const match of file.text.matchAll(/\.anim\s*=\s*"([a-z]+)"/g)) {
-        names.add(match[1] ?? "");
-      }
-      for (const match of file.text.matchAll(/\?\s*"([a-z]+)"\s*:\s*"([a-z]+)"/g)) {
-        names.add(match[1] ?? "");
-        names.add(match[2] ?? "");
+      // Only `.anim = ...` assignments: `.state = ...` assigns a different vocabulary.
+      for (const match of file.text.matchAll(/\.anim\s*=\s*([^;\n]+);/g)) {
+        for (const literal of (match[1] ?? "").matchAll(/"([a-z]+)"/g)) {
+          names.add(literal[1] ?? "");
+        }
       }
       found.set(owner, names);
     }
