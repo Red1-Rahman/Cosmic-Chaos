@@ -31,6 +31,11 @@ function travel(world: World, entity: Entity, ticks: number, state: InputState =
   return Math.hypot(entity.x - x0, entity.y - y0);
 }
 
+/** Milliseconds to whole fixed steps, rounded up so a timer always expires. */
+function ticks(ms: number): number {
+  return Math.ceil((ms / 1000) * 60);
+}
+
 /** Put an Orca in a clean chasing setup with the player a fixed distance away. */
 function setupChase(world: World, gap: number): { orca: Entity; player: Entity } {
   const orca = need(world, "orca");
@@ -65,13 +70,25 @@ describe("orca state machine", () => {
   it("biases the approach by the player velocity so a lateral cut pulls it wide", () => {
     const still = createWorld(1337);
     const cutting = createWorld(1337);
-    const a = setupChase(still, 500).orca;
-    const b = setupChase(cutting, 500).orca;
+    for (const world of [still, cutting]) {
+      const orca = need(world, "orca");
+      const player = need(world, "player");
+      orca.state = "chase";
+      orca.props.cooldown = 0;
+      // Diagonal approach, so a lead along x visibly changes the heading.
+      orca.x = player.x + 200;
+      orca.y = player.y - 120;
+      player.props.vx = 0;
+      player.props.vy = 0;
+    }
     run(still, 12, input({ moveX: 0 }));
     run(cutting, 12, input({ moveX: 1 }));
-    // Both Orcas start at the same x and cover the same distance, but the one
-    // aiming at a predicted point has committed further along the cut.
-    expect(b.x).toBeGreaterThan(a.x);
+    const a = need(still, "orca");
+    const b = need(cutting, "orca");
+    const headingA = Math.abs(a.y - (need(still, "player").y - 120)) / Math.abs(a.x);
+    const headingB = Math.abs(b.y - (need(cutting, "player").y - 120)) / Math.abs(b.x);
+    // The lead pulled the cutting Orca onto a flatter, wider line.
+    expect(headingB).toBeLessThan(headingA);
   });
 
   it("telegraphs with a fixed wind-up before the lunge", () => {
@@ -80,7 +97,9 @@ describe("orca state machine", () => {
     const player = need(world, "player");
     orca.x = player.x - ORCA.telegraphRange + 40;
     orca.y = player.y;
-    run(world, Math.round(ORCA.idleMs / 1000) + 2);
+    run(world, 1);
+    expect(orca.state).toBe("chase");
+    run(world, 1);
     expect(orca.state).toBe("telegraph");
     expect(orca.anim).toBe("jump");
     const frozen = { x: orca.x, y: orca.y };
@@ -88,7 +107,7 @@ describe("orca state machine", () => {
     expect(orca.x).toBeCloseTo(frozen.x, 9);
     expect(orca.y).toBeCloseTo(frozen.y, 9);
     expect(orca.state).toBe("telegraph");
-    run(world, Math.round(ORCA.telegraphMs / 1000));
+    run(world, ticks(ORCA.telegraphMs) + 1);
     expect(orca.state).toBe("lunge");
   });
 
@@ -106,10 +125,10 @@ describe("orca state machine", () => {
     expect(orca.state).toBe("lunge");
     expect(orca.anim).toBe("jump");
     expect(before - Math.hypot(player.x - orca.x, player.y - orca.y)).toBeGreaterThan(0);
-    run(world, Math.round(ORCA.lungeMs / 1000));
+    run(world, ticks(ORCA.lungeMs) + 1);
     expect(orca.state).toBe("recover");
     expect(orca.anim).toBe("swim");
-    run(world, Math.round(ORCA.recoverMs / 1000));
+    run(world, ticks(ORCA.recoverMs) + 1);
     expect(orca.state).toBe("chase");
   });
 
@@ -118,6 +137,13 @@ describe("orca state machine", () => {
     const orca = need(world, "orca");
     const player = need(world, "player");
     orca.state = "chase";
+    orca.props.cooldown = 0;
+    orca.x = player.x + 400;
+    orca.y = player.y;
+    run(world, 1);
+    // Close the gap only after the chase has had a chance to telegraph.
+    orca.state = "chase";
+    orca.props.cooldown = 0;
     orca.x = player.x + 20;
     orca.y = player.y;
     run(world, 1);
@@ -125,11 +151,10 @@ describe("orca state machine", () => {
 
     orca.state = "telegraph";
     orca.props.timer = 1;
-    run(world, 2);
     orca.x = player.x + 20;
     orca.y = player.y;
     drainEvents(world);
-    run(world, 1);
+    run(world, 2);
     expect(player.hp).toBeLessThan(1);
     expect(drainEvents(world).some((e) => e.type === "hit")).toBe(true);
   });
@@ -141,13 +166,14 @@ describe("orca inside the snail time field", () => {
     const inside = createWorld(1337);
     const a = setupChase(outside, 500).orca;
     const b = setupChase(inside, 500).orca;
+    // Park the snail in the middle of the band so the field has room both ways.
     const snail = need(inside, "snail");
+    snail.x = (inside.arena.minX + inside.arena.maxX) / 2;
+    snail.y = (inside.arena.minY + inside.arena.maxY) / 2;
     b.x = snail.x;
     b.y = snail.y;
-    // Keep the target inside the band whichever side of the snail has room.
-    const sign = snail.x - 500 >= inside.arena.minX ? 1 : -1;
     const playerB = need(inside, "player");
-    playerB.x = b.x + 500 * sign;
+    playerB.x = b.x + 500;
     playerB.y = b.y;
 
     const movedOut = travel(outside, a, 10);

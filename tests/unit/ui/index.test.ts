@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createUi, isDebugRequested, type HudModel, type Screen } from "../../../src/ui/index.js";
 import type { UiCallbacks } from "../../../src/ui/types.js";
-import { asDocument, asHost, FakeDocument, FakeElement } from "./fake-dom.js";
+import { asDocument, asHost, FakeDocument, type FakeElement } from "./fake-dom.js";
 
 const BASE_MODEL: HudModel = {
   hp: 1,
@@ -195,18 +195,18 @@ describe("title screen", () => {
 describe("screens", () => {
   const screens: readonly Screen[] = ["title", "playing", "paused", "defeat"];
 
-  it("activates exactly one screen at a time", () => {
+  it("activates exactly one screen at a time, and none while playing", () => {
     const { host, ui } = setup();
     for (const screen of screens) {
       ui.show(screen);
       const active = host.findAllByClass("cc-screen-active");
-      expect(active.length).toBe(1);
+      expect(active.length).toBe(screen === "playing" ? 0 : 1);
       const names = host
         .findAllByClass("cc-screen-active")
         .map((node) => node.classList.contains("cc-screen--title") ? "title"
           : node.classList.contains("cc-screen--pause") ? "paused"
           : "defeat");
-      expect(names[0]).toBe(screen === "playing" ? "" : screen);
+      expect(names[0] ?? "").toBe(screen === "playing" ? "" : screen);
       expect(host.findByClass("cc-hud")?.classList.contains("cc-hud-playing")).toBe(
         screen === "playing" || screen === "paused",
       );
@@ -278,18 +278,11 @@ describe("isDebugRequested", () => {
 });
 
 describe("console", () => {
-  let spies: ReturnType<typeof vi.spyOn>[] = [];
-
-  beforeEach(() => {
-    spies = [
-      vi.spyOn(console, "log").mockImplementation(() => undefined),
-      vi.spyOn(console, "warn").mockImplementation(() => undefined),
-      vi.spyOn(console, "error").mockImplementation(() => undefined),
-      vi.spyOn(console, "info").mockImplementation(() => undefined),
-    ];
-  });
-
   it("stays silent through mount, updates, screens and destroy", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
     const doc = new FakeDocument();
     const host = doc.createElement("div");
     const ui = createUi({
@@ -310,15 +303,66 @@ describe("console", () => {
     ui.update(model({ canvasScale: 1.25 }));
     ui.destroy();
 
-    for (const spy of spies) expect(spy).not.toHaveBeenCalled();
-    for (const spy of spies) spy.mockRestore();
-    spies = [];
+    for (const spy of [log, warn, error, info]) {
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    }
   });
 });
 
+describe("debug overlay visibility", () => {
+  const overlays = (host: FakeElement): string[] =>
+    host.findAllByAttribute("data-cc-overlay").map((node) => node.getAttribute("data-cc-overlay") ?? "");
+
+  it("is absent without the flag, down to the DOM node", () => {
+    const { host, ui } = setup();
+    expect(overlays(host)).toEqual(["hud", "screens"]);
+    expect(host.findByAttribute("data-cc-overlay", "debug")).toBeNull();
+    ui.update(model({ tick: 10 }));
+    expect(host.textDump).not.toContain("tick");
+  });
+
+  it("is present with ?debug=1 and reads the same model", () => {
+    const { host, ui } = setup({ debug: true });
+    ui.update(model());
+    expect(overlays(host)).toEqual(["hud", "screens", "debug"]);
+    const debug = host.findByAttribute("data-cc-overlay", "debug");
+    expect(debug).not.toBeNull();
+    expect(debug?.find("data-cc-debug-tick")?.textContent).toBe("0");
+    expect(debug?.find("data-cc-debug-counts")?.textContent).toBe("human 5  orca 1");
+  });
+
+  it("is driven by the URL when no explicit option is given", () => {
+    const globals = globalThis as { location?: { search: string } };
+    const previous = globals.location;
+    try {
+      globals.location = { search: "?test=1&debug=1" };
+      expect(host_overlays(setup())).toContain("debug");
+      globals.location = { search: "?test=1" };
+      expect(host_overlays(setup())).not.toContain("debug");
+      globals.location = { search: "" };
+      expect(host_overlays(setup())).not.toContain("debug");
+    } finally {
+      if (previous === undefined) delete globals.location;
+      else globals.location = previous;
+    }
+  });
+});
+
+function host_overlays(instance: { host: FakeElement }): string[] {
+  return instance.host.findAllByAttribute("data-cc-overlay").map(
+    (node) => node.getAttribute("data-cc-overlay") ?? "",
+  );
+}
+
 describe("document handling", () => {
   it("falls back to the global document when the host has no ownerDocument", () => {
-    const host = { } as HTMLElement;
+    const appended: unknown[] = [];
+    const host = {
+      append: (child: unknown): void => {
+        appended.push(child);
+      },
+    } as unknown as HTMLElement;
     const globals = globalThis as { document?: Document };
     const previous = globals.document;
     const doc = new FakeDocument();
@@ -332,9 +376,10 @@ describe("document handling", () => {
         onToggleMute: (): void => undefined,
       });
       ui.mount(host);
+      expect(appended.length).toBe(1);
       expect(doc.body.children.length).toBe(0);
-      expect((host as unknown as { children?: unknown[] }).children?.length).toBe(1);
       ui.destroy();
+      expect(appended.length).toBe(1);
     } finally {
       if (previous === undefined) delete globals.document;
       else globals.document = previous;

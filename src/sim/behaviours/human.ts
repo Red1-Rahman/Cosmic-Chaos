@@ -53,6 +53,12 @@ export function updateHuman(human: Entity, ctx: BehaviourContext): void {
   let dirX = human.props.driftDirX ?? 1;
   let dirY = human.props.driftDirY ?? 0;
   [dirX, dirY] = keepInBand(human, ctx.arena, dirX, dirY, HUMAN.margin);
+  // Keep the heading unit length so `driftSpeed` really is px per second.
+  const heading = Math.sqrt(dirX * dirX + dirY * dirY);
+  if (heading > 1e-9) {
+    dirX /= heading;
+    dirY /= heading;
+  }
 
   const speed = human.props.driftSpeed ?? HUMAN.minSpeed;
   // The nudge from a bump decays with the same exponential drag the player uses.

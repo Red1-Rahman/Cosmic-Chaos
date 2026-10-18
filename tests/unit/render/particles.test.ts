@@ -16,13 +16,6 @@ import { testManifest } from "./fixtures";
 const manifest = testManifest();
 const prop = (id: string) => manifest.proceduralProps.find((entry) => entry.id === id);
 
-/** Signature of every particle position, so two runs can be compared. */
-function signature(count: () => number): number[] {
-  const values: number[] = [];
-  for (let i = 0; i < count(); i += 1) values.push(i);
-  return values;
-}
-
 describe("readStardust", () => {
   it("reads the shark trail spec out of the manifest", () => {
     const spec = readStardust(prop("stardust"));
@@ -103,7 +96,7 @@ describe("createParticleSystem", () => {
     second.update(120);
     first.draw(a.ctx);
     second.draw(b.ctx);
-    expect(signature(first.count)).toEqual(signature(second.count));
+    expect(first.count()).toBe(second.count());
     expect(a.findAll("fillRect").map((call) => call.args)).toEqual(
       b.findAll("fillRect").map((call) => call.args),
     );

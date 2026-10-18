@@ -20,7 +20,7 @@ export interface UiOptions {
 const DEBUG_TRUE: readonly string[] = ["1", "true", "on", "yes"];
 
 /** True when a query string asks for the debug overlay, e.g. "?debug=1". */
-export function isDebugRequested(search: string): boolean {
+export function isDebugRequested(search: unknown): boolean {
   if (typeof search !== "string") return false;
   const query = search.startsWith("?") ? search.slice(1) : search;
   if (query === "") return false;
@@ -36,10 +36,16 @@ export function isDebugRequested(search: string): boolean {
   return false;
 }
 
-/** Location is read without touching the global `location` binding, so node is fine. */
+interface LocationLike {
+  readonly search?: unknown;
+}
+
+/** Location is read through a cast, so nothing binds the global `location` in node. */
 function currentSearch(): string {
-  const location = (globalThis as { location?: { search?: unknown } }).location;
-  const search = location?.search;
+  const scope = globalThis as unknown as { readonly location?: LocationLike };
+  const found = scope.location;
+  if (found === undefined) return "";
+  const search: unknown = found.search;
   return typeof search === "string" ? search : "";
 }
 
@@ -71,8 +77,10 @@ function focusHost(doc: Document, screen: Screen, screens: ScreensHandle): void 
     return;
   }
   // Playing: hand focus back to the page so Space does not re-trigger a menu button.
-  const active = doc.activeElement;
-  if (active !== null && active !== undefined && typeof active.blur === "function") active.blur();
+  const active: Element | null = doc.activeElement;
+  if (active !== null && typeof (active as HTMLElement).blur === "function") {
+    (active as HTMLElement).blur();
+  }
 }
 
 /**

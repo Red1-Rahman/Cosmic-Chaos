@@ -35,7 +35,17 @@ type Listener = (event: FakeEvent) => void;
 
 export class FakeElement {
   readonly tagName: string;
-  className = "";
+  get className(): string {
+    return [...this.classes].join(" ");
+  }
+
+  /** Assigning className replaces the class set, exactly like the real DOM. */
+  set className(value: string) {
+    this.classes.clear();
+    for (const name of value.split(/\s+/)) {
+      if (name !== "") this.classes.add(name);
+    }
+  }
   type = "";
   readonly style = new FakeStyle();
   readonly dataset: Record<string, string> = {};
@@ -75,11 +85,9 @@ export class FakeElement {
   readonly classList = {
     add: (name: string): void => {
       this.classes.add(name);
-      if (name !== this.className) this.className = [...this.classes].join(" ");
     },
     remove: (name: string): void => {
       this.classes.delete(name);
-      this.className = [...this.classes].join(" ");
     },
     toggle: (name: string, force?: boolean): boolean => {
       const want = force ?? !this.classes.has(name);
@@ -88,7 +96,6 @@ export class FakeElement {
       } else {
         this.classes.delete(name);
       }
-      this.className = [...this.classes].join(" ");
       return want;
     },
     contains: (name: string): boolean => this.classes.has(name),

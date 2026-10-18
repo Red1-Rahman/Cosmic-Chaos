@@ -50,7 +50,7 @@ interface Cached {
   timeScale: number;
   inField: boolean;
   seed: number;
-  presetId: string;
+  presetId: string | null;
   muted: boolean;
   paused: boolean;
 }
@@ -60,7 +60,7 @@ const NOTHING: Cached = {
   timeScale: Number.NaN,
   inField: false,
   seed: Number.NaN,
-  presetId: "",
+  presetId: null,
   muted: false,
   paused: false,
 };

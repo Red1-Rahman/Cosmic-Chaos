@@ -2,7 +2,7 @@
 // defeat panel. They own nothing but text and buttons. Every action calls a callback,
 // never audio, never storage. Restarting reuses the seed the app already holds.
 import type { UiCallbacks } from "./types.js";
-import { el, focusQuietly, text, createButton } from "./dom.js";
+import { el, focusQuietly, text, createButton, type ButtonOptions } from "./dom.js";
 
 /** Copy lives here so the world tone can be edited in one place. Logged in docs/decisions.md. */
 export const TITLE_COPY = {
@@ -81,11 +81,15 @@ function createPanel(doc: Document, spec: ScreenSpec): ScreenHandle {
   panel.append(buttons);
   const created: HTMLButtonElement[] = [];
   for (const action of spec.actions) {
-    created.push(createButton(doc, action));
+    const button = createButton(doc, action);
+    buttons.append(button);
+    created.push(button);
   }
   const primaryButton = created[spec.primaryIndex];
   if (primaryButton === undefined) {
-    throw new Error(`ui: the ${spec.className} screen needs an action at index ${spec.primaryIndex}.`);
+    throw new Error(
+      `ui: the ${spec.className} screen needs an action at index ${String(spec.primaryIndex)}.`,
+    );
   }
 
   return {
@@ -116,7 +120,9 @@ export function createTitleScreen(doc: Document, callbacks: UiCallbacks): Screen
         action: "start",
         label: TITLE_COPY.start,
         className: "cc-btn cc-btn-primary",
-        onClick: (): void => callbacks.onStart(),
+        onClick: (): void => {
+          callbacks.onStart();
+        },
       },
     ],
     primaryIndex: 0,
@@ -142,13 +148,17 @@ export function createPauseScreen(doc: Document, callbacks: UiCallbacks): Screen
         action: "resume",
         label: PAUSE_COPY.resume,
         className: "cc-btn cc-btn-primary",
-        onClick: (): void => callbacks.onTogglePause(),
+        onClick: (): void => {
+          callbacks.onTogglePause();
+        },
       },
       {
         action: "restart",
         label: PAUSE_COPY.restart,
         className: "cc-btn",
-        onClick: (): void => callbacks.onRestart(),
+        onClick: (): void => {
+          callbacks.onRestart();
+        },
       },
     ],
     primaryIndex: 0,
@@ -168,7 +178,9 @@ export function createDefeatScreen(doc: Document, callbacks: UiCallbacks): Scree
         action: "restart",
         label: DEFEAT_COPY.restart,
         className: "cc-btn cc-btn-primary",
-        onClick: (): void => callbacks.onRestart(),
+        onClick: (): void => {
+          callbacks.onRestart();
+        },
       },
     ],
     primaryIndex: 0,

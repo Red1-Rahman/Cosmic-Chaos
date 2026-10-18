@@ -26,8 +26,24 @@ describe("shark dash loop", () => {
   it("cycles circle, pause and dash and uses both animations", () => {
     const world = createWorld(1337);
     const shark = need(world, "shark");
+    // Park the player in the opposite corner and idle the Orca so the loop is not
+    // cut short by a defeat.
+    const player = need(world, "player");
+    player.x = world.arena.minX + 4;
+    player.y = world.arena.maxY - 4;
+    const orca = need(world, "orca");
+    orca.x = world.arena.maxX - 6;
+    orca.y = world.arena.minY + 6;
+    orca.state = "idle";
+    orca.props.timer = 100000;
+    shark.x = world.arena.maxX - 200;
+    shark.y = world.arena.minY + 20;
+    shark.props.dirX = -1;
+    shark.props.dirY = 1;
     const seen = new Set<string>();
     for (let i = 0; i < 600; i += 1) {
+      orca.state = "idle";
+      orca.props.timer = 100000;
       step(world, NEUTRAL, MOVEMENT.fixedDt);
       seen.add(shark.state);
     }
@@ -84,7 +100,7 @@ describe("shark dash loop", () => {
   it("turns around instead of leaving the arena", () => {
     const world = createWorld(1337);
     const shark = need(world, "shark");
-    shark.x = world.arena.minX + 5;
+    shark.x = world.arena.minX;
     shark.y = world.arena.minY + 40;
     shark.props.dirX = -1;
     shark.props.dirY = 1;

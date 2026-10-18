@@ -18,8 +18,8 @@ export const PLAYER = {
   splashCooldownMs: 260,
   /** Landing after a hop always splashes; this is its strength. */
   landSplashPower: 0.55,
-  /** The same attacker cannot hit again for this long. */
-  hitCooldownMs: 420,
+  /** The same player cannot be hit again for this long: a mercy window. */
+  hitCooldownMs: 600,
   /** Knockback impulse in px per second. */
   knockback: 330,
   /** Flash duration in ms, and how far it drives scale and alpha. */
@@ -54,6 +54,11 @@ function splashTick(world: World, player: Entity): void {
  * fast player cannot stack a splash event on every single step.
  */
 export function updatePlayerPresentation(world: World, player: Entity, dt: number): void {
+  if (world.status === "defeat") {
+    player.anim = "defeat";
+    player.state = "defeat";
+    return;
+  }
   const cd = Math.max(0, (player.props.splashCd ?? 0) - dt * 1000);
   player.props.splashCd = cd;
 
@@ -96,6 +101,9 @@ export function hitPlayer(
   fromX: number,
   fromY: number,
 ): void {
+  // A short mercy window after a hit: a lunge still whiffs, it just cannot
+  // chain into another hit. Keeps a 10 second chase survivable without dodging.
+  if ((player.props.iFrameMs ?? 0) > 0) return;
   const dx = player.x - fromX;
   const dy = player.y - fromY;
   const d2 = dx * dx + dy * dy;
@@ -105,6 +113,7 @@ export function hitPlayer(
   player.hp = clamp(player.hp - power, 0, 1);
   player.props.flashMs = PLAYER.flashMs;
   player.props.hurtMs = PLAYER.regenDelayMs;
+  player.props.iFrameMs = PLAYER.hitCooldownMs;
   world.events.push({ type: "hit", id: player.id, x: player.x, y: player.y, power });
 
   if (player.hp <= 0 && world.status === "playing") {
@@ -126,6 +135,8 @@ export function updatePlayerVitality(player: Entity, ctx: BehaviourContext): voi
 
   const hurtMs = Math.max(0, (player.props.hurtMs ?? 0) - dt * 1000);
   player.props.hurtMs = hurtMs;
+  const iFrameMs = Math.max(0, (player.props.iFrameMs ?? 0) - dt * 1000);
+  player.props.iFrameMs = iFrameMs;
   if (hurtMs <= 0 && player.hp < 1 && ctx.world.status === "playing") {
     player.hp = clamp(player.hp + PLAYER.regenPerSecond * dt, 0, 1);
   }

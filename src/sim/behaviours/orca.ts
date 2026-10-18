@@ -29,11 +29,11 @@ export const ORCA = {
   lungeSpeed: 700,
   lungeMs: 360,
   /** Stagger after a missed lunge: slower and much easier to dodge. */
-  recoverMs: 650,
+  recoverMs: 900,
   recoverSpeedScale: 0.35,
   /** Contact while lunging is what hurts the player. */
   contactRadius: 48,
-  hitPower: 0.34,
+  hitPower: 0.22,
   /** Repeat wind-ups cannot start again until this cooldown clears. */
   cooldownMs: 500,
 } as const;

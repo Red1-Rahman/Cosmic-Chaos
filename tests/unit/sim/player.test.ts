@@ -110,23 +110,36 @@ describe("capybara hit response", () => {
     expect(p.alpha).toBeCloseTo(1, 6);
   });
 
-  it("regenerates health slowly once out of combat", () => {
+  it("regenerates health slowly, and only after the out-of-combat delay", () => {
     const world = createWorld(1337);
     const p = player(world);
+    const orca = world.entities.find((e) => e.kind === "orca");
+    if (!orca) throw new Error("no orca");
+    orca.x = world.arena.maxX - 4;
+    orca.y = world.arena.minY + 4;
+    orca.state = "idle";
+    orca.props.timer = 100000;
+
     p.hp = 0.5;
-    run(world, 120);
-    expect(p.hp).toBeCloseTo(0.5, 6);
+    const before = p.hp;
+    step(world, NEUTRAL, MOVEMENT.fixedDt);
+    // One step of regen is at most regenPerSecond of a second.
+    expect(p.hp - before).toBeLessThanOrEqual(PLAYER.regenPerSecond * MOVEMENT.fixedDt + 1e-9);
     run(world, 240);
-    expect(p.hp).toBeGreaterThan(0.5);
-    expect(p.hp).toBeLessThanOrEqual(0.5 + PLAYER.regenPerSecond * 8);
+    expect(p.hp).toBeGreaterThan(before);
+    expect(p.hp).toBeLessThanOrEqual(before + PLAYER.regenPerSecond * 8);
+
+    // A fresh hit restarts the delay, so health does not tick back yet.
+    p.hp = 0.5;
+    p.props.hurtMs = PLAYER.regenDelayMs;
+    const hit = p.hp;
+    run(world, Math.ceil((PLAYER.regenDelayMs / 1000) * 60) - 10);
+    expect(p.hp).toBe(hit);
   });
 
   it("goes to defeat at zero hp and emits a defeat event once", () => {
     const world = createWorld(1337);
     const p = player(world);
-    p.hp = 0.01;
-    p.x = 0;
-    p.y = 0;
     const orca = world.entities.find((e) => e.kind === "orca");
     if (!orca) throw new Error("no orca");
     orca.state = "lunge";
@@ -135,12 +148,17 @@ describe("capybara hit response", () => {
     orca.props.dirX = 1;
     orca.props.dirY = 0;
     orca.props.timer = ORCA.lungeMs;
+    p.x = 0;
+    p.y = 0;
+    p.hp = 0.01;
     drainEvents(world);
     step(world, NEUTRAL, MOVEMENT.fixedDt);
     expect(p.hp).toBe(0);
     expect(world.status).toBe("defeat");
     expect(p.anim).toBe("defeat");
     expect(drainEvents(world).some((e) => e.type === "defeat")).toBe(true);
+    // The world freezes, so nothing else is emitted afterwards.
+    run(world, 5);
     expect(drainEvents(world)).toHaveLength(0);
   });
 });

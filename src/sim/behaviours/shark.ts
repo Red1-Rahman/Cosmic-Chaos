@@ -4,7 +4,7 @@
 import type { Entity } from "../types";
 import { hitPlayer } from "./player";
 import type { BehaviourContext } from "./shared";
-import { dist2, faceFromDX, keepInBand, moveInBand } from "./shared";
+import { dist2, faceFromDX, keepInBand, moveInBand, tickTimer } from "./shared";
 
 export const SHARK = {
   /** Slow patrol along the diagonal, px per second. */
@@ -33,21 +33,21 @@ export function updateShark(shark: Entity, ctx: BehaviourContext): void {
   let dirX = shark.props.dirX ?? 1;
   let dirY = shark.props.dirY ?? 1;
   if (shark.props.timer === undefined) shark.props.timer = SHARK.circleMs;
+  [dirX, dirY] = keepInBand(shark, ctx.arena, dirX, dirY, SHARK.margin);
   const raw = shark.state as SharkState;
   const state: SharkState = raw === "dash" || raw === "pause" ? raw : "circle";
 
   if (state === "circle") {
     shark.anim = "swim";
-    [dirX, dirY] = keepInBand(shark, ctx.arena, dirX, dirY, SHARK.margin);
     moveInBand(shark, ctx.arena, dirX * SHARK.circleSpeed, dirY * SHARK.circleSpeed, dt);
     shark.state = "circle";
-    if ((shark.props.timer ?? 0) - dt * 1000 <= 0) {
+    if (tickTimer(shark, "timer", dt) <= 0) {
       shark.props.timer = SHARK.pauseMs;
       shark.state = "pause";
     }
   } else if (state === "pause") {
     shark.anim = "idle";
-    if ((shark.props.timer ?? 0) - dt * 1000 <= 0) {
+    if (tickTimer(shark, "timer", dt) <= 0) {
       shark.props.timer = SHARK.dashMs;
       shark.state = "dash";
     }
@@ -55,7 +55,7 @@ export function updateShark(shark: Entity, ctx: BehaviourContext): void {
     shark.anim = "swim";
     moveInBand(shark, ctx.arena, dirX * SHARK.dashSpeed, dirY * SHARK.dashSpeed, dt);
     shark.state = "dash";
-    if ((shark.props.timer ?? 0) - dt * 1000 <= 0) {
+    if (tickTimer(shark, "timer", dt) <= 0) {
       shark.props.timer = SHARK.circleMs;
       shark.state = "circle";
     }

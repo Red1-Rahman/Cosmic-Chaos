@@ -2,10 +2,10 @@
 // Everything here is deliberately dumb: create a node, set a CSS custom property,
 // clamp a number, format a number for a label. No logic, no state.
 
-/** Create an element with a class name. Text is set separately so it stays assertable. */
-export function el(doc: Document, tag: string, className?: string): HTMLElement {
+/** Create a div with a class name. Text is set separately so it stays assertable. */
+export function el(doc: Document, className: string, tag = "div"): HTMLElement {
   const node = doc.createElement(tag);
-  if (className !== undefined) node.className = className;
+  node.className = className;
   return node;
 }
 
@@ -76,9 +76,8 @@ export interface ButtonOptions {
 
 /** A real <button>, so Enter and Space work without any key handling of our own. */
 export function createButton(doc: Document, options: ButtonOptions): HTMLButtonElement {
-  const button = doc.createElement("button");
+  const button = el(doc, options.className, "button") as HTMLButtonElement;
   button.type = "button";
-  button.className = options.className;
   button.setAttribute(ACTION_ATTRIBUTE, options.action);
   button.setAttribute("aria-label", options.label);
   button.textContent = options.label;

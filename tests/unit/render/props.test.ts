@@ -109,8 +109,8 @@ describe("time field", () => {
     drawTimeField(fake.ctx, spec, 320, 520, 0);
     const arcs = fake.findAll("arc").map((call) => call.args[2]);
     expect(arcs[0]).toBeCloseTo(132, 6);
-    // The disc, the ring stroke and three drifting edge arcs.
-    expect(fake.countOf("arc")).toBe(5);
+    // One disc arc plus three drifting edge arcs.
+    expect(fake.countOf("arc")).toBe(4);
     expect(fake.countOf("fill")).toBe(1);
     expect(fake.countOf("stroke")).toBe(4);
   });
@@ -158,7 +158,8 @@ describe("waterbike", () => {
     });
     expect(fake.find("rotate")?.args).toEqual([0.2]);
     expect(fake.countOf("ellipse")).toBe(1);
-    expect(fake.countOf("quadraticCurveTo")).toBeGreaterThanOrEqual(3 * 8);
+    // Hull shade, hull, deck and rail: four rounded boxes of four corners.
+    expect(fake.countOf("quadraticCurveTo")).toBe(4 * 4);
     const lines = fake.findAll("lineTo").length;
     // Two jet flames at three points each, plus the rounded box corners.
     expect(lines).toBeGreaterThanOrEqual(6);
@@ -199,8 +200,10 @@ describe("waterbike", () => {
 describe("crystal glows", () => {
   it("breathes the radius around the manifest radius", () => {
     const spec = readCrystalGlow(prop("crystal-glow"));
-    expect(crystalRadius(spec, 0, 0, false)).toBeCloseTo(54 * 1.275, 4);
-    expect(crystalRadius(spec, 0, 0, false)).toBeGreaterThanOrEqual(spec.radius * 0.8);
+    // At t = 0 every anchor sits at the midpoint of its pulse.
+    expect(crystalRadius(spec, 0, 0, false)).toBeCloseTo(54 * 0.975, 4);
+    expect(crystalRadius(spec, 500, 0, false)).toBeGreaterThan(spec.radius);
+    expect(crystalRadius(spec, 0, 0, true)).toBeCloseTo(54 * 0.975, 4);
   });
 
   it("draws one halo gradient per anchor", () => {
@@ -217,8 +220,9 @@ describe("roundRectPath", () => {
     const fake = createFakeCanvas();
     roundRectPath(fake.ctx, 0, 0, 10, 4, 99);
     expect(fake.countOf("closePath")).toBe(1);
+    // The radius is clamped to half the shorter side, so the start is (2, 0).
     const first = fake.find("moveTo")?.args;
-    expect(first?.[0]).toBeCloseTo(5, 6);
+    expect(first?.[0]).toBeCloseTo(2, 6);
     expect(first?.[1]).toBeCloseTo(0, 6);
   });
 });

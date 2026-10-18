@@ -166,7 +166,17 @@ export function drawSprite(ctx: CanvasRenderingContext2D, atlas: Atlas, draw: Sp
   ctx.scale(kx, ky);
   ctx.rotate(draw.rot);
   ctx.globalAlpha = clamp01(draw.alpha);
-  ctx.drawImage(entry.bitmap, 0, 0, entry.tile.w, entry.tile.h, -entry.anchor.x * w, -entry.anchor.y * h, w, h);
+  ctx.drawImage(
+    entry.bitmap,
+    0,
+    0,
+    entry.tile.w,
+    entry.tile.h,
+    -entry.anchor.x * w,
+    -entry.anchor.y * h,
+    w,
+    h,
+  );
   ctx.restore();
 
   // Haze veil over the drawn box. Every pose rotates only slightly, so an axis
@@ -325,11 +335,15 @@ export function createRenderer(
     const drift = entity.props["drift"];
     if (typeof drift === "number" && Number.isFinite(drift)) return clampTilt(drift);
     const vx = entity.props["vx"] ?? 0;
-    return clampTilt((clamp01((vx + PROP_SPEED_REFERENCE) / (PROP_SPEED_REFERENCE * 2)) * 2 - 1) * MAX_TILT_RAD);
+    return clampTilt(
+      (clamp01((vx + PROP_SPEED_REFERENCE) / (PROP_SPEED_REFERENCE * 2)) * 2 - 1) * MAX_TILT_RAD,
+    );
   };
 
   const emitStardustTrail = (world: World, entity: Entity, x: number, y: number): void => {
-    const intensity = clamp01((entity.props["speed"] ?? PROP_SPEED_REFERENCE * 0.6) / PROP_SPEED_REFERENCE);
+    const intensity = clamp01(
+      (entity.props["speed"] ?? PROP_SPEED_REFERENCE * 0.6) / PROP_SPEED_REFERENCE,
+    );
     const rate = reducedMotion ? 0 : 26 * intensity;
     const step = Math.min(MAX_PARTICLE_STEP_MS, Math.max(0, world.timeMs - lastTimeMs));
     dustCarry = Math.min(dustCarry + (rate * step) / 1000, 24);
@@ -422,7 +436,12 @@ export function createRenderer(
     ctx.globalAlpha = 1;
   };
 
-  const render = (ctx: CanvasRenderingContext2D, world: World, layout: Layout, alpha: number): void => {
+  const render = (
+    ctx: CanvasRenderingContext2D,
+    world: World,
+    layout: Layout,
+    alpha: number,
+  ): void => {
     ensureSeed(world);
     if (view === undefined) applyLayout(layout);
     const arenaView = view;
@@ -474,6 +493,9 @@ export function createRenderer(
     setReducedMotion: (value: boolean): void => {
       reducedMotion = value;
       particles.setReducedMotion(value);
+      // Reduced motion means near zero motion, so anything already in flight
+      // is dropped rather than animated out.
+      if (value) particles.clear();
     },
     reducedMotion: (): boolean => reducedMotion,
     particleCount: (): number => particles.count(),

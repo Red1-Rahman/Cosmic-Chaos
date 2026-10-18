@@ -28,6 +28,35 @@ const isBackgroundDraw = (call: RecordedCall): boolean => call.args.length === 5
 
 const isSpriteDraw = (call: RecordedCall): boolean => call.args.length === 9;
 
+interface SpriteAnchor {
+  readonly name: string;
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * Every sprite draw with the anchor it was drawn at. `drawSprite` translates to
+ * the anchor immediately before the drawImage, inside the same save/restore.
+ */
+function spriteAnchors(canvas: ReturnType<typeof createFakeCanvas>): SpriteAnchor[] {
+  const out: SpriteAnchor[] = [];
+  let anchor: { x: number; y: number } | undefined;
+  for (const call of canvas.calls) {
+    if (call.name === "save" || call.name === "restore") {
+      anchor = undefined;
+      continue;
+    }
+    if (call.name === "translate") {
+      anchor = { x: call.args[0] as number, y: call.args[1] as number };
+      continue;
+    }
+    if (isSpriteDraw(call) && anchor !== undefined) {
+      out.push({ name: (call.args[0] as { name: string }).name, x: anchor.x, y: anchor.y });
+    }
+  }
+  return out;
+}
+
 describe("computeArenaView", () => {
   it("contain fits the 1408x768 arena into a 1408x792 canvas", () => {
     const view = computeArenaView({ w: 1408, h: 768 }, { w: 1408, h: 792 });
@@ -204,17 +233,15 @@ describe("createRenderer", () => {
       makeEntity("human", "mid", { x: 300, y: 570 }),
     ]);
     renderer.render(fake.ctx, world, layoutFor("16:9"), 0);
-    const sources = fake.findAll("drawImage").filter(isSpriteDraw).map((call) => call.args[0]);
-    expect(sources).toEqual(["human-1", "human-1", "human-1"]);
-    const ys = fake.findAll("translate").map((call) => call.args[1]);
-    // Crystal glows and the waterbike add transforms; the entity ones ascend.
-    const entityYs = ys.filter((y): y is number => typeof y === "number" && y >= 500 && y <= 640);
-    expect(entityYs[0]).toBeLessThanOrEqual(entityYs[entityYs.length - 1] ?? 0);
+    const anchors = spriteAnchors(fake);
+    expect(anchors.map((anchor) => anchor.y)).toEqual([500, 570, 640]);
+    for (const anchor of anchors) expect(anchor.name).toBe("human-standing");
   });
 
   it("scales entities with depth", () => {
     const far = createFakeCanvas();
     const near = createFakeCanvas();
+    const renderer = createRenderer(manifest, testAtlas(), { backgrounds: backgroundImages() });
     renderer.render(
       far.ctx,
       makeWorld([makeEntity("human", "a", { x: 400, y: manifest.arena.playBand.minY })]),
@@ -230,9 +257,7 @@ describe("createRenderer", () => {
     const depthScale = (canvas: ReturnType<typeof createFakeCanvas>): number => {
       const draw = canvas.findAll("drawImage").find(isSpriteDraw);
       expect(draw).toBeDefined();
-      const translate = canvas
-        .findAll("translate")
-        .find((call) => call.args[0] === 400);
+      const translate = canvas.findAll("translate").find((call) => call.args[0] === 400);
       expect(translate).toBeDefined();
       const index = canvas.calls.indexOf(translate as RecordedCall);
       const scale = canvas.calls.slice(index).find((call) => call.name === "scale");
@@ -247,7 +272,9 @@ describe("createRenderer", () => {
   it("mirrors the sprite with a negative horizontal scale when facing left", () => {
     const fake = createFakeCanvas();
     const renderer = createRenderer(manifest, testAtlas(), { backgrounds: backgroundImages() });
-    const world = makeWorld([makeEntity("orca", "orca-1", { x: 500, y: 550, anim: "swim", facing: -1 })]);
+    const world = makeWorld([
+      makeEntity("orca", "orca-1", { x: 500, y: 550, anim: "swim", facing: -1 }),
+    ]);
     renderer.render(fake.ctx, world, layoutFor("16:9"), 0);
     const index = fake.calls.findIndex((call) => call.name === "translate" && call.args[0] === 500);
     expect(index).toBeGreaterThanOrEqual(0);
@@ -259,7 +286,9 @@ describe("createRenderer", () => {
   it("leaves the horizontal scale positive when facing right", () => {
     const fake = createFakeCanvas();
     const renderer = createRenderer(manifest, testAtlas(), { backgrounds: backgroundImages() });
-    const world = makeWorld([makeEntity("orca", "orca-1", { x: 500, y: 550, anim: "swim", facing: 1 })]);
+    const world = makeWorld([
+      makeEntity("orca", "orca-1", { x: 500, y: 550, anim: "swim", facing: 1 }),
+    ]);
     renderer.render(fake.ctx, world, layoutFor("16:9"), 0);
     const index = fake.calls.findIndex((call) => call.name === "translate" && call.args[0] === 500);
     const scale = fake.calls.slice(index).find((call) => call.name === "scale");
@@ -280,12 +309,14 @@ describe("createRenderer", () => {
     const playerIndex = withPlayer.calls.findIndex(
       (call) => call.name === "translate" && call.args[0] === 700,
     );
-    const bikeFill = withPlayer.calls
-      .slice(0, playerIndex)
-      .find((call) => call.name === "quadraticCurveTo");
+    expect(playerIndex).toBeGreaterThanOrEqual(0);
+    // The bike paths come after its translate and before the sprite drawImage.
     const spriteIndex = withPlayer.calls.findIndex(
       (call, index) => index > playerIndex && call.name === "drawImage" && isSpriteDraw(call),
     );
+    const bikeFill = withPlayer.calls
+      .slice(playerIndex, spriteIndex)
+      .find((call) => call.name === "quadraticCurveTo");
     expect(bikeFill).toBeDefined();
     expect(spriteIndex).toBeGreaterThan(playerIndex);
     expect(withoutPlayer.countOf("quadraticCurveTo")).toBe(0);

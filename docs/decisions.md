@@ -92,3 +92,39 @@ Alternatives: `crypto` noise (banned), a fresh buffer per burst (rejected: waste
 Context: `codebase.txt` line 71 lists `AudioPort { unlock(), play(cue), setMuted(bool) }`, but the lead's contract adds `setEngine` and `dispose`.
 Decision: implemented the lead's five-method contract. `codebase.txt` is human-owned and was left alone; the human should update that line.
 Alternatives: dropping `setEngine` (rejected: the hum has no other driver), editing `codebase.txt` (rejected: human-owned).
+
+## 2026-10-19 role: render: the arena is contain fitted into every preset
+
+Context: the canvas buffer is the preset logical size (1408x792, 1770x540, 810x1800, ...), never the 1408x768 arena, so arena coordinates cannot be canvas coordinates.
+Decision: `computeArenaView(arena, logical)` is a contain fit, cached per layout by `resize()` and refreshed when the preset id or the logical size changes. Every prop, entity and particle is drawn in arena coordinates inside `translate(offset) + scale(k)`, so `arena.playBand` is fully on screen at all eight presets. The background is the exception: it is cover fitted to the whole canvas, because it is art rather than a coordinate space and must never leave a gap.
+Alternatives: cover fitting the arena (rejected: pushed the play band off screen on the tall presets), stretching the arena (rejected: the viewport contract is contain only), one canvas pixel per arena pixel (rejected: portrait presets would lose a third of the arena).
+
+## 2026-10-19 role: render: the renderer caches the previous tick instead of asking the sim
+
+Context: `render(ctx, world, layout, alpha)` gets one world snapshot plus the loop interpolation alpha, and the sim is forbidden from knowing about the renderer.
+Decision: the renderer keeps a private `previous { tick, positions }` from the last frame and interpolates x and y only when `previous.tick === world.tick - 1`; otherwise it uses the world position as is. The cache is presentation state, never written back.
+Alternatives: adding previous/next positions to `Entity` (rejected: doubles sim state and the golden hash), ignoring alpha entirely (rejected: 60Hz sim on a 144Hz display judders).
+
+## 2026-10-19 role: render: cosmetic one-shots arrive through pushEvent
+
+Context: the app drains `world.events` for audio and UI, so the renderer cannot consume the queue itself, and the sim must not know about particles.
+Decision: `Renderer.pushEvent(event)` queues hit, splash and laser events into a 64 entry cosmetic buffer that the next `render` drains into the particle system. The world queue is never touched and never mutated.
+Alternatives: passing a list into `render` (rejected: changes the agreed signature every frame), cloning `world.events` (rejected: allocation per frame for data the app already has).
+
+## 2026-10-19 role: render: reduced motion is a flag on the Renderer, not a media query
+
+Context: `prefers-reduced-motion` is a browser global, and `src/render` should stay testable in node.
+Decision: `createRenderer(manifest, atlas, { reducedMotion })` plus `setReducedMotion(bool)`. Under it, particle counts, jet flutter, the time field breath and the crystal pulse all collapse to a steady value, and enabling it clears anything already in flight. The app owns the `matchMedia` listener.
+Alternatives: `matchMedia` inside the renderer (rejected: DOM global in a node tested module), an option the caller must remember to pass (rejected: silently ignored accessibility).
+
+## 2026-10-19 role: render: flashes are rate limited by a hold-per-step limiter
+
+Context: no flash may change more than three times per second, but hit sparks are driven by a decaying value that moves every frame.
+Decision: `createFlashLimiter()` holds the quantized level until `flashStep(timeMs)` advances, so the visible level can change at most `MAX_FLASH_HZ` (3) times per second. `quantizeFlash` alone is the pure snap, exported for tests.
+Alternatives: dropping flashes past a threshold (rejected: the hit response would vanish), smoothing the decay (rejected: still crosses more than three levels a second).
+
+## 2026-10-19 role: render: props are read field by field with manifest defaults
+
+Context: `proceduralProps` is a heterogeneous array and `shape`, `jets`, `wake` and `colors` are loosely typed dicts that may be absent.
+Decision: `readWaterbike`, `readTimeField`, `readCrystalGlow` and `readStardust` in `props.ts` parse field by field and fall back to the shipped values, so a missing or partial prop never throws mid frame and never silently draws a zero sized shape.
+Alternatives: casting the raw dicts (rejected: a missing field would reach Canvas as NaN), throwing on a bad prop (rejected: the renderer must never break the frame loop).

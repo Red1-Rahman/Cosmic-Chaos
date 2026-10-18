@@ -44,9 +44,7 @@ export function parseColor(color: string): Rgba {
   }
   const fn = RGB_FN.exec(color);
   if (fn !== null) {
-    const parts = (fn[1] ?? "")
-      .split(",")
-      .map((part) => Number.parseFloat(part.trim()));
+    const parts = (fn[1] ?? "").split(",").map((part) => Number.parseFloat(part.trim()));
     const [r = 0, g = 0, b = 0, a = 1] = parts;
     return {
       r: Number.isFinite(r) ? r : 0,
@@ -185,7 +183,9 @@ export const DEFAULT_WATERBIKE: WaterbikeSpec = {
   wakeColor: "#bfe9ff",
 };
 
-const colorMap = (colors: ProceduralProp["colors"]): Readonly<Record<string, string>> | undefined => {
+const colorMap = (
+  colors: ProceduralProp["colors"],
+): Readonly<Record<string, string>> | undefined => {
   if (colors === undefined || Array.isArray(colors)) return undefined;
   return colors as Readonly<Record<string, string>>;
 };
@@ -197,13 +197,16 @@ const colorFrom = (colors: ProceduralProp["colors"], key: string, fallback: stri
   return typeof value === "string" && value !== "" ? value : fallback;
 };
 
+const dict = (value: unknown): Record<string, unknown> =>
+  typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+
 /** Read the `waterbike` prop. Falls back to the shipped defaults per field. */
 export function readWaterbike(prop: ProceduralProp | undefined): WaterbikeSpec {
   if (prop === undefined) return DEFAULT_WATERBIKE;
   const colors = prop.colors;
-  const jets = typeof prop.jets === "object" && prop.jets !== null ? prop.jets : {};
-  const wake = typeof prop.wake === "object" && prop.wake !== null ? prop.wake : {};
-  const shape = typeof prop.shape === "object" && prop.shape !== null ? prop.shape : {};
+  const jets = dict(prop.jets);
+  const wake = dict(prop.wake);
+  const shape = dict(prop.shape);
   const offsets = jets["offsetX"];
   return {
     hull: box(shape["hull"], DEFAULT_WATERBIKE.hull),
@@ -281,7 +284,15 @@ export function drawWaterbike(
   ctx.globalAlpha = spec.wakeFade * (0.35 + 0.65 * speed);
   ctx.fillStyle = spec.wakeColor;
   ctx.beginPath();
-  ctx.ellipse(-halfHull - spec.wakeLength / 2 + 6, 0, spec.wakeLength / 2, spec.wakeWidth / 2, 0, 0, TAU);
+  ctx.ellipse(
+    -halfHull - spec.wakeLength / 2 + 6,
+    0,
+    spec.wakeLength / 2,
+    spec.wakeWidth / 2,
+    0,
+    0,
+    TAU,
+  );
   ctx.fill();
   ctx.globalAlpha = 1;
 
@@ -316,12 +327,26 @@ export function drawWaterbike(
 
   // Deck.
   ctx.fillStyle = spec.deckColor;
-  roundRectPath(ctx, -spec.deck.w / 2, -hullH / 2 - spec.deck.h, spec.deck.w, spec.deck.h, spec.deck.radius);
+  roundRectPath(
+    ctx,
+    -spec.deck.w / 2,
+    -hullH / 2 - spec.deck.h,
+    spec.deck.w,
+    spec.deck.h,
+    spec.deck.radius,
+  );
   ctx.fill();
 
   // Rail.
   ctx.fillStyle = spec.railColor;
-  roundRectPath(ctx, -spec.rail.w / 2, -hullH / 2 - spec.deck.h - spec.rail.h, spec.rail.w, spec.rail.h, spec.rail.radius);
+  roundRectPath(
+    ctx,
+    -spec.rail.w / 2,
+    -hullH / 2 - spec.deck.h - spec.rail.h,
+    spec.rail.w,
+    spec.rail.h,
+    spec.rail.radius,
+  );
   ctx.fill();
 
   ctx.restore();
@@ -451,7 +476,12 @@ export function readCrystalGlow(prop: ProceduralProp | undefined): CrystalSpec {
 }
 
 /** Glow radius for one anchor at a given time. Pure, so tests can assert it. */
-export function crystalRadius(spec: CrystalSpec, timeMs: number, index: number, reduced: boolean): number {
+export function crystalRadius(
+  spec: CrystalSpec,
+  timeMs: number,
+  index: number,
+  reduced: boolean,
+): number {
   const beat = pulse(timeMs + index * 917, spec.pulseHz, reduced);
   return spec.radius * (0.8 + 0.35 * beat);
 }
