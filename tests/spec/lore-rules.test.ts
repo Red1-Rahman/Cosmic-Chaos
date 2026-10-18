@@ -81,6 +81,48 @@ function trace(world: World, ticks: number, state: InputState, watch: Entity): s
   return seen;
 }
 
+/**
+ * Integrate the orca for `ticks` fixed steps while pinning the snail and the player
+ * to fixed points, so the only variable between two runs is whether the orca starts
+ * inside the snail's field. Returns how far the orca actually travelled.
+ */
+function measureChaseTravel(
+  world: World,
+  points: { snail: Placement; player: Placement; orca: Placement },
+  ticks: number,
+): number {
+  const orca = need(world, "orca");
+  const snail = need(world, "snail");
+  const player = need(world, "player");
+  const before = orca.x;
+  for (let i = 0; i < ticks; i += 1) {
+    snail.x = points.snail.x;
+    snail.y = points.snail.y;
+    player.x = points.player.x;
+    player.y = points.player.y;
+    orca.state = "chase";
+    orca.props.timer = 0;
+    orca.props.cooldown = Number.MAX_SAFE_INTEGER;
+    step(world, NEUTRAL, MOVEMENT.fixedDt);
+    drainEvents(world);
+  }
+  return Math.abs(orca.x - before);
+}
+
+interface Placement {
+  readonly x: number;
+  readonly y: number;
+}
+
+const BAND_CENTRE: Placement = {
+  x: (ARENA.minX + ARENA.maxX) / 2,
+  y: (ARENA.minY + ARENA.maxY) / 2,
+};
+
+const FIELD_CENTRE: Placement = BAND_CENTRE;
+/** Well outside the snail field, in the middle of the band. */
+const OPEN_WATER: Placement = { x: ARENA.minX + 6, y: ARENA.minY + 6 };
+
 const lore = new Map(characters.characters.map((entry) => [entry.id, entry]));
 
 describe("world lore", () => {
@@ -284,9 +326,11 @@ describe("orca: warden of the rule", () => {
     // Hold the orca just outside telegraph range so the pursuit is what is under test.
     orca.state = "chase";
     orca.props.timer = 0;
+    orca.props.cooldown = Number.MAX_SAFE_INTEGER;
     orca.x = player.x + ORCA.telegraphRange + 60;
     orca.y = player.y;
-    run(world, 30);
+    const chaseStates = trace(world, 20, NEUTRAL, orca);
+    expect(chaseStates).toContain("chase");
     expect(orca.state).toBe("chase");
     expect(orca.anim).toBe("swim");
 
