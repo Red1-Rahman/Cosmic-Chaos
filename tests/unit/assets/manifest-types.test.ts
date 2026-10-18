@@ -9,7 +9,7 @@ import {
   isManifestError,
   parseManifest,
 } from "../../../src/assets/manifest-types";
-import type { Dict, Manifest } from "../../../src/assets/manifest-types";
+import type { Dict } from "../../../src/assets/manifest-types";
 import { draftManifest, manifest } from "./fixtures";
 
 type Section = Dict[];

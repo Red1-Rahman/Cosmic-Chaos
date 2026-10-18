@@ -161,12 +161,15 @@ export function pickPreset(
   for (let i = 1; i < presets.length; i += 1) {
     const candidate = presets[i];
     if (candidate === undefined) continue;
-    if (!isPositiveNumber(candidate.ratio)) fail(`preset ${candidate.id} has a bad ratio.`);
-    const distance = Math.abs(windowLogAspect - Math.log(candidate.ratio));
-    if (distance < bestDistance) {
-      best = candidate;
-      bestDistance = distance;
+    if (isPositiveNumber(candidate.ratio)) {
+      const distance = Math.abs(windowLogAspect - Math.log(candidate.ratio));
+      if (distance < bestDistance) {
+        best = candidate;
+        bestDistance = distance;
+      }
+      continue;
     }
+    return fail(`preset ${candidate.id} has a bad ratio.`);
   }
   return best;
 }
@@ -219,10 +222,10 @@ export function computeLayoutForPreset(
   options: { devicePixelRatio?: number; integerScalePreferred?: boolean; minFill?: number } = {},
 ): Layout {
   if (!isPositiveNumber(win.w) || !isPositiveNumber(win.h)) {
-    fail("window size must be positive finite numbers.");
+    return fail("window size must be positive finite numbers.");
   }
   if (!isPositiveNumber(preset.logical.w) || !isPositiveNumber(preset.logical.h)) {
-    fail(`preset ${preset.id} has an invalid logical size.`);
+    return fail(`preset ${preset.id} has an invalid logical size.`);
   }
   const dpr = options.devicePixelRatio ?? 1;
   const preferInteger = options.integerScalePreferred ?? PREFER_INTEGER_SCALE;

@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  BackgroundError,
   DEFAULT_FOCAL_POINT,
   backgroundFamily,
   declaredRatiosFor,
   isBackgroundError,
   pickBackground,
 } from "../../../src/assets/backgrounds";
+import type { BackgroundError } from "../../../src/assets/backgrounds";
 import type { Dict } from "../../../src/assets/manifest-types";
 import type { Manifest } from "../../../src/assets/manifest-types";
 import { manifest } from "./fixtures";
