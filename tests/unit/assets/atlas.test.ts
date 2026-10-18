@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { Atlas, AtlasError, anchorPoint, frameRect, isAtlasError } from "../../../src/assets/atlas";
+import { Atlas, anchorPoint, frameRect, isAtlasError } from "../../../src/assets/atlas";
+import type { AtlasError } from "../../../src/assets/atlas";
 import type { DecodedImage } from "../../../src/assets/loader";
 import { parseManifest } from "../../../src/assets/manifest-types";
 import type { Dict } from "../../../src/assets/manifest-types";
@@ -80,7 +81,7 @@ describe("frames", () => {
     (sprites[0] as Dict)["frame"] = { grid: { cols: 4, rows: 2 }, tile: { w: 32, h: 48 } };
     const m = parseManifest(draft);
     const images = new Map<string, DecodedImage>();
-    m.sprites.forEach((sprite, i) => images.set(sprite.id, decoded(128, 96)));
+    m.sprites.forEach((sprite) => images.set(sprite.id, decoded(128, 96)));
     const entry = Atlas.create(m, images).get("capybara-idle");
     expect(entry.frameCount).toBe(8);
     expect(frameRect(entry, 0)).toEqual({ x: 0, y: 0, w: 32, h: 48 });
