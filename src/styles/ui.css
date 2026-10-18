@@ -290,8 +290,9 @@
 
 .cc-debug {
   position: absolute;
-  left: 0.9em;
+  left: 50%;
   bottom: 0.9em;
+  transform: translateX(-50%);
   max-width: 24em;
   padding: 0.5em 0.7em;
   border: 2px solid rgb(126 232 176 / 45%);
