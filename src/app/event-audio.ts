@@ -32,8 +32,17 @@ export function cueForEvent(event: GameEvent): AudioCue | undefined {
   }
 }
 
+export interface EngineState {
+  readonly speed01: number;
+  readonly timeScale: number;
+}
+
 /** Engine throttle and pitch follow the player's speed and the active time scale. */
-export function engineForState(speed: number, timeScale: number, speedReference: number): number {
+export function engineForState(
+  speed: number,
+  timeScale: number,
+  speedReference: number,
+): EngineState {
   const throttle = speedReference > 0 ? Math.min(1, Math.max(0, speed / speedReference)) : 0;
   return { speed01: throttle, timeScale };
 }
