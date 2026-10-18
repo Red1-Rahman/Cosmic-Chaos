@@ -250,7 +250,7 @@ describe("panel fit", () => {
   it("keeps the HUD rows and buttons in em, so they track the frame short side", () => {
     // Every HUD offset is in em off --cc-font-size, which the ui layer derives from the
     // letterboxed short side. Nothing may reintroduce a raw pixel or vh offset.
-    for (const selector of [".cc-hud-vitals", ".cc-hud-meta", ".cc-hud-actions"]) {
+    for (const selector of [".cc-hud-stack", ".cc-hud-vitals", ".cc-hud-meta", ".cc-hud-actions"]) {
       const body = rule(selector);
       expect(body).not.toMatch(/\d(px|vh|vw)/);
     }
