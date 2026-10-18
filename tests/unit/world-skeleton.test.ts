@@ -128,7 +128,6 @@ describe("step", () => {
     const outside = need(world.entities.find((e) => e.kind === "orca"));
     player.x = snail.x;
     player.y = snail.y;
-    const outside = world.entities.find((e) => e.kind === "orca")!;
     drainEvents(world);
     step(world, NEUTRAL, MOVEMENT.fixedDt);
     expect(player.timeScale).toBeCloseTo(ARENA.timeScaleInside, 9);

@@ -21,12 +21,12 @@ function jsonResponse(body: unknown, ok = true, status = 200): Response {
   return {
     ok,
     status,
-    text: () => Promise.resolve(JSON.stringify(body)),
-  } as unknown as Response;
+    text: (): Promise<string> => Promise.resolve(JSON.stringify(body)),
+  } as Response;
 }
 
 function fetchReturning(response: Response): typeof fetch {
-  return (() => Promise.resolve(response)) as unknown as typeof fetch;
+  return (() => Promise.resolve(response)) as typeof fetch;
 }
 
 describe("listAssetReferences", () => {
@@ -58,10 +58,10 @@ describe("loadManifest", () => {
     const seen: string[] = [];
     const loaded = await loadManifest({
       manifestUrl: "assets/assets.json",
-      fetchImpl: (input) => {
-        seen.push(String(input));
+      fetchImpl: ((input: RequestInfo | URL) => {
+        seen.push(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
         return Promise.resolve(jsonResponse(rawManifest));
-      },
+      }) as typeof fetch,
     });
     expect(seen).toEqual(["assets/assets.json"]);
     expect(loaded.sprites).toHaveLength(12);
@@ -109,7 +109,7 @@ describe("loadManifest", () => {
   });
 
   it("throws a typed error for invalid JSON", async () => {
-    const bad = { ok: true, status: 200, text: () => Promise.resolve("{ nope") } as unknown as Response;
+    const bad = { ok: true, status: 200, text: (): Promise<string> => Promise.resolve("{ nope") } as Response;
     let caught: unknown;
     try {
       await loadManifest({ fetchImpl: fetchReturning(bad) });
