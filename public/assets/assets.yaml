@@ -1,0 +1,245 @@
+# Cosmic Chaos asset manifest
+# Location: public/assets/assets.yaml (lives next to the images it describes)
+#
+# Purpose: lets coding agents understand every image without opening it.
+# All "file" values are relative to this directory.
+#
+# Conventions
+#   - Sprite facing: unless noted, characters face RIGHT. Flip horizontally (scaleX = -1) to face left.
+#   - Sprites are PNG with transparent background (RGBA). Backgrounds are opaque JPEG.
+#   - Sizes are native pixels (width x height). Sprite sizes are NOT uniform, so anchor
+#     sprites by their bottom center (or center for flyers/swimmers) and scale in code.
+#   - The art is pixel art style. Disable smoothing when scaling (image-rendering: pixelated,
+#     or ctx.imageSmoothingEnabled = false, or Phaser pixelArt: true).
+#   - The sprites are single images, not sprite sheets. Each file is one frame or one pose.
+#   - Animation is expected to be done in code (tweens, bobbing, squash and stretch, swapping
+#     between pose images listed under each character).
+
+game:
+  title: Cosmic Chaos
+  premise: >
+    A capybara scientist broke a fundamental rule of the universe. Cosmic beings enforce,
+    punish, and watch over the fallout while humans drift around as mindless pets.
+  art_style: Pixel art, space and nebula themed, glowing cyan and purple accents.
+
+# ---------------------------------------------------------------------------
+# Characters
+# ---------------------------------------------------------------------------
+characters:
+
+  capybara:
+    role: Mad Scientist
+    lore: The one who broke the rule of the universe. Reckless, brilliant, the root cause of the chaos.
+    suggested_game_role: Protagonist, player character.
+    visual_identity: >
+      Brown capybara wearing a white lab coat with a small patch, a brown aviator cap with
+      goggles on top, and a long brown scarf trailing in the wind. Sits upright and looks
+      slightly smug and calm.
+    sprites:
+      - file: Capybara-idle.png
+        size: [170, 170]
+        pose: idle
+        facing: right
+        description: Capybara sitting upright on the ground, scarf flowing behind it to the left.
+        suggested_use: Idle or standing state, menu portrait, dialogue portrait.
+
+  orca:
+    role: Warden of the Rule, The Punisher
+    lore: Enforces the universal rule that the capybara broke. Hunts the scientist down.
+    suggested_game_role: Chaser or pursuer enemy, mid-boss.
+    visual_identity: >
+      Black and white orca with a space pilot look: aviator goggles on the head and a
+      grey riveted armor vest with patches and a small badge. Blue-tinted highlights.
+    sprites:
+      - file: Orca-idle.png
+        size: [167, 167]
+        pose: idle
+        facing: left-ish
+        description: >
+          Orca hovering in a mostly upright, slightly curved pose, belly facing the viewer,
+          goggles on its head, looking toward the viewer.
+        suggested_use: Idle, hovering, spawn-in, taunt.
+      - file: Orca-jump-up-right-diagonal.png
+        size: [158, 158]
+        pose: jump
+        facing: up-right
+        description: >
+          Orca leaping out of water diagonally up and to the right, with water splash
+          droplets under its tail.
+        suggested_use: Leap attack, vertical dash, pounce, breaching animation.
+      - file: Orca-swim-right.png
+        size: [148, 74]
+        pose: swim
+        facing: right
+        description: Side profile of the orca swimming horizontally to the right, goggles on, armor vest visible.
+        suggested_use: Horizontal chase or patrol movement. Wide aspect ratio (2:1), unlike the others.
+
+  shark:
+    role: Cosmic Avenger
+    lore: A vengeful force of the cosmos. Fast, relentless, trailing stardust.
+    suggested_game_role: Fast aggressive enemy, charge or dash attacker.
+    visual_identity: >
+      Grey-blue great white style shark with white belly, black pixel outline, an angry
+      toothy mouth, and a trail of purple and cyan galaxy dust with sparkles behind it.
+    sprites:
+      - file: Shark-slide-right-diagonal-slightly-down.png
+        size: [1095, 976]
+        pose: slide
+        facing: right, angled slightly downward
+        description: >
+          Shark gliding toward the lower right, nose pointing down-right, with a purple,
+          cyan, and starry nebula trail streaming from behind its tail toward the upper left.
+        suggested_use: Dash or charge attack, swoop, boss intro.
+        notes: >
+          Much larger than every other sprite (about 6x). Downscale in code or pre-resize
+          to roughly 150 to 200 px wide to match the rest of the cast. The nebula trail is
+          part of the image, so the visual center of the body is right of the image center.
+
+  tarantula:
+    # Filenames use the word "Spider" even though the character is a tarantula.
+    role: Celestial Overlord
+    lore: Sits at the top of the cosmic hierarchy. Rules over the others.
+    suggested_game_role: Final boss.
+    visual_identity: >
+      Large tarantula with blue and teal fur and purple highlights, a small glowing
+      mechanical or gem emblem on its back, and an orange glowing tip on one limb.
+    sprites:
+      - file: Spider-Idle.png
+        size: [165, 165]
+        pose: idle
+        facing: toward viewer (front 3/4 view, slightly left)
+        description: Tarantula standing with legs spread wide and a metallic gadget on its back.
+        suggested_use: Idle, boss waiting phase, intro.
+      - file: Spider-jump-up-right-diagonal.png
+        size: [162, 162]
+        pose: jump
+        facing: up-right
+        description: >
+          Tarantula mid-leap toward the upper right, legs trailing, with a streak of blue
+          speed or energy wisps beneath it and a glowing orange spark near the lower right.
+        suggested_use: Leap or pounce attack, phase transition, ground slam wind-up.
+
+  snail:
+    role: Steward of Time
+    lore: Keeper of time itself. Slow on the outside, but controls the flow of time.
+    suggested_game_role: Neutral NPC or helper, time-slow or time-rewind power-up giver.
+    visual_identity: >
+      Snail with a swirled shell filled with a purple and blue starry galaxy pattern,
+      grey-green body, and round eyes on stalks.
+    sprites:
+      - file: Snail-idle-facing-right.png
+        size: [150, 150]
+        pose: idle
+        facing: right
+        description: Snail sitting still with eyes up on stalks and a slightly worried or sleepy expression.
+        suggested_use: Idle, dialogue portrait, shop or NPC.
+      - file: Snail-glide-right.png
+        size: [171, 101]
+        pose: glide
+        facing: right
+        description: Snail sliding to the right with a faint blue and white glowing slime trail behind it.
+        suggested_use: Slow movement, patrol, time-bubble effect. Wide aspect ratio.
+
+  human:
+    role: Non-sentient Pets
+    lore: Humans are mindless pets floating around in space, not aware of anything.
+    suggested_game_role: Ambient creatures, collectibles, rescue targets, or hazards to protect.
+    visual_identity: >
+      Person in a blue and grey space suit with a clear bubble helmet, backpack, and chest
+      panel. Brown-skinned figure in the two floating poses, pale figure in the standing pose.
+    sprites:
+      - file: human-standing.png
+        size: [165, 165]
+        pose: standing
+        facing: front, slight right turn
+        description: Astronaut standing upright on the ground with a calm neutral stance.
+        suggested_use: Idle or grounded state. Note the lowercase "h" in the filename.
+        notes: Figure appears to be a different person from the floating poses (lighter skin, lighter hair). Treat as a separate variant.
+      - file: Human-floating-knee-bent-high.png
+        size: [99, 155]
+        pose: floating
+        facing: front
+        description: Astronaut floating weightless with one knee raised high and arms out, in a zero-gravity drift pose.
+        suggested_use: Drifting animation frame A. Pair with the slight variant to alternate.
+      - file: Human-floating-knee-bent-slight.png
+        size: [100, 154]
+        pose: floating
+        facing: front
+        description: Same floating astronaut with the knee only slightly bent and limbs more relaxed.
+        suggested_use: Drifting animation frame B. Alternate with the high variant for a simple float loop.
+    animation_hints:
+      float_loop: [Human-floating-knee-bent-slight.png, Human-floating-knee-bent-high.png]
+
+# ---------------------------------------------------------------------------
+# Backgrounds / canvases
+# ---------------------------------------------------------------------------
+backgrounds:
+
+  - file: canvas-01.jpeg
+    size: [1408, 768]
+    style: Pixel art
+    theme: Spaceship bridge or control room
+    description: >
+      Interior of a sci-fi control room with a wide curved window showing a colorful
+      purple, teal, and blue nebula and a spiral galaxy. In the room are tangled bundles of
+      cables, steampunk gears, multiple monitors and holographic screens, and a glowing
+      orange grid panel at the center. The floor is a cyan grid.
+    suggested_use: >
+      Capybara's lab or hideout, main menu, cutscene or dialogue scene, or a hub area.
+      Good for the "broke the universe" origin story.
+    mood: Mysterious, technological, cozy but chaotic.
+
+  - file: canvas-02.jpeg
+    size: [1371, 768]
+    style: Painterly, semi-realistic fantasy
+    theme: Candy alien shoreline
+    description: >
+      Alien lake shore under a pastel nebula sky of pink, teal, and orange clouds.
+      Twisted teal trees on the left carry cotton candy puffs in pink, blue, and yellow.
+      The lake reflects them. On the right are stone ruins with a broken arch, rubble,
+      and large crystals in the foreground.
+    suggested_use: Whimsical level, safe or calm zone, human pet habitat, or snail's realm.
+    mood: Dreamy, soft, playful.
+
+  - file: canvas-03.jpeg
+    size: [1408, 768]
+    style: Painterly, semi-realistic cosmic
+    theme: Night shoreline under a nebula
+    description: >
+      Same shoreline layout as canvas-02 (rocks, ruined arch, crystals, still lake) but
+      at night. A dense starfield and a huge orange and gold nebula range sits on the
+      horizon like mountains, reflected in the water. The candy trees are absent.
+    suggested_use: Intense or boss level, final confrontation, or night variant of canvas-02.
+    mood: Epic, dramatic, awe-inspiring.
+    notes: Shares composition with canvas-02, so the two can be used as a day and night swap of the same location.
+
+# ---------------------------------------------------------------------------
+# Quick reference for code
+# ---------------------------------------------------------------------------
+relationships:
+  - capybara: Broke the rule. Hunted by the orca, the shark, and the tarantula.
+  - orca: Enforces the rule directly and punishes the capybara.
+  - shark: Avenges the broken rule with raw speed and force.
+  - tarantula: Rules above all of them. Final authority.
+  - snail: Manages time. Neutral, may help or hinder.
+  - human: Oblivious pets that float around the chaos.
+
+asset_index:
+  # Flat list of every file for quick loading or validation.
+  sprites:
+    - Capybara-idle.png
+    - Orca-idle.png
+    - Orca-jump-up-right-diagonal.png
+    - Orca-swim-right.png
+    - Shark-slide-right-diagonal-slightly-down.png
+    - Spider-Idle.png
+    - Spider-jump-up-right-diagonal.png
+    - Snail-idle-facing-right.png
+    - Snail-glide-right.png
+    - human-standing.png
+    - Human-floating-knee-bent-high.png
+    - Human-floating-knee-bent-slight.png
+  backgrounds:
+    - canvas-01.jpeg
+    - canvas-02.jpeg
+    - canvas-03.jpeg

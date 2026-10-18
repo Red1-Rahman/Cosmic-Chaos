@@ -1,0 +1,70 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate-windows-chromium:
+    name: gate (windows-latest, chromium)
+    runs-on: windows-latest
+    timeout-minutes: 25
+    env:
+      E2E_BROWSER: chromium
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: npm run test:ci
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: reports-windows-chromium
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+
+  cross-browser:
+    name: ${{ matrix.os }} (${{ matrix.browser }})
+    needs: gate-windows-chromium
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            browser: webkit
+          - os: ubuntu-latest
+            browser: firefox
+    env:
+      E2E_BROWSER: ${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npm run test:ci
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: reports-${{ matrix.os }}-${{ matrix.browser }}
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore

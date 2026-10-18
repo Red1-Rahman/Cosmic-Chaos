@@ -1,0 +1,42 @@
+{
+  "name": "cosmic-chaos",
+  "version": "0.1.0",
+  "description": "Cosmic Chaos: A vibe-coded web game made of random bs",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Redwan Rahman",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "verify:harness": "node scripts/verify-harness.mjs",
+    "assets:lock": "node scripts/verify-harness.mjs --lock",
+    "lint": "eslint .",
+    "spec": "vitest run tests/spec --passWithNoTests=false",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "syntax": "tsc --noEmit",
+    "unit": "vitest run tests/unit",
+    "cross": "vitest run tests/cross-module",
+    "e2e": "playwright test --project=e2e",
+    "api": "playwright test --project=api",
+    "regression": "vitest run tests/regression",
+    "test:ci": "node scripts/run-gates.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}

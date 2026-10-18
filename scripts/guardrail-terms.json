@@ -1,0 +1,62 @@
+{
+  "readme": "Whole-word, case-insensitive terms that must not appear in src/**, index.html or public/assets/*.json. Enforced by scripts/verify-harness.mjs. Humans maintain this list.",
+  "categories": {
+    "sexual-or-nudity": [
+      "nude",
+      "nudity",
+      "naked",
+      "nsfw",
+      "porn",
+      "erotic",
+      "sexual",
+      "sex",
+      "explicit",
+      "lewd"
+    ],
+    "religion-or-worship": [
+      "god",
+      "gods",
+      "goddess",
+      "divine",
+      "holy",
+      "sacred",
+      "worship",
+      "prayer",
+      "pray",
+      "temple",
+      "church",
+      "mosque",
+      "altar",
+      "scripture",
+      "bible",
+      "quran",
+      "heaven",
+      "angel",
+      "demon",
+      "devil",
+      "satan",
+      "cult",
+      "ritual",
+      "sacrifice",
+      "blessing",
+      "religion",
+      "religious",
+      "deity",
+      "idol"
+    ],
+    "black-magic": [
+      "witch",
+      "witchcraft",
+      "sorcery",
+      "necromancy",
+      "voodoo",
+      "occult",
+      "hexing",
+      "curse",
+      "cursed",
+      "spell",
+      "spells",
+      "black magic"
+    ]
+  }
+}

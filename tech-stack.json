@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "project": "Cosmic Chaos: A vibe-coded web game made of random bs",
+  "license": "Apache-2.0",
+  "copyright": "2026 Redwan Rahman",
+  "readme": "Source of truth for tooling. Do not add, remove or bump a dependency without editing this file and package.json in the same change, then run npm run verify:harness.",
+  "runtime": {
+    "languages": ["TypeScript (strict)", "JavaScript (tooling scripts only)", "HTML", "CSS"],
+    "target": "ES2023 in evergreen browsers",
+    "framework": "none (vanilla)",
+    "rendering": "Canvas 2D only. No WebGL, no WebGPU, so CI never needs a GPU.",
+    "audio": "Native Web Audio API, all sounds synthesized at runtime. No audio files.",
+    "randomness": "Seeded Mulberry32 implemented in src/util/rng.ts. No library.",
+    "timestep": "Fixed 60 Hz simulation step, rendering interpolates.",
+    "state": "Stateless. No database, no localStorage, no sessionStorage, no IndexedDB, no cookies, no network at runtime beyond loading static files.",
+    "runtimeDependencies": []
+  },
+  "tooling": {
+    "node": { "major": 24, "file": ".nvmrc", "minimumEngine": ">=22.13.0" },
+    "packageManager": "npm",
+    "install": "npm ci",
+    "bundler": "vite",
+    "typecheck": "typescript",
+    "lint": "eslint (flat config) with typescript-eslint strictTypeChecked",
+    "format": "prettier",
+    "unitAndSpec": "vitest (node environment, hand-written fake canvas context, no native canvas module)",
+    "e2eAndApi": "@playwright/test with headless browsers"
+  },
+  "pins": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  },
+  "pinNotes": {
+    "typescript": "Held on 6.0.x because typescript-eslint 8.71.x declares support for TypeScript below 6.1."
+  },
+  "devServer": {
+    "host": "127.0.0.1",
+    "devPort": 5173,
+    "previewPort": 4173,
+    "strictPort": true,
+    "hosting": "Out of scope. Localhost only."
+  },
+  "ci": {
+    "file": ".github/workflows/ci.yml",
+    "stageOrder": [
+      "lint",
+      "spec",
+      "format",
+      "syntax",
+      "unit",
+      "cross-module",
+      "e2e",
+      "api",
+      "regression"
+    ],
+    "stageCommands": {
+      "lint": "npm run lint",
+      "spec": "npm run spec",
+      "format": "npm run format",
+      "syntax": "npm run syntax",
+      "unit": "npm run unit",
+      "cross-module": "npm run cross",
+      "e2e": "npm run e2e",
+      "api": "npm run api",
+      "regression": "npm run regression"
+    },
+    "entry": "npm run test:ci",
+    "preGate": "npm run verify:harness",
+    "browserSelection": "E2E_BROWSER=chromium|firefox|webkit (default chromium)",
+    "matrix": {
+      "gate": {
+        "os": "windows-latest",
+        "browser": "chromium",
+        "note": "Playwright Chromium, the Chrome engine, pinned by the Playwright version."
+      },
+      "after": [
+        { "os": "macos-latest", "browser": "webkit", "note": "Stands in for Safari." },
+        { "os": "ubuntu-latest", "browser": "firefox" }
+      ],
+      "rule": "The after jobs start only when the gate job passes."
+    },
+    "headless": {
+      "unitAndCross": "Run in Node against a hand-written fake CanvasRenderingContext2D that records draw calls. No display, no GPU, no native modules.",
+      "e2eAndApi": "Playwright headless against the built bundle served by vite preview. Canvas 2D renders in software.",
+      "audio": "Game code talks to an AudioPort. Tests use a recording backend. The real AudioContext is created lazily on the first user gesture, which also avoids the autoplay console warning."
+    },
+    "zeroWarnings": "Vitest setup (tests/setup/fail-on-console.ts) and the Playwright fixture (tests/e2e/fixtures.ts) fail on any console warning or error, uncaught page error, or failed request. index.html must declare a favicon to avoid a 404 error."
+  },
+  "viewport": {
+    "source": "public/assets/assets.json#viewport",
+    "presets": ["16:9", "16:10", "4:3", "20:9", "29.5:9", "sqrt2:1", "1:sqrt2"],
+    "behavior": "Contain-fit with letterboxing or pillarboxing, image-rendering: pixelated, integer upscaling preferred when it keeps at least 90 percent of the fit size."
+  },
+  "inputs": [
+    "Keyboard (WASD, arrows, Space)",
+    "Gamepad API",
+    "Virtual touch D-pad for coarse pointers and mobile viewports"
+  ],
+  "forbidden": [
+    "Any git command or edit inside .git",
+    "Audio files (wav, mp3, ogg, m4a, flac)",
+    "Runtime dependencies or CDN scripts",
+    "Math.random, Date.now and performance.now outside src/app/clock.ts and tests",
+    "Writing to public/assets image files",
+    "WebGL, WebGPU, localStorage, sessionStorage, IndexedDB, cookies, WebSocket"
+  ]
+}

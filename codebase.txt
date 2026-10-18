@@ -1,0 +1,83 @@
+COSMIC CHAOS: CODEBASE MAP
+Rule of thumb: game code goes in src/, tests go in tests/, nothing new goes in the project root.
+Legend: [human] only a human edits. [agents] agents own it. [shared] agents may edit with care.
+
+.
+|-- AGENTS.md                  [human] agent contract, read first
+|-- CLAUDE.md                  [human] one line, imports AGENTS.md
+|-- README.md                  [human]
+|-- LICENSE                    [human] Apache 2.0, 2026 Redwan Rahman
+|-- codebase.txt               [human] this file
+|-- tech-stack.json            [shared] tooling source of truth, edit together with package.json
+|-- package.json               [shared] exact pins only, zero runtime dependencies
+|-- package-lock.json          [shared] updated only by npm install, never by hand
+|-- .nvmrc  .npmrc  .editorconfig  .prettierrc.json  .prettierignore   [human]
+|-- tsconfig.json  vite.config.ts  playwright.config.ts  eslint.config.js [shared] never weaken a rule to get green
+|-- index.html                 [agents] Vite entry. Needs <link rel="icon" href="data:,"> and one <canvas>
+|-- .agents/prompts/           [human] reusable role prompts, start at README.md
+|-- .github/workflows/ci.yml   [shared] windows+chromium gate, then macos+webkit and ubuntu+firefox
+|-- docs/
+|   |-- decisions.md           [agents] append-only decision log
+|   `-- handoff-m1.md          [agents] written once when Milestone 1 is done
+|-- scripts/
+|   |-- verify-harness.mjs     [human] drift guard (pins, assets, characters, content scan)
+|   |-- run-gates.mjs          [human] runs every gate in order, backs npm run test:ci
+|   `-- guardrail-terms.json   [human] banned terms for the content scan
+|-- public/
+|   `-- assets/                [human] art. Agents never edit image files
+|       |-- assets.json        [shared] sprite and background manifest, animations, viewport presets
+|       |-- canvas-01.jpeg  canvas-02.jpeg  canvas-03.jpeg
+|       |-- canvas-01-mobile.png  canvas-02-mobile.png  canvas-03-mobile.png   (20:9)
+|       `-- Capybara-*, Orca-*, Shark-*, Spider-*, Snail-*, human-*, Human-*   (sprites)
+|-- src/
+|   |-- main.ts                [agents] entry, calls app/boot
+|   |-- app/                   [agents] wiring: boot, game loop, clock, test hooks. Only place with real time
+|   |-- sim/                   [agents] pure deterministic simulation. No DOM, no audio, no clocks, no imports from other layers
+|   |-- assets/                [agents] manifest loader, image preload, animation sampler. Only place that may fetch
+|   |-- render/                [agents] viewport/letterbox, canvas drawing, procedural props, particles
+|   |-- audio/                 [agents] Web Audio synth voices, AudioPort, null and recording backends
+|   |-- input/                 [agents] keyboard, gamepad, virtual touch D-pad, merged InputState
+|   |-- ui/                    [agents] title screen, HUD, pause, debug overlay
+|   |-- util/                  [agents] rng.ts (mulberry32), math helpers, tiny shared types
+|   |-- styles/                [agents] plain CSS
+|   `-- data/
+|       `-- characters.json    [shared] lore, roles, Milestone 1 scope per character
+|-- tests/
+|   |-- setup/fail-on-console.ts   [human] vitest fails on any console warn or error
+|   |-- helpers/                   [agents] fake canvas context, fake input sources, recording audio backend
+|   |-- spec/                      [agents] data contracts, lore rules, content guardrails (vitest, node)
+|   |-- unit/                      [agents] one module at a time (vitest, node)
+|   |-- cross-module/              [agents] several modules wired together, still in node
+|   |-- regression/                [agents] seeded replays and golden state hashes (vitest, node)
+|   |-- api/                       [agents] HTTP checks against vite preview (Playwright request, no browser)
+|   `-- e2e/                       [agents] real browser, headless (Playwright). Import test from fixtures.ts
+`-- dist/, node_modules/, playwright-report/, test-results/   generated, never edit
+
+CI STAGE ORDER (npm run test:ci, fail fast)
+  harness (verify-harness) -> lint -> spec -> format -> syntax -> unit -> cross-module -> e2e -> api -> regression
+
+DEFAULT MODULE CONTRACT (names are defaults. If you change one, update this file and docs/decisions.md)
+  util/rng.ts          mulberry32(seed), createRng(seed): { next(), int(a,b), pick(list), fork(label) }
+                       Two streams: sim (gameplay) and cosmetic (particles, noise buffers). Math.random is banned.
+  app/clock.ts         Clock { nowMs() }. Real and fake implementations. Only file allowed to read real time.
+  sim/types.ts         InputState { moveX, moveY, jump, action } with moveX and moveY in [-1, 1]
+                       GameEvent union (hit, jump, splash, laser, timeFieldEnter, timeFieldExit, spawn, defeat, ui)
+  sim/world.ts         createWorld(seed), step(world, input, fixedDt), world.events drained each frame, hashWorld(world)
+  assets/loader.ts     loadManifest(), loadImages(manifest), parseManifest(unknown)
+  assets/animation.ts  sampleAnimation(manifest, characterId, name, elapsedMs) -> { spriteId, dx, dy, rot, sx, sy, alpha }
+                       resolves aliases, interpolates keyframes, pure
+  render/viewport.ts   pickPreset(winW, winH), computeLayout(win, preset), applyLayout(canvas, layout)
+  render/renderer.ts   render(ctx, world, atlas, alpha)
+  audio/port.ts        AudioPort { unlock(), play(cue), setMuted(bool) }  Cues map from GameEvents in app/
+  input/input.ts       createInput(target): { poll(): InputState, dispose() }
+  app/test-hooks.ts    exposes window.__cosmic (read-only snapshot: tick, seed, timeScale, entities) only when the URL has ?test=1
+
+WHERE DOES X GO
+  New enemy behavior                 -> src/sim/ and its test in tests/unit/
+  New sound                          -> src/audio/voices/ as a data spec, plus a spec test
+  New sprite pose or image           -> a human adds the file, runs npm run assets:lock, then edits assets.json
+  Screen layout, letterboxing        -> src/render/viewport.ts
+  Button or HUD element              -> src/ui/ (touch D-pad lives in src/input/)
+  Anything that needs real time      -> src/app/clock.ts only
+  Anything that needs fetch          -> src/assets/loader.ts only
+  A new dependency                   -> do not. Ask the human, then edit tech-stack.json and package.json together

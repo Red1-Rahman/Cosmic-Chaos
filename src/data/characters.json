@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "readme": "Lore, roles and Milestone 1 scope per character. Art and animation data live in public/assets/assets.json. The concept is intentionally loose: agents fill gaps with their own design judgment and log non-obvious choices in docs/decisions.md. Anything marked mustNot is out of scope until a later milestone.",
+  "world": {
+    "setting": "A cosmic ocean under a living nebula, with a ruined archway and crystals on the shore. Fully fictional science fiction.",
+    "coreEvent": "The capybara broke a fundamental rule of the universe. The cosmos is now correcting itself through several beings with different jobs.",
+    "tone": "Playful, chaotic, a little ominous. Stylized, bloodless action.",
+    "arenaBackground": "canvas-03"
+  },
+  "milestone1": {
+    "name": "Cosmic Ocean Arena",
+    "stopWhen": "All six characters exist in the arena, the player pilots the Capybara waterbike, the Orca chases, the Snail changes tick rates, and npm run test:ci passes with 0 failures and 0 console warnings. When this is true, stop and write the handoff report. Do not start Milestone 2 ideas.",
+    "spawn": {
+      "seedDefault": 1337,
+      "rule": "Positions and counts come from the seeded PRNG so every run with the same seed is identical."
+    }
+  },
+  "characters": [
+    {
+      "id": "capybara",
+      "displayName": "Capybara",
+      "title": "Mad Scientist",
+      "species": "capybara",
+      "faction": "rule-breaker",
+      "playable": true,
+      "lore": "Brilliant, reckless, and the reason everything is going wrong. Piloting a waterbike is the escape plan.",
+      "personality": ["smug", "calm under pressure", "curious to a fault"],
+      "spriteIds": ["capybara-idle"],
+      "designHints": [
+        "Rides a procedural waterbike because no bike art exists. See proceduralProps in assets.json.",
+        "Movement should feel like skimming water: momentum, drift, a visible wake.",
+        "Jump means a waterbike hop."
+      ],
+      "spawn": { "count": 1 },
+      "milestone1": {
+        "must": [
+          "Spawn on the water inside the play band.",
+          "Respond to the unified input actions: move in 2D within the band, jump, and one primary action of your choice.",
+          "Play idle, walk, swim and jump animations from assets.json at the right moments.",
+          "React to Orca contact with a visible and audible hit response."
+        ],
+        "may": [
+          "Health or a simple shield meter",
+          "Defeat animation and a restart that reuses the same seed"
+        ],
+        "mustNot": ["Inventory", "Upgrades", "Multiple levels", "Persistence of any kind"]
+      }
+    },
+    {
+      "id": "orca",
+      "displayName": "Orca",
+      "title": "Warden of the Rule",
+      "species": "orca",
+      "faction": "enforcer",
+      "playable": false,
+      "lore": "Enforces the rule the capybara broke. Calm, methodical, relentless. The punisher.",
+      "personality": ["disciplined", "patient", "merciless but fair"],
+      "spriteIds": ["orca-idle", "orca-swim", "orca-jump"],
+      "designHints": [
+        "Chase should feel inevitable but dodgeable: telegraph the lunge, then recover.",
+        "Breach (jump) is the signature attack."
+      ],
+      "spawn": { "count": 1 },
+      "milestone1": {
+        "must": [
+          "Spawn away from the player.",
+          "Chase the Capybara with a pursuit behavior that reacts to the player's movement.",
+          "Use swim while pursuing and jump for a telegraphed lunge.",
+          "Slow down or speed up when inside the Snail's time field."
+        ],
+        "may": [
+          "Simple stagger after a missed lunge",
+          "Defeat animation if the player can win a clash"
+        ],
+        "mustNot": ["Multiple orcas", "Phases", "Dialogue trees"]
+      }
+    },
+    {
+      "id": "shark",
+      "displayName": "Shark",
+      "title": "Cosmic Avenger",
+      "species": "great white shark",
+      "faction": "enforcer",
+      "playable": false,
+      "lore": "Born from the damage the rule-breaking caused. Fast, angry, and leaves a trail of stardust.",
+      "personality": ["vengeful", "impulsive", "fast"],
+      "spriteIds": ["shark-slide"],
+      "designHints": [
+        "The only art is a diagonal slide pose, so lean into slashing dashes along that diagonal.",
+        "Scale it down with renderScale, never edit the file."
+      ],
+      "spawn": { "count": 1 },
+      "milestone1": {
+        "must": [
+          "Spawn in the arena and be visibly present.",
+          "Perform a simple repeating patrol or dash pattern that reads as a threat.",
+          "Use the swim and idle animations."
+        ],
+        "may": ["Contact damage", "A faint wake effect"],
+        "mustNot": ["Complex AI", "Boss phases"]
+      }
+    },
+    {
+      "id": "tarantula",
+      "displayName": "Tarantula",
+      "title": "Celestial Overlord",
+      "species": "tarantula",
+      "faction": "sovereign",
+      "playable": false,
+      "lore": "Sits at the top of the cosmic order and rules the others as a political authority. A ruler, not an object of reverence.",
+      "personality": ["cold", "calculating", "patient"],
+      "spriteIds": ["tarantula-idle", "tarantula-jump"],
+      "designHints": [
+        "Large and imposing. Hovering in the sky or perched on the ruins both work.",
+        "Presence matters more than action in Milestone 1."
+      ],
+      "spawn": { "count": 1 },
+      "milestone1": {
+        "must": [
+          "Spawn and be clearly the most imposing figure on screen.",
+          "Play idle continuously.",
+          "Trigger one small reaction when the player does something notable, such as a screen pulse or a look toward the player."
+        ],
+        "may": ["A single scripted jump to show off the jump art"],
+        "mustNot": ["Combat", "A boss fight", "Cutscenes"]
+      }
+    },
+    {
+      "id": "snail",
+      "displayName": "Snail",
+      "title": "Steward of Time",
+      "species": "snail",
+      "faction": "neutral",
+      "playable": false,
+      "lore": "Keeps the tempo of the universe. Slow on the outside, and everything around it feels it.",
+      "personality": ["unhurried", "wise", "slightly worried"],
+      "spriteIds": ["snail-idle", "snail-glide"],
+      "designHints": [
+        "Its time field changes the simulation tick rate (a time scale applied to dt) for whatever is inside it.",
+        "The step size of the fixed timestep never changes. Only the scaled dt fed to entities does.",
+        "Make the field readable: a pulsing ring plus a pitch shift on the audio hum."
+      ],
+      "spawn": { "count": 1 },
+      "milestone1": {
+        "must": [
+          "Spawn in the arena and drift slowly with the glide animation.",
+          "Maintain a visible time field.",
+          "Entities inside the field (including the Orca and the player) run at a different time scale than entities outside.",
+          "Expose the active time scale to the HUD or debug overlay so tests can assert it."
+        ],
+        "may": ["Field radius that breathes", "Toggle between slow and fast zones"],
+        "mustNot": ["Rewind", "Save states", "Global pause"]
+      }
+    },
+    {
+      "id": "human",
+      "displayName": "Human",
+      "title": "Non-sentient Pets",
+      "species": "human",
+      "faction": "bystander",
+      "playable": false,
+      "lore": "Drifting space-suited pets with no awareness of anything going on. Harmless and oblivious.",
+      "personality": ["blank", "drifting", "oblivious"],
+      "spriteIds": ["human-standing", "human-float-high", "human-float-slight"],
+      "designHints": [
+        "Use the two floating poses as a drift loop.",
+        "They are scenery with a little physics. Gentle bumps from the player are fine."
+      ],
+      "spawn": { "count": { "min": 3, "max": 6 } },
+      "milestone1": {
+        "must": [
+          "Spawn a seeded number of humans in the allowed range.",
+          "Drift with the walk animation and never block the player.",
+          "Respond to being bumped with a small nudge."
+        ],
+        "may": ["Collectible behavior", "Occasional standing idle on the shore"],
+        "mustNot": ["Combat", "Dialogue", "Harm to humans as a game mechanic"]
+      }
+    }
+  ]
+}
