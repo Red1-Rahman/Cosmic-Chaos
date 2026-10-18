@@ -91,8 +91,8 @@ export function updateHuman(human: Entity, ctx: BehaviourContext): void {
     const dy = human.y - player.y;
     const d2 = dx * dx + dy * dy;
     const dist = d2 < 1e-9 ? 1 : Math.sqrt(d2);
-    human.props.pushX = (human.props.pushX ?? 0) + (dx / dist) * HUMAN.bumpImpulse;
-    human.props.pushY = (human.props.pushY ?? 0) + (dy / dist) * HUMAN.bumpImpulse;
+    human.props.pushX = pushX + (dx / dist) * HUMAN.bumpImpulse;
+    human.props.pushY = pushY + (dy / dist) * HUMAN.bumpImpulse;
     human.props.bumpedMs = HUMAN.bumpedMs;
     human.props.bumpCd = HUMAN.bumpedMs;
     human.state = "bumped";
