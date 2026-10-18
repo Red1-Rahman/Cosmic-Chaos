@@ -41,17 +41,18 @@ describe("characters.json shape", () => {
     }
   });
 
-  it("writes every must and mustNot rule as a full sentence", () => {
+  it("writes every must rule as a full sentence and every mustNot as a short ban", () => {
     for (const entry of roster) {
       expect(entry.milestone1.must.length, entry.id).toBeGreaterThan(0);
       expect(entry.milestone1.mustNot.length, entry.id).toBeGreaterThan(0);
-      for (const rule of [...entry.milestone1.must, ...entry.milestone1.mustNot]) {
+      for (const rule of entry.milestone1.must) {
         expect(rule, `${entry.id}: ${rule}`).toMatch(/\.$/);
         expect(rule.length, `${entry.id}: ${rule}`).toBeGreaterThan(15);
       }
-      // may entries are short noun phrases, but never empty filler.
-      for (const rule of entry.milestone1.may) {
+      // mustNot and may entries are short noun phrases, but never empty filler.
+      for (const rule of [...entry.milestone1.may, ...entry.milestone1.mustNot]) {
         expect(rule.length, `${entry.id}: ${rule}`).toBeGreaterThan(3);
+        expect(rule.length, `${entry.id}: ${rule}`).toBeLessThan(60);
       }
     }
   });

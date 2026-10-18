@@ -94,17 +94,15 @@ function measureChaseTravel(
   const orca = need(world, "orca");
   const snail = need(world, "snail");
   const player = need(world, "player");
+  orca.x = points.orca.x;
+  orca.y = points.orca.y;
   const before = orca.x;
   for (let i = 0; i < ticks; i += 1) {
     snail.x = points.snail.x;
     snail.y = points.snail.y;
     player.x = points.player.x;
     player.y = points.player.y;
-    // Set once, then let it integrate: the orca is the only thing allowed to move.
-    if (i === 0) {
-      orca.x = points.orca.x;
-      orca.y = points.orca.y;
-    }
+    // The snail and the player are pinned; the orca is the only thing allowed to move.
     orca.state = "chase";
     orca.props.timer = 0;
     orca.props.cooldown = Number.MAX_SAFE_INTEGER;
