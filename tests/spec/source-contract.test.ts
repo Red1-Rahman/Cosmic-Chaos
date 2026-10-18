@@ -240,9 +240,12 @@ describe("source of truth files", () => {
     };
     for (const [stage, command] of Object.entries(techStack.ci.stageCommands)) {
       const script = command.replace(/^npm run /, "");
-      expect(pkg.scripts[script], `${stage} -> ${command}`).toBe(command);
+      expect(pkg.scripts[script], `${stage} -> ${command}`).toBeDefined();
+      expect(command, stage).toBe(`npm run ${script}`);
     }
-    expect(pkg.scripts["test:ci"]).toBe(techStack.ci.entry);
+    const entryScript = techStack.ci.entry.replace(/^npm run /, "");
+    expect(pkg.scripts[entryScript], techStack.ci.entry).toBe(techStack.ci.entry);
+    expect(pkg.scripts[entryScript]).toContain("scripts/run-gates.mjs");
   });
 
   it("keeps every pin exact and shared with tech-stack.json", () => {
