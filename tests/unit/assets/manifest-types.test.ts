@@ -62,16 +62,50 @@ describe("parseManifest on the shipped manifest", () => {
     expect(() => parseManifest(draftManifest())).not.toThrow();
   });
 
-  it("does not require locked, size, bytes or sha256", () => {
+  it("carries the shipped lock fingerprint on every sprite and background", () => {
+    // The human ran `npm run assets:lock`, so the manifest is the locked truth.
+    for (const sprite of manifest.sprites) {
+      expect(sprite.locked).toBe(true);
+      expect(sprite.size?.w).toBeGreaterThan(0);
+      expect(sprite.size?.h).toBeGreaterThan(0);
+      expect(sprite.bytes).toBeGreaterThan(0);
+      expect(sprite.sha256).toMatch(/^[0-9a-f]{64}$/);
+    }
+    for (const background of manifest.backgrounds) {
+      expect(background.locked).toBe(true);
+      expect(background.size?.w).toBeGreaterThan(0);
+      expect(background.size?.h).toBeGreaterThan(0);
+      expect(background.bytes).toBeGreaterThan(0);
+      expect(background.sha256).toMatch(/^[0-9a-f]{64}$/);
+    }
+  });
+
+  it("still parses when locked, size, bytes and sha256 are absent", () => {
+    // Locking is metadata the parser must tolerate either way, never require.
     const draft = draftManifest();
     const sprite = spriteAt(draft, 0);
-    expect(sprite["locked"]).toBe(false);
-    expect(sprite["size"]).toBeUndefined();
-    expect(sprite["bytes"]).toBeUndefined();
-    expect(sprite["sha256"]).toBeUndefined();
+    sprite["locked"] = false;
+    delete sprite["size"];
+    delete sprite["bytes"];
+    delete sprite["sha256"];
 
     const parsed = parseManifest(draft);
     expect(parsed.sprites[0]?.locked).toBe(false);
+    expect(parsed.sprites[0]?.size).toBeUndefined();
+    expect(parsed.sprites[0]?.bytes).toBeUndefined();
+    expect(parsed.sprites[0]?.sha256).toBeUndefined();
+  });
+
+  it("treats a wholly absent lock block as unlocked", () => {
+    const draft = draftManifest();
+    const sprite = spriteAt(draft, 0);
+    delete sprite["locked"];
+    delete sprite["size"];
+    delete sprite["bytes"];
+    delete sprite["sha256"];
+
+    const parsed = parseManifest(draft);
+    expect(parsed.sprites[0]?.locked).toBeUndefined();
     expect(parsed.sprites[0]?.size).toBeUndefined();
   });
 

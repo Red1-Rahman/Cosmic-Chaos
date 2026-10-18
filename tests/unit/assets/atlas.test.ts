@@ -11,6 +11,13 @@ function decoded(width: number, height: number): DecodedImage {
   return { source: {} as CanvasImageSource, width, height };
 }
 
+/** renderScale as authored in the manifest, so an art retune never breaks these tests. */
+function renderScaleOf(spriteId: string): number {
+  const sprite = manifest.sprites.find((entry) => entry.id === spriteId);
+  if (sprite === undefined) throw new Error(`no sprite ${spriteId}`);
+  return sprite.renderScale;
+}
+
 function fullAtlas(): Atlas {
   const images = new Map<string, DecodedImage>();
   manifest.sprites.forEach((sprite, i) => {
@@ -31,16 +38,18 @@ describe("Atlas.create", () => {
     const atlas = fullAtlas();
     const entry = atlas.get("orca-jump");
     expect(entry.facing).toBe("up-right");
-    expect(entry.renderScale).toBe(0.26);
+    expect(entry.renderScale).toBe(renderScaleOf("orca-jump"));
     expect(entry.anchor).toEqual({ x: 0.45, y: 0.9 });
   });
 
   it("derives drawSize from the decoded size and renderScale", () => {
     const entry = fullAtlas().get("capybara-idle");
+    const scale = renderScaleOf("capybara-idle");
     expect(entry.sourceSize.w).toBe(100);
     expect(entry.sourceSize.h).toBe(200);
-    expect(entry.drawSize.w).toBeCloseTo(100 * 0.26, 10);
-    expect(entry.drawSize.h).toBeCloseTo(200 * 0.26, 10);
+    expect(entry.renderScale).toBe(scale);
+    expect(entry.drawSize.w).toBeCloseTo(100 * scale, 10);
+    expect(entry.drawSize.h).toBeCloseTo(200 * scale, 10);
   });
 
   it("skips sprites with no decoded image and reports them", () => {

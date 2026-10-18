@@ -126,15 +126,17 @@ describe("drawSprite", () => {
     });
     const call = fake.findAll("drawImage")[0];
     expect(call?.args.slice(0, 5)).toEqual([entry.bitmap, 0, 0, entry.tile.w, entry.tile.h]);
+    const scale = manifest.sprites.find((sprite) => sprite.id === "capybara-idle")?.renderScale;
+    expect(scale).toBeDefined();
     const w = call?.args[7];
     const h = call?.args[8];
     const ox = call?.args[5];
     const oy = call?.args[6];
-    expect(w).toBeCloseTo(100 * 0.26, 10);
-    expect(h).toBeCloseTo(200 * 0.26, 10);
+    expect(w).toBeCloseTo(100 * (scale ?? 0), 10);
+    expect(h).toBeCloseTo(200 * (scale ?? 0), 10);
     // The anchor places the sprite around the given point.
-    expect(ox).toBeCloseTo(-0.5 * (100 * 0.26), 10);
-    expect(oy).toBeCloseTo(-0.92 * (200 * 0.26), 10);
+    expect(ox).toBeCloseTo(-0.5 * (100 * (scale ?? 0)), 10);
+    expect(oy).toBeCloseTo(-0.92 * (200 * (scale ?? 0)), 10);
   });
 
   it("skips a sprite the atlas never loaded", () => {
