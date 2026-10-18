@@ -13,197 +13,347 @@
     {
       "id": "capybara-idle",
       "file": "Capybara-idle.png",
-      "locked": false,
+      "locked": true,
       "character": "capybara",
       "pose": "idle",
       "facing": "right",
       "renderScale": 0.26,
-      "anchor": { "x": 0.5, "y": 0.92 },
-      "note": "Scarf trails to the left, so the body sits right of center. Anchor near the bottom because the waterbike deck is drawn underneath."
+      "anchor": {
+        "x": 0.5,
+        "y": 0.92
+      },
+      "note": "Scarf trails to the left, so the body sits right of center. Anchor near the bottom because the waterbike deck is drawn underneath.",
+      "size": {
+        "w": 170,
+        "h": 170
+      },
+      "bytes": 44852,
+      "sha256": "712b25f5f00af4a663921e92cba0e5cb109dbb4d90c722f47faece662392bb07"
     },
     {
       "id": "orca-idle",
       "file": "Orca-idle.png",
-      "locked": false,
+      "locked": true,
       "character": "orca",
       "pose": "idle",
       "facing": "front",
       "renderScale": 0.26,
-      "anchor": { "x": 0.5, "y": 0.8 },
-      "note": "Hovers upright, belly toward the viewer. Centered anchor, it hovers rather than stands."
+      "anchor": {
+        "x": 0.5,
+        "y": 0.8
+      },
+      "note": "Hovers upright, belly toward the viewer. Centered anchor, it hovers rather than stands.",
+      "size": {
+        "w": 167,
+        "h": 167
+      },
+      "bytes": 37229,
+      "sha256": "592396494624fdf939886c1eeef762d4b3d84005ebe5c28b39e9149357f3b2bc"
     },
     {
       "id": "orca-swim",
       "file": "Orca-swim-right.png",
-      "locked": false,
+      "locked": true,
       "character": "orca",
       "pose": "swim",
       "facing": "right",
       "renderScale": 0.26,
-      "anchor": { "x": 0.5, "y": 0.55 },
-      "note": "Wide 2:1 side profile. Only horizontal chase art that exists."
+      "anchor": {
+        "x": 0.5,
+        "y": 0.55
+      },
+      "note": "Wide 2:1 side profile. Only horizontal chase art that exists.",
+      "size": {
+        "w": 148,
+        "h": 74
+      },
+      "bytes": 16282,
+      "sha256": "58ec2d65985ebf8e497448629b2ee3942e8557f55dc0f2fd0dc02aadc60fcec3"
     },
     {
       "id": "orca-jump",
       "file": "Orca-jump-up-right-diagonal.png",
-      "locked": false,
+      "locked": true,
       "character": "orca",
       "pose": "jump",
       "facing": "up-right",
       "renderScale": 0.26,
-      "anchor": { "x": 0.45, "y": 0.9 },
-      "note": "Breach pose used for the telegraphed lunge."
+      "anchor": {
+        "x": 0.45,
+        "y": 0.9
+      },
+      "note": "Breach pose used for the telegraphed lunge.",
+      "size": {
+        "w": 158,
+        "h": 158
+      },
+      "bytes": 39381,
+      "sha256": "7480f9b131f04f9114ce8edd54a8dbd50a8898b46ee670b9169f55a1e4fc4592"
     },
     {
       "id": "shark-slide",
       "file": "Shark-slide-right-diagonal-slightly-down.png",
-      "locked": false,
+      "locked": true,
       "character": "shark",
       "pose": "slide",
       "facing": "down-right",
       "renderScale": 0.085,
-      "anchor": { "x": 0.7, "y": 0.52 },
-      "note": "1095x976 with the nebula trail baked in. The body sits right of the image center, hence anchor x 0.7. The trail makes the drawn box much larger than the shark itself."
+      "anchor": {
+        "x": 0.7,
+        "y": 0.52
+      },
+      "note": "1095x976 with the nebula trail baked in. The body sits right of the image center, hence anchor x 0.7. The trail makes the drawn box much larger than the shark itself.",
+      "size": {
+        "w": 1095,
+        "h": 976
+      },
+      "bytes": 810334,
+      "sha256": "eda8cd3a8bde503502fb7de5c725928fc1cfc0f5cd46793abd1808902e39c198"
     },
     {
       "id": "tarantula-idle",
       "file": "Spider-Idle.png",
-      "locked": false,
+      "locked": true,
       "character": "tarantula",
       "pose": "idle",
       "facing": "front",
       "renderScale": 0.4,
-      "anchor": { "x": 0.5, "y": 0.72 },
-      "note": "Largest renderScale of the cast. The Celestial Overlord must dominate the frame. It hovers above the play band."
+      "anchor": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "note": "Largest renderScale of the cast. The Celestial Overlord must dominate the frame. It hovers above the play band.",
+      "size": {
+        "w": 165,
+        "h": 165
+      },
+      "bytes": 33433,
+      "sha256": "f339cc3eac16c99ef09612ad57f3bdcf097e8f43e3473541a30a6e2a07c69e9a"
     },
     {
       "id": "tarantula-jump",
       "file": "Spider-jump-up-right-diagonal.png",
-      "locked": false,
+      "locked": true,
       "character": "tarantula",
       "pose": "jump",
       "facing": "up-right",
       "renderScale": 0.4,
-      "anchor": { "x": 0.5, "y": 0.72 },
-      "note": "Used once, as a scripted show-off reaction."
+      "anchor": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "note": "Used once, as a scripted show-off reaction.",
+      "size": {
+        "w": 162,
+        "h": 162
+      },
+      "bytes": 38012,
+      "sha256": "f331df4186374ddf5ca81a561dff32082c908ddc8c09c9df42c9c75d000b35a2"
     },
     {
       "id": "snail-idle",
       "file": "Snail-idle-facing-right.png",
-      "locked": false,
+      "locked": true,
       "character": "snail",
       "pose": "idle",
       "facing": "right",
       "renderScale": 0.24,
-      "anchor": { "x": 0.5, "y": 0.82 },
-      "note": "Stays small and calm. The time field around it does the shouting."
+      "anchor": {
+        "x": 0.5,
+        "y": 0.82
+      },
+      "note": "Stays small and calm. The time field around it does the shouting.",
+      "size": {
+        "w": 150,
+        "h": 150
+      },
+      "bytes": 36058,
+      "sha256": "b1c40b5cc5550d06abd018c790ebbfb3014005eb99a3dfac02ef545cc9a6e9f5"
     },
     {
       "id": "snail-glide",
       "file": "Snail-glide-right.png",
-      "locked": false,
+      "locked": true,
       "character": "snail",
       "pose": "glide",
       "facing": "right",
       "renderScale": 0.24,
-      "anchor": { "x": 0.5, "y": 0.6 },
-      "note": "Wide glide pose with the glowing slime trail already in the art."
+      "anchor": {
+        "x": 0.5,
+        "y": 0.6
+      },
+      "note": "Wide glide pose with the glowing slime trail already in the art.",
+      "size": {
+        "w": 171,
+        "h": 101
+      },
+      "bytes": 34973,
+      "sha256": "53a05c7e4ac594f983543b9022d2e16b963f23f0879eefaf251894449e06b8f5"
     },
     {
       "id": "human-standing",
       "file": "human-standing.png",
-      "locked": false,
+      "locked": true,
       "character": "human",
       "pose": "standing",
       "facing": "front",
       "renderScale": 0.2,
-      "anchor": { "x": 0.5, "y": 0.9 },
-      "note": "Lowercase h in the filename. Lighter figure than the floating poses; treat it as a second pet variant."
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9
+      },
+      "note": "Lowercase h in the filename. Lighter figure than the floating poses; treat it as a second pet variant.",
+      "size": {
+        "w": 165,
+        "h": 165
+      },
+      "bytes": 29081,
+      "sha256": "28cc6fd8fede0947eb6e54f772a5341c1caeadf02e3de57714030e638d7e6431"
     },
     {
       "id": "human-float-high",
       "file": "Human-floating-knee-bent-high.png",
-      "locked": false,
+      "locked": true,
       "character": "human",
       "pose": "float-high",
       "facing": "front",
       "renderScale": 0.2,
-      "anchor": { "x": 0.5, "y": 0.5 },
-      "note": "Drift loop frame A."
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "note": "Drift loop frame A.",
+      "size": {
+        "w": 99,
+        "h": 155
+      },
+      "bytes": 26877,
+      "sha256": "584e25d0f1941436c5fdd81e3a8fb3a2912ea7c58fa1a619a1161ddbcb635fa0"
     },
     {
       "id": "human-float-slight",
       "file": "Human-floating-knee-bent-slight.png",
-      "locked": false,
+      "locked": true,
       "character": "human",
       "pose": "float-slight",
       "facing": "front",
       "renderScale": 0.2,
-      "anchor": { "x": 0.5, "y": 0.5 },
-      "note": "Drift loop frame B. The two float poses are near identical in size, so the swap reads as a gentle bob rather than a pop."
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "note": "Drift loop frame B. The two float poses are near identical in size, so the swap reads as a gentle bob rather than a pop.",
+      "size": {
+        "w": 100,
+        "h": 154
+      },
+      "bytes": 28226,
+      "sha256": "6175ad3102455a879f7fe460988dbf90e1b186bcad344fda8e8d0a0d3fdc0edc"
     }
   ],
   "backgrounds": [
     {
       "id": "canvas-01",
       "file": "canvas-01.jpeg",
-      "locked": false,
+      "locked": true,
       "theme": "spaceship bridge",
       "fit": "contain",
       "role": "unused-in-milestone-1",
-      "note": "The capybara's lab. Kept in the manifest for a later hub or title scene. Milestone 1 does not render it."
+      "note": "The capybara's lab. Kept in the manifest for a later hub or title scene. Milestone 1 does not render it.",
+      "size": {
+        "h": 768,
+        "w": 1408
+      },
+      "bytes": 1041834,
+      "sha256": "56f57194e305a53f2f185ce70266014662bfa6b40548547589672d47a6898f51"
     },
     {
       "id": "canvas-01-mobile",
       "file": "canvas-01-mobile.png",
-      "locked": false,
+      "locked": true,
       "variantOf": "canvas-01",
       "fit": "contain",
-      "orientation": "portrait"
+      "orientation": "portrait",
+      "size": {
+        "w": 841,
+        "h": 1870
+      },
+      "bytes": 2454187,
+      "sha256": "5d8556be788799b4d94f6c38ac8c352ff86a6a9f5450c2cf1534d80f8dc81cd5"
     },
     {
       "id": "canvas-02",
       "file": "canvas-02.jpeg",
-      "locked": false,
+      "locked": true,
       "theme": "candy shoreline, day",
       "fit": "contain",
       "role": "unused-in-milestone-1",
-      "note": "Day counterpart of canvas-03. Same composition, warmer light."
+      "note": "Day counterpart of canvas-03. Same composition, warmer light.",
+      "size": {
+        "h": 768,
+        "w": 1371
+      },
+      "bytes": 859739,
+      "sha256": "3fab112b7224879de8ba0834bfda98ea569d20e3f718d023db6cbd6b1e776f24"
     },
     {
       "id": "canvas-02-mobile",
       "file": "canvas-02-mobile.png",
-      "locked": false,
+      "locked": true,
       "variantOf": "canvas-02",
       "fit": "contain",
-      "orientation": "portrait"
+      "orientation": "portrait",
+      "size": {
+        "w": 841,
+        "h": 1870
+      },
+      "bytes": 3125195,
+      "sha256": "4c9192a45027fd5494da6ad4775af93324ee25a9857fbce87f708029e1d4589c"
     },
     {
       "id": "canvas-03",
       "file": "canvas-03.jpeg",
-      "locked": false,
+      "locked": true,
       "theme": "cosmic shoreline, night",
       "fit": "contain",
       "role": "milestone-1-arena",
-      "note": "characters.json sets this as the arena. 1408x768 native, which is why the logical arena is 1408x768."
+      "note": "characters.json sets this as the arena. 1408x768 native, which is why the logical arena is 1408x768.",
+      "size": {
+        "h": 768,
+        "w": 1408
+      },
+      "bytes": 1046440,
+      "sha256": "d8df836517c868fe14a790eb9b45dcf9d72fd7ae823dc12016b45135cf93d108"
     },
     {
       "id": "canvas-03-mobile",
       "file": "canvas-03-mobile.png",
-      "locked": false,
+      "locked": true,
       "variantOf": "canvas-03",
       "fit": "contain",
       "orientation": "portrait",
-      "note": "Portrait 9:20 crop of the same shoreline. Chosen by the viewport handler for tall presets only."
+      "note": "Portrait 9:20 crop of the same shoreline. Chosen by the viewport handler for tall presets only.",
+      "size": {
+        "w": 841,
+        "h": 1870
+      },
+      "bytes": 3062505,
+      "sha256": "dd69d513b422987ebc86373307f010337090e6d5c78d387f7dca35b133c06f29"
     },
     {
       "id": "title",
       "file": "Cosmic Chaos.png",
-      "locked": false,
+      "locked": true,
       "theme": "title splash, all three canvases triptych with the wordmark",
       "fit": "contain",
       "role": "title-screen",
-      "note": "1440x1080. Already carries the wordmark, so the title screen adds UI over it and never re-renders text into the image."
+      "note": "1440x1080. Already carries the wordmark, so the title screen adds UI over it and never re-renders text into the image.",
+      "size": {
+        "w": 1440,
+        "h": 1080
+      },
+      "bytes": 3325239,
+      "sha256": "26ca0abc407a23595ca3c11294954863094bbdeda1c754c273f5f2c7f2fb63a1"
     }
   ],
   "proceduralProps": [
@@ -213,9 +363,21 @@
       "reason": "No waterbike art exists. Drawn in Canvas 2D under the capybara sprite.",
       "anchorTo": "sprite-bottom",
       "shape": {
-        "hull": { "w": 78, "h": 16, "radius": 8 },
-        "deck": { "w": 60, "h": 6, "radius": 3 },
-        "rail": { "w": 44, "h": 4, "radius": 2 }
+        "hull": {
+          "w": 78,
+          "h": 16,
+          "radius": 8
+        },
+        "deck": {
+          "w": 60,
+          "h": 6,
+          "radius": 3
+        },
+        "rail": {
+          "w": 44,
+          "h": 4,
+          "radius": 2
+        }
       },
       "colors": {
         "hull": "#d8d2c4",
@@ -226,7 +388,10 @@
       },
       "jets": {
         "count": 2,
-        "offsetX": [-20, 20],
+        "offsetX": [
+          -20,
+          20
+        ],
         "length": 26,
         "width": 7,
         "spreadDeg": 12,
@@ -268,25 +433,44 @@
       "count": 26,
       "lifeMs": 520,
       "size": 3,
-      "colors": ["#b98bff", "#7fe8ff", "#ffffff"]
+      "colors": [
+        "#b98bff",
+        "#7fe8ff",
+        "#ffffff"
+      ]
     },
     {
       "id": "crystal-glow",
       "character": null,
       "reason": "Shore crystals pulse faintly so the shore reads as part of the cosmic setting.",
       "anchors": [
-        { "x": 1180, "y": 700 },
-        { "x": 1300, "y": 660 },
-        { "x": 60, "y": 690 }
+        {
+          "x": 1180,
+          "y": 700
+        },
+        {
+          "x": 1300,
+          "y": 660
+        },
+        {
+          "x": 60,
+          "y": 690
+        }
       ],
       "radius": 54,
       "pulseHz": 0.22,
-      "colors": { "core": "#9fe8ff", "halo": "#2f6cff" }
+      "colors": {
+        "core": "#9fe8ff",
+        "halo": "#2f6cff"
+      }
     }
   ],
   "arena": {
     "background": "canvas-03",
-    "logical": { "w": 1408, "h": 768 },
+    "logical": {
+      "w": 1408,
+      "h": 768
+    },
     "origin": "top-left",
     "water": {
       "horizonY": 456,
@@ -310,9 +494,36 @@
     "spawn": {
       "note": "Counts and ranges come from src/data/characters.json. Positions come from the seeded stream, and the spawner rejects any point inside the snail's time field or within spawnMinDistance of the player.",
       "seedDefault": 1337,
-      "playerFraction": { "x": [0.3, 0.7], "y": [0.6, 0.9] },
-      "enemyFraction": { "x": [0.08, 0.92], "y": [0.25, 0.95] },
-      "ambientFraction": { "x": [0.1, 0.9], "y": [0.1, 0.9] },
+      "playerFraction": {
+        "x": [
+          0.3,
+          0.7
+        ],
+        "y": [
+          0.6,
+          0.9
+        ]
+      },
+      "enemyFraction": {
+        "x": [
+          0.08,
+          0.92
+        ],
+        "y": [
+          0.25,
+          0.95
+        ]
+      },
+      "ambientFraction": {
+        "x": [
+          0.1,
+          0.9
+        ],
+        "y": [
+          0.1,
+          0.9
+        ]
+      },
       "spawnMinDistance": 220,
       "maxAttempts": 24
     },
@@ -321,102 +532,423 @@
   },
   "characters": {
     "capybara": {
-      "sprites": ["capybara-idle"],
+      "sprites": [
+        "capybara-idle"
+      ],
       "prop": "waterbike",
       "animations": {
         "idle": {
           "loop": true,
           "durationMs": 1700,
           "keyframes": [
-            { "t": 0, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.5, "sprite": "capybara-idle", "dx": 0, "dy": -3, "rot": 0.01, "sx": 1.01, "sy": 0.99, "alpha": 1 },
-            { "t": 1, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": -3,
+              "rot": 0.01,
+              "sx": 1.01,
+              "sy": 0.99,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "walk": {
           "loop": true,
           "durationMs": 420,
           "keyframes": [
-            { "t": 0, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0.03, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.25, "sprite": "capybara-idle", "dx": 0, "dy": -5, "rot": 0, "sx": 1.05, "sy": 0.95, "alpha": 1 },
-            { "t": 0.5, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0.03, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.75, "sprite": "capybara-idle", "dx": 0, "dy": -5, "rot": 0, "sx": 0.97, "sy": 1.03, "alpha": 1 },
-            { "t": 1, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0.03, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0.03,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.25,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": -5,
+              "rot": 0,
+              "sx": 1.05,
+              "sy": 0.95,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0.03,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.75,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": -5,
+              "rot": 0,
+              "sx": 0.97,
+              "sy": 1.03,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0.03,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "swim": {
           "loop": true,
           "durationMs": 900,
           "keyframes": [
-            { "t": 0, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.35, "sprite": "capybara-idle", "dx": 2, "dy": -3, "rot": -0.03, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.7, "sprite": "capybara-idle", "dx": 0, "dy": 1, "rot": 0.02, "sx": 1.01, "sy": 0.99, "alpha": 1 },
-            { "t": 1, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.35,
+              "sprite": "capybara-idle",
+              "dx": 2,
+              "dy": -3,
+              "rot": -0.03,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.7,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": 1,
+              "rot": 0.02,
+              "sx": 1.01,
+              "sy": 0.99,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "jump": {
           "loop": false,
           "durationMs": 760,
           "keyframes": [
-            { "t": 0, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 0.94, "sy": 1.08, "alpha": 1 },
-            { "t": 0.22, "sprite": "capybara-idle", "dx": 0, "dy": -14, "rot": -0.12, "sx": 1.05, "sy": 0.96, "alpha": 1 },
-            { "t": 0.55, "sprite": "capybara-idle", "dx": 0, "dy": -34, "rot": -0.3, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.82, "sprite": "capybara-idle", "dx": 0, "dy": -8, "rot": 0.14, "sx": 0.98, "sy": 1.02, "alpha": 1 },
-            { "t": 1, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1.1, "sy": 0.86, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 0.94,
+              "sy": 1.08,
+              "alpha": 1
+            },
+            {
+              "t": 0.22,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": -14,
+              "rot": -0.12,
+              "sx": 1.05,
+              "sy": 0.96,
+              "alpha": 1
+            },
+            {
+              "t": 0.55,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": -34,
+              "rot": -0.3,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.82,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": -8,
+              "rot": 0.14,
+              "sx": 0.98,
+              "sy": 1.02,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1.1,
+              "sy": 0.86,
+              "alpha": 1
+            }
           ]
         },
         "defeat": {
           "loop": false,
           "durationMs": 900,
           "keyframes": [
-            { "t": 0, "sprite": "capybara-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.45, "sprite": "capybara-idle", "dx": -6, "dy": 4, "rot": 0.5, "sx": 1, "sy": 1, "alpha": 0.85 },
-            { "t": 1, "sprite": "capybara-idle", "dx": -14, "dy": 12, "rot": 1.35, "sx": 1, "sy": 0.9, "alpha": 0.3 }
+            {
+              "t": 0,
+              "sprite": "capybara-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.45,
+              "sprite": "capybara-idle",
+              "dx": -6,
+              "dy": 4,
+              "rot": 0.5,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 0.85
+            },
+            {
+              "t": 1,
+              "sprite": "capybara-idle",
+              "dx": -14,
+              "dy": 12,
+              "rot": 1.35,
+              "sx": 1,
+              "sy": 0.9,
+              "alpha": 0.3
+            }
           ]
         }
       },
       "aliases": {}
     },
     "orca": {
-      "sprites": ["orca-idle", "orca-swim", "orca-jump"],
+      "sprites": [
+        "orca-idle",
+        "orca-swim",
+        "orca-jump"
+      ],
       "animations": {
         "idle": {
           "loop": true,
           "durationMs": 1500,
           "keyframes": [
-            { "t": 0, "sprite": "orca-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.5, "sprite": "orca-idle", "dx": 0, "dy": -5, "rot": 0.03, "sx": 1, "sy": 1.02, "alpha": 1 },
-            { "t": 1, "sprite": "orca-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "orca-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "orca-idle",
+              "dx": 0,
+              "dy": -5,
+              "rot": 0.03,
+              "sx": 1,
+              "sy": 1.02,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "orca-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "swim": {
           "loop": true,
           "durationMs": 780,
           "keyframes": [
-            { "t": 0, "sprite": "orca-swim", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.25, "sprite": "orca-swim", "dx": 0, "dy": -4, "rot": -0.05, "sx": 1.02, "sy": 0.98, "alpha": 1 },
-            { "t": 0.5, "sprite": "orca-swim", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.75, "sprite": "orca-swim", "dx": 0, "dy": -4, "rot": 0.05, "sx": 0.98, "sy": 1.02, "alpha": 1 },
-            { "t": 1, "sprite": "orca-swim", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "orca-swim",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.25,
+              "sprite": "orca-swim",
+              "dx": 0,
+              "dy": -4,
+              "rot": -0.05,
+              "sx": 1.02,
+              "sy": 0.98,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "orca-swim",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.75,
+              "sprite": "orca-swim",
+              "dx": 0,
+              "dy": -4,
+              "rot": 0.05,
+              "sx": 0.98,
+              "sy": 1.02,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "orca-swim",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "jump": {
           "loop": false,
           "durationMs": 820,
           "keyframes": [
-            { "t": 0, "sprite": "orca-jump", "dx": 0, "dy": 4, "rot": 0.5, "sx": 0.86, "sy": 0.86, "alpha": 1 },
-            { "t": 0.45, "sprite": "orca-jump", "dx": 0, "dy": -46, "rot": 0.34, "sx": 1.06, "sy": 1.06, "alpha": 1 },
-            { "t": 0.75, "sprite": "orca-jump", "dx": 0, "dy": -14, "rot": 0.2, "sx": 0.98, "sy": 0.98, "alpha": 1 },
-            { "t": 1, "sprite": "orca-jump", "dx": 0, "dy": 0, "rot": 0.1, "sx": 1.14, "sy": 0.84, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "orca-jump",
+              "dx": 0,
+              "dy": 4,
+              "rot": 0.5,
+              "sx": 0.86,
+              "sy": 0.86,
+              "alpha": 1
+            },
+            {
+              "t": 0.45,
+              "sprite": "orca-jump",
+              "dx": 0,
+              "dy": -46,
+              "rot": 0.34,
+              "sx": 1.06,
+              "sy": 1.06,
+              "alpha": 1
+            },
+            {
+              "t": 0.75,
+              "sprite": "orca-jump",
+              "dx": 0,
+              "dy": -14,
+              "rot": 0.2,
+              "sx": 0.98,
+              "sy": 0.98,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "orca-jump",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0.1,
+              "sx": 1.14,
+              "sy": 0.84,
+              "alpha": 1
+            }
           ]
         },
         "defeat": {
           "loop": false,
           "durationMs": 1000,
           "keyframes": [
-            { "t": 0, "sprite": "orca-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.5, "sprite": "orca-idle", "dx": 0, "dy": 6, "rot": -0.7, "sx": 1, "sy": 0.96, "alpha": 0.8 },
-            { "t": 1, "sprite": "orca-idle", "dx": 0, "dy": 18, "rot": -1.5, "sx": 1, "sy": 0.86, "alpha": 0.2 }
+            {
+              "t": 0,
+              "sprite": "orca-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "orca-idle",
+              "dx": 0,
+              "dy": 6,
+              "rot": -0.7,
+              "sx": 1,
+              "sy": 0.96,
+              "alpha": 0.8
+            },
+            {
+              "t": 1,
+              "sprite": "orca-idle",
+              "dx": 0,
+              "dy": 18,
+              "rot": -1.5,
+              "sx": 1,
+              "sy": 0.86,
+              "alpha": 0.2
+            }
           ]
         }
       },
@@ -425,43 +957,162 @@
       }
     },
     "shark": {
-      "sprites": ["shark-slide"],
+      "sprites": [
+        "shark-slide"
+      ],
       "animations": {
         "idle": {
           "loop": true,
           "durationMs": 1500,
           "keyframes": [
-            { "t": 0, "sprite": "shark-slide", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.5, "sprite": "shark-slide", "dx": 0, "dy": -8, "rot": -0.03, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 1, "sprite": "shark-slide", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "shark-slide",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "shark-slide",
+              "dx": 0,
+              "dy": -8,
+              "rot": -0.03,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "shark-slide",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "swim": {
           "loop": true,
           "durationMs": 620,
           "keyframes": [
-            { "t": 0, "sprite": "shark-slide", "dx": -6, "dy": 0, "rot": 0.05, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.5, "sprite": "shark-slide", "dx": 6, "dy": -10, "rot": -0.05, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 1, "sprite": "shark-slide", "dx": -6, "dy": 0, "rot": 0.05, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "shark-slide",
+              "dx": -6,
+              "dy": 0,
+              "rot": 0.05,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "shark-slide",
+              "dx": 6,
+              "dy": -10,
+              "rot": -0.05,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "shark-slide",
+              "dx": -6,
+              "dy": 0,
+              "rot": 0.05,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "jump": {
           "loop": false,
           "durationMs": 900,
           "keyframes": [
-            { "t": 0, "sprite": "shark-slide", "dx": 0, "dy": 0, "rot": 0.15, "sx": 0.8, "sy": 0.8, "alpha": 1 },
-            { "t": 0.4, "sprite": "shark-slide", "dx": 0, "dy": -52, "rot": -0.18, "sx": 1.08, "sy": 1.08, "alpha": 1 },
-            { "t": 0.75, "sprite": "shark-slide", "dx": 0, "dy": -16, "rot": -0.05, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 1, "sprite": "shark-slide", "dx": 0, "dy": 0, "rot": 0.1, "sx": 1.2, "sy": 0.8, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "shark-slide",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0.15,
+              "sx": 0.8,
+              "sy": 0.8,
+              "alpha": 1
+            },
+            {
+              "t": 0.4,
+              "sprite": "shark-slide",
+              "dx": 0,
+              "dy": -52,
+              "rot": -0.18,
+              "sx": 1.08,
+              "sy": 1.08,
+              "alpha": 1
+            },
+            {
+              "t": 0.75,
+              "sprite": "shark-slide",
+              "dx": 0,
+              "dy": -16,
+              "rot": -0.05,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "shark-slide",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0.1,
+              "sx": 1.2,
+              "sy": 0.8,
+              "alpha": 1
+            }
           ]
         },
         "defeat": {
           "loop": false,
           "durationMs": 1100,
           "keyframes": [
-            { "t": 0, "sprite": "shark-slide", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.55, "sprite": "shark-slide", "dx": 10, "dy": 8, "rot": 0.55, "sx": 1, "sy": 0.9, "alpha": 0.7 },
-            { "t": 1, "sprite": "shark-slide", "dx": 26, "dy": 22, "rot": 1.1, "sx": 0.9, "sy": 0.7, "alpha": 0.15 }
+            {
+              "t": 0,
+              "sprite": "shark-slide",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.55,
+              "sprite": "shark-slide",
+              "dx": 10,
+              "dy": 8,
+              "rot": 0.55,
+              "sx": 1,
+              "sy": 0.9,
+              "alpha": 0.7
+            },
+            {
+              "t": 1,
+              "sprite": "shark-slide",
+              "dx": 26,
+              "dy": 22,
+              "rot": 1.1,
+              "sx": 0.9,
+              "sy": 0.7,
+              "alpha": 0.15
+            }
           ]
         }
       },
@@ -470,33 +1121,117 @@
       }
     },
     "tarantula": {
-      "sprites": ["tarantula-idle", "tarantula-jump"],
+      "sprites": [
+        "tarantula-idle",
+        "tarantula-jump"
+      ],
       "animations": {
         "idle": {
           "loop": true,
           "durationMs": 2100,
           "keyframes": [
-            { "t": 0, "sprite": "tarantula-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.5, "sprite": "tarantula-idle", "dx": 0, "dy": -7, "rot": 0.015, "sx": 1.01, "sy": 0.99, "alpha": 1 },
-            { "t": 1, "sprite": "tarantula-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "tarantula-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "tarantula-idle",
+              "dx": 0,
+              "dy": -7,
+              "rot": 0.015,
+              "sx": 1.01,
+              "sy": 0.99,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "tarantula-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "jump": {
           "loop": false,
           "durationMs": 1200,
           "keyframes": [
-            { "t": 0, "sprite": "tarantula-jump", "dx": 0, "dy": 0, "rot": 0.05, "sx": 0.92, "sy": 0.92, "alpha": 1 },
-            { "t": 0.4, "sprite": "tarantula-jump", "dx": 14, "dy": -40, "rot": -0.28, "sx": 1.06, "sy": 1.06, "alpha": 1 },
-            { "t": 0.8, "sprite": "tarantula-jump", "dx": 20, "dy": -10, "rot": -0.1, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 1, "sprite": "tarantula-idle", "dx": 20, "dy": 0, "rot": 0, "sx": 1.02, "sy": 0.96, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "tarantula-jump",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0.05,
+              "sx": 0.92,
+              "sy": 0.92,
+              "alpha": 1
+            },
+            {
+              "t": 0.4,
+              "sprite": "tarantula-jump",
+              "dx": 14,
+              "dy": -40,
+              "rot": -0.28,
+              "sx": 1.06,
+              "sy": 1.06,
+              "alpha": 1
+            },
+            {
+              "t": 0.8,
+              "sprite": "tarantula-jump",
+              "dx": 20,
+              "dy": -10,
+              "rot": -0.1,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "tarantula-idle",
+              "dx": 20,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1.02,
+              "sy": 0.96,
+              "alpha": 1
+            }
           ]
         },
         "defeat": {
           "loop": false,
           "durationMs": 900,
           "keyframes": [
-            { "t": 0, "sprite": "tarantula-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 1, "sprite": "tarantula-idle", "dx": 0, "dy": 16, "rot": 0.3, "sx": 1, "sy": 0.88, "alpha": 0.35 }
+            {
+              "t": 0,
+              "sprite": "tarantula-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "tarantula-idle",
+              "dx": 0,
+              "dy": 16,
+              "rot": 0.3,
+              "sx": 1,
+              "sy": 0.88,
+              "alpha": 0.35
+            }
           ]
         }
       },
@@ -506,32 +1241,107 @@
       }
     },
     "snail": {
-      "sprites": ["snail-idle", "snail-glide"],
+      "sprites": [
+        "snail-idle",
+        "snail-glide"
+      ],
       "animations": {
         "idle": {
           "loop": true,
           "durationMs": 2300,
           "keyframes": [
-            { "t": 0, "sprite": "snail-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.5, "sprite": "snail-idle", "dx": 0, "dy": -2, "rot": 0.01, "sx": 1, "sy": 1.01, "alpha": 1 },
-            { "t": 1, "sprite": "snail-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "snail-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "snail-idle",
+              "dx": 0,
+              "dy": -2,
+              "rot": 0.01,
+              "sx": 1,
+              "sy": 1.01,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "snail-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "swim": {
           "loop": true,
           "durationMs": 1700,
           "keyframes": [
-            { "t": 0, "sprite": "snail-glide", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.5, "sprite": "snail-glide", "dx": 4, "dy": -2, "rot": -0.02, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 1, "sprite": "snail-glide", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "snail-glide",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "snail-glide",
+              "dx": 4,
+              "dy": -2,
+              "rot": -0.02,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "snail-glide",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "defeat": {
           "loop": false,
           "durationMs": 1200,
           "keyframes": [
-            { "t": 0, "sprite": "snail-idle", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 1, "sprite": "snail-idle", "dx": 0, "dy": 4, "rot": 0.2, "sx": 1, "sy": 0.9, "alpha": 0.4 }
+            {
+              "t": 0,
+              "sprite": "snail-idle",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "snail-idle",
+              "dx": 0,
+              "dy": 4,
+              "rot": 0.2,
+              "sx": 1,
+              "sy": 0.9,
+              "alpha": 0.4
+            }
           ]
         }
       },
@@ -541,50 +1351,180 @@
       }
     },
     "human": {
-      "sprites": ["human-standing", "human-float-high", "human-float-slight"],
+      "sprites": [
+        "human-standing",
+        "human-float-high",
+        "human-float-slight"
+      ],
       "animations": {
         "idle": {
           "loop": true,
           "durationMs": 1900,
           "keyframes": [
-            { "t": 0, "sprite": "human-standing", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.5, "sprite": "human-standing", "dx": 0, "dy": -3, "rot": 0.02, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 1, "sprite": "human-standing", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "human-standing",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "human-standing",
+              "dx": 0,
+              "dy": -3,
+              "rot": 0.02,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "human-standing",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "walk": {
           "loop": true,
           "durationMs": 1300,
           "keyframes": [
-            { "t": 0, "sprite": "human-standing", "dx": 0, "dy": 0, "rot": 0.05, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.5, "sprite": "human-standing", "dx": 0, "dy": -2, "rot": -0.05, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 1, "sprite": "human-standing", "dx": 0, "dy": 0, "rot": 0.05, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "human-standing",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0.05,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "human-standing",
+              "dx": 0,
+              "dy": -2,
+              "rot": -0.05,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "human-standing",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0.05,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "swim": {
           "loop": true,
           "durationMs": 1500,
           "keyframes": [
-            { "t": 0, "sprite": "human-float-slight", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.5, "sprite": "human-float-high", "dx": 3, "dy": -6, "rot": 0.06, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 1, "sprite": "human-float-slight", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "human-float-slight",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "human-float-high",
+              "dx": 3,
+              "dy": -6,
+              "rot": 0.06,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "human-float-slight",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "jump": {
           "loop": false,
           "durationMs": 1100,
           "keyframes": [
-            { "t": 0, "sprite": "human-float-high", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 0.5, "sprite": "human-float-high", "dx": 4, "dy": -26, "rot": 0.18, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 1, "sprite": "human-float-slight", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 }
+            {
+              "t": 0,
+              "sprite": "human-float-high",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 0.5,
+              "sprite": "human-float-high",
+              "dx": 4,
+              "dy": -26,
+              "rot": 0.18,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "human-float-slight",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            }
           ]
         },
         "defeat": {
           "loop": false,
           "durationMs": 1300,
           "keyframes": [
-            { "t": 0, "sprite": "human-float-high", "dx": 0, "dy": 0, "rot": 0, "sx": 1, "sy": 1, "alpha": 1 },
-            { "t": 1, "sprite": "human-float-slight", "dx": 18, "dy": 14, "rot": 0.9, "sx": 1, "sy": 1, "alpha": 0.25 }
+            {
+              "t": 0,
+              "sprite": "human-float-high",
+              "dx": 0,
+              "dy": 0,
+              "rot": 0,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 1
+            },
+            {
+              "t": 1,
+              "sprite": "human-float-slight",
+              "dx": 18,
+              "dy": 14,
+              "rot": 0.9,
+              "sx": 1,
+              "sy": 1,
+              "alpha": 0.25
+            }
           ]
         }
       },
@@ -601,49 +1541,73 @@
       {
         "id": "16:9",
         "ratio": 1.7777777778,
-        "logical": { "w": 1408, "h": 792 },
+        "logical": {
+          "w": 1408,
+          "h": 792
+        },
         "background": "canvas-03"
       },
       {
         "id": "16:10",
         "ratio": 1.6,
-        "logical": { "w": 1408, "h": 880 },
+        "logical": {
+          "w": 1408,
+          "h": 880
+        },
         "background": "canvas-03"
       },
       {
         "id": "4:3",
         "ratio": 1.3333333333,
-        "logical": { "w": 1024, "h": 768 },
+        "logical": {
+          "w": 1024,
+          "h": 768
+        },
         "background": "canvas-03"
       },
       {
         "id": "20:9",
         "ratio": 2.2222222222,
-        "logical": { "w": 1600, "h": 720 },
+        "logical": {
+          "w": 1600,
+          "h": 720
+        },
         "background": "canvas-03"
       },
       {
         "id": "29.5:9",
         "ratio": 3.2777777778,
-        "logical": { "w": 1770, "h": 540 },
+        "logical": {
+          "w": 1770,
+          "h": 540
+        },
         "background": "canvas-03"
       },
       {
         "id": "sqrt2:1",
         "ratio": 1.4142135624,
-        "logical": { "w": 1088, "h": 768 },
+        "logical": {
+          "w": 1088,
+          "h": 768
+        },
         "background": "canvas-03"
       },
       {
         "id": "1:sqrt2",
         "ratio": 0.7071067812,
-        "logical": { "w": 768, "h": 1086 },
+        "logical": {
+          "w": 768,
+          "h": 1086
+        },
         "background": "canvas-03-mobile"
       },
       {
         "id": "9:20",
         "ratio": 0.45,
-        "logical": { "w": 810, "h": 1800 },
+        "logical": {
+          "w": 810,
+          "h": 1800
+        },
         "background": "canvas-03-mobile"
       }
     ]
