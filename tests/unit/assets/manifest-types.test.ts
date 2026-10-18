@@ -28,7 +28,7 @@ function spriteAt(draft: Dict, index: number): Dict {
 function character(draft: Dict, id: string): Dict {
   const characters = draft["characters"] as Dict;
   const entry = characters[id];
-  if (entry === undefined) throw new Error(`no character ${String(id)}`);
+  if (entry === undefined) throw new Error(`no character ${id}`);
   return entry;
 }
 

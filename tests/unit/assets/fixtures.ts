@@ -7,5 +7,5 @@ export const manifest: Manifest = parseManifest(rawManifest);
 
 /** A mutable deep copy of the real manifest, for malformed-input tests. */
 export function draftManifest(): Dict {
-  return structuredClone(rawManifest) as Dict;
+  return structuredClone(rawManifest);
 }

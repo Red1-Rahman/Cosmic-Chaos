@@ -140,13 +140,19 @@ describe("step", () => {
     const world = createWorld(1337);
     const snail = need(world.entities.find((e) => e.kind === "snail"));
     const player = need(world.entities[0]);
-    player.x = snail.x - ARENA.fieldRadius - 40;
+    player.x = snail.x - ARENA.fieldRadius - 20;
     player.y = snail.y;
+    player.props.vx = 0;
+    player.props.vy = 0;
     drainEvents(world);
-    step(world, input({ moveX: 1 }), MOVEMENT.fixedDt);
+
+    run(world, 60, input({ moveX: 1 }));
+    expect(player.timeScale).toBeCloseTo(ARENA.timeScaleInside, 9);
     expect(drainEvents(world).some((e) => e.type === "timeFieldEnter")).toBe(true);
-    run(world, 300, input({ moveX: 1 }));
+
+    run(world, 90, input({ moveX: -1 }));
     expect(player.timeScale).toBe(1);
+    expect(drainEvents(world).some((e) => e.type === "timeFieldExit")).toBe(true);
   });
 
   it("is deterministic: same seed and same inputs give the same hash", () => {

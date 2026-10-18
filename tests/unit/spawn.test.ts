@@ -65,6 +65,7 @@ describe("createInitialEntities", () => {
       const entities = createInitialEntities(createRng(seed).fork("sim"));
       const snail = expectEntity(byKind(entities, "snail")[0]);
       for (const e of entities) {
+        if (e.kind === "snail") continue; // the snail owns the field
         expect({ seed, id: e.id, inside: insideField(e, snail, ARENA.fieldRadius) }).toEqual({
           seed,
           id: e.id,

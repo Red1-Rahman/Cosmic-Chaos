@@ -84,11 +84,11 @@ function advancePlayer(world: World, player: Entity, input: InputState, dt: numb
   player.y = clamp(player.y + dampedVy * dt, world.arena.minY, world.arena.maxY);
   player.props.speed = Math.sqrt(dampedVx * dampedVx + dampedVy * dampedVy);
 
-  const jumpMs = player.props.jumpMs ?? 0;
-  if (input.jump && jumpMs <= 0) {
+  if (input.jump && (player.props.jumpMs ?? 0) <= 0) {
     player.props.jumpMs = MOVEMENT.jumpMs;
     world.events.push({ type: "jump", id: player.id, x: player.x, y: player.y });
   }
+  const jumpMs = player.props.jumpMs ?? 0;
   if (jumpMs > 0) {
     const remaining = Math.max(0, jumpMs - dt * 1000);
     player.props.jumpMs = remaining;
