@@ -1,0 +1,77 @@
+name: deploy
+
+# Release trigger: a push to main that changes package.json's version. Every other
+# push to main is ignored, so unfinished work never ships. The build is static files
+# pushed to itch.io with the butler CLI; there is no server and no database.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+
+permissions:
+  contents: read
+
+# Never cancel a push that is already in flight; let a second one queue behind it.
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy to itch.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: detect a version bump
+        id: bump
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          old_version=$(git show "$BEFORE:package.json" 2>/dev/null \
+            | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).version' || echo "")
+          new_version=$(node -p 'JSON.parse(require("fs").readFileSync("package.json","utf8")).version')
+          if [ -n "$old_version" ] && [ "$old_version" = "$new_version" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$new_version" >> "$GITHUB_OUTPUT"
+
+      - if: steps.bump.outputs.changed == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - if: steps.bump.outputs.changed == 'true'
+        run: npm ci
+
+      - if: steps.bump.outputs.changed == 'true'
+        run: npm run build
+
+      - if: steps.bump.outputs.changed == 'true'
+        run: zip -r game.zip dist
+
+      - name: install butler
+        if: steps.bump.outputs.changed == 'true'
+        run: |
+          curl -fsSL -o butler.zip "https://broth.itch.so/butler/linux-amd64/LATEST"
+          unzip -q butler.zip -d "$RUNNER_TEMP/butler"
+          echo "$RUNNER_TEMP/butler" >> "$GITHUB_PATH"
+
+      - name: push to itch.io
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          ITCH_USER: ${{ vars.ITCH_USER }}
+          ITCH_PROJECT: ${{ vars.ITCH_PROJECT }}
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          butler push game.zip "$ITCH_USER/$ITCH_PROJECT:html5" --display-version="$VERSION"

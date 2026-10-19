@@ -606,7 +606,7 @@ export function createRenderer(
     resize: (_layout: Layout): void => {
       // Nothing to cache: the camera view is rebuilt every frame because its
       // focus follows the player, and the viewport owns the canvas buffer.
-      // The hook stays so the app has one explicit layout signal.
+      // The hook stays so the app has one clear layout signal.
     },
     pushEvent: (event: GameEvent): void => {
       if (queued.length < 64) queued.push(event);

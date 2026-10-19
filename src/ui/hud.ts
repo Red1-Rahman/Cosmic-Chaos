@@ -252,9 +252,9 @@ export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
   root.append(dialogue);
 
   // Staged onboarding card, top-centre: clear of the left stack, the right-hand buttons
-  // and the dialogue over the waterline. Hidden unless a tutorial stage is showing.
+  // and the dialogue over the waterline. Hidden unless a tutorial stage is showing; the
+  // data-cc-tutorial attribute only exists while a card is up, so tests can count it.
   const tutorialCard = el(doc, "cc-tutorial");
-  tutorialCard.setAttribute("data-cc-tutorial", "");
   tutorialCard.setAttribute("role", "status");
   const tutorialTitle = el(doc, "cc-tutorial-title");
   const tutorialBody = el(doc, "cc-tutorial-body");

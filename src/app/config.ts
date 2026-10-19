@@ -4,7 +4,7 @@ export interface AppConfig {
   readonly debug: boolean;
   readonly test: boolean;
   readonly startMuted: boolean;
-  /** Explicit tutorial override. Undefined means "on, except under ?test=1". */
+  /** Forced tutorial override. Undefined means "on, except under ?test=1". */
   readonly tutorial: boolean | undefined;
 }
 

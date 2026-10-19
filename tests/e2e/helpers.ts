@@ -161,11 +161,14 @@ export async function installStorageSpy(page: Page): Promise<void> {
 /** Load the game with the test hooks installed. */
 export async function openGame(
   page: Page,
-  options: { seed?: number; test?: boolean } = {},
+  options: { seed?: number; test?: boolean; tutorial?: boolean } = {},
 ): Promise<void> {
   const params = new URLSearchParams();
   params.set("test", options.test === false ? "0" : "1");
   if (options.seed !== undefined) params.set("seed", String(options.seed));
+  // `?tutorial=1` forces the staged onboarding on even under the test hooks, so a spec
+  // can drive it; leaving it out keeps the hooks' usual full-roster, tutorial-off run.
+  if (options.tutorial !== undefined) params.set("tutorial", options.tutorial ? "1" : "0");
   await page.goto(`/?${params.toString()}`);
   await page.waitForFunction(() => window.__cosmic !== undefined);
 }

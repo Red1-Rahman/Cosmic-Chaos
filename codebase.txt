@@ -16,6 +16,7 @@ Legend: [human] only a human edits. [agents] agents own it. [shared] agents may 
 |-- index.html                 [agents] Vite entry. Needs <link rel="icon" href="data:,"> and one <canvas>
 |-- .agents/prompts/           [human] reusable role prompts, start at README.md
 |-- .github/workflows/ci.yml   [shared] windows+chromium gate, then macos+webkit and ubuntu+firefox
+|-- .github/workflows/deploy.yml [shared] version bump on main -> build -> butler push to itch.io
 |-- docs/
 |   |-- decisions.md           [agents] append-only decision log
 |   `-- handoff-m1.md          [agents] written once when Milestone 1 is done
@@ -71,8 +72,11 @@ DEFAULT MODULE CONTRACT (names are defaults. If you change one, update this file
                        objective book. buildObstacles/buildCores/buildObjectives/collectCores/stepPellets/updateObjectives.
   sim/game-config.ts   ARENA and SPAWN_RULES mirror assets.json (a spec test enforces the mirror). MOVEMENT,
                        WEAPON, STAGGER, DODGE, PARRY, OBSTACLES and CORES are sim-owned tuning blocks.
-  sim/world.ts         createWorld(seed, levelId=1), step(world, input, fixedDt), world.events drained each frame,
+  sim/world.ts         createWorld(seed, levelId=1, options?={tutorial}), step(world, input, fixedDt), world.events drained each frame,
                        hashWorld(world)
+  sim/tutorial.ts      TUTORIAL_COPY (six cards), beginTutorial(...), stepTutorial(world, player, fromIndex).
+                       Staged onboarding: withholds the cast and the cores, hands them over one stage at a
+                       time. Optional world.tutorial; a world built without the flag is unchanged.
   assets/loader.ts     loadManifest(), loadImages(manifest), parseManifest(unknown)
   assets/animation.ts  sampleAnimation(manifest, characterId, name, elapsedMs) -> { spriteId, dx, dy, rot, sx, sy, alpha }
                        resolves aliases, interpolates keyframes, pure

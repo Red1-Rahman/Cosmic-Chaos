@@ -32,7 +32,7 @@ You may flip, mirror, rotate, scale and tint sprites in the presentation layer w
 
 ## Rules that keep the project drift proof
 
-- Stateless: no database, no localStorage, no sessionStorage, no IndexedDB, no cookies. Restarting resets everything. Hosting is out of scope. Localhost only.
+- Stateless: no database, no localStorage, no sessionStorage, no IndexedDB, no cookies. Restarting resets everything. No server and no backend of any kind; static hosting only (itch.io via butler). Localhost for development.
 - Stack: vanilla TypeScript, HTML, CSS, Canvas 2D, native Web Audio. Zero runtime dependencies. Versions are exact pins in `tech-stack.json` and `package.json`. Do not add or bump a dependency. Ask the human.
 - Sound: synthesize everything with Web Audio at runtime. No audio files, no external URLs.
 - Determinism: no `Math.random`, `Date.now`, `performance.now` or `crypto` randomness (ESLint enforces it). Use the seeded Mulberry32 streams. Real time lives only in `src/app/clock.ts`. Simulation runs on a fixed 60 Hz step. Avoid trig and `Math.pow` results leaking into golden hashes unless quantized.
