@@ -50,13 +50,15 @@ test.describe("starting and steering", () => {
     await openGame(page, { seed: FRIENDLY_SEED });
     await page.getByRole("button", { name: "Start the run" }).focus();
     await page.keyboard.press("Enter");
-    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 10_000 }).toBeGreaterThan(0);
+    await expect
+      .poll(async () => (await cosmic(page)).tick, { timeout: 10_000 })
+      .toBeGreaterThan(0);
     await expect(page.locator(".cc-screen--title")).not.toHaveClass(/cc-screen-active/);
 
     // Idle first: nothing is held, so the bike is parked and plays idle.
-    await expect.poll(async () => playerOf(await cosmic(page)).anim, { timeout: 8_000 }).toBe(
-      "idle",
-    );
+    await expect
+      .poll(async () => playerOf(await cosmic(page)).anim, { timeout: 8_000 })
+      .toBe("idle");
 
     // Right: the capybara moves right, faces right and walks.
     const start = playerOf(await cosmic(page));
@@ -81,9 +83,7 @@ test.describe("starting and steering", () => {
     await expect
       .poll(async () => playerOf(await cosmic(page)).x, { timeout: 8_000 })
       .toBeLessThan(turned.x - 30);
-    await expect
-      .poll(async () => playerOf(await cosmic(page)).facing, { timeout: 8_000 })
-      .toBe(-1);
+    await expect.poll(async () => playerOf(await cosmic(page)).facing, { timeout: 8_000 }).toBe(-1);
 
     // Down then up: the other axis. A swim pose rather than a walk.
     await holdKeys(page, ["down"]);
@@ -102,13 +102,13 @@ test.describe("starting and steering", () => {
     await startWithKeyboard(page);
 
     await page.keyboard.down("Space");
-    await expect.poll(async () => playerOf(await cosmic(page)).anim, { timeout: 10_000 }).toBe(
-      "jump",
-    );
+    await expect
+      .poll(async () => playerOf(await cosmic(page)).anim, { timeout: 10_000 })
+      .toBe("jump");
     await page.keyboard.up("Space");
-    await expect.poll(async () => playerOf(await cosmic(page)).anim, { timeout: 10_000 }).toBe(
-      "idle",
-    );
+    await expect
+      .poll(async () => playerOf(await cosmic(page)).anim, { timeout: 10_000 })
+      .toBe("idle");
 
     // The tarantula reacts to exactly one laser, so its reaction state is the browser
     // visible proof that the action event reached the simulation.
@@ -297,7 +297,9 @@ test.describe("pause and restart", () => {
   test("freezes the simulation while paused and resumes on demand", async ({ page }) => {
     await openGame(page, { seed: FRIENDLY_SEED });
     await startWithKeyboard(page);
-    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 20_000 }).toBeGreaterThan(20);
+    await expect
+      .poll(async () => (await cosmic(page)).tick, { timeout: 20_000 })
+      .toBeGreaterThan(20);
 
     await page.getByRole("button", { name: "Pause" }).click();
     await expect(page.locator(".cc-screen--pause")).toHaveClass(/cc-screen-active/);
@@ -308,9 +310,9 @@ test.describe("pause and restart", () => {
 
     await page.getByRole("button", { name: "Resume" }).click();
     await expect(page.locator(".cc-screen--pause")).not.toHaveClass(/cc-screen-active/);
-    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 20_000 }).toBeGreaterThan(
-      frozen,
-    );
+    await expect
+      .poll(async () => (await cosmic(page)).tick, { timeout: 20_000 })
+      .toBeGreaterThan(frozen);
   });
 
   test("restarts on the same seed and deals the same opening again", async ({ page }) => {
@@ -320,12 +322,16 @@ test.describe("pause and restart", () => {
     await expect(page.locator("[data-cc-seed]")).toHaveText(`seed ${String(FRIENDLY_SEED)}`);
 
     await startWithKeyboard(page);
-    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 20_000 }).toBeGreaterThan(20);
+    await expect
+      .poll(async () => (await cosmic(page)).tick, { timeout: 20_000 })
+      .toBeGreaterThan(20);
 
     await page.getByRole("button", { name: "Pause" }).click();
     await page.getByRole("button", { name: "Restart" }).click();
     await expect(page.locator(".cc-screen--pause")).not.toHaveClass(/cc-screen-active/);
-    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 20_000 }).toBeGreaterThan(0);
+    await expect
+      .poll(async () => (await cosmic(page)).tick, { timeout: 20_000 })
+      .toBeGreaterThan(0);
 
     const restarted = await cosmic(page);
     expect(restarted.seed).toBe(opening.seed);

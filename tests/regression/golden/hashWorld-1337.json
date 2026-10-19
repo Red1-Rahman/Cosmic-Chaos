@@ -3,18 +3,7 @@
   "seed": 1337,
   "fixedDt": 0.016666666666666666,
   "totalTicks": 840,
-  "checkpoints": [
-    60,
-    150,
-    210,
-    255,
-    300,
-    420,
-    570,
-    660,
-    720,
-    840
-  ],
+  "checkpoints": [60, 150, 210, 255, 300, 420, 570, 660, 720, 840],
   "phases": [
     {
       "name": "idle on the water",
@@ -71,13 +60,5 @@
     "720": "d533e9ca",
     "840": "9b930875"
   },
-  "eventTypes": [
-    "hit",
-    "jump",
-    "laser",
-    "spawn",
-    "splash",
-    "timeFieldEnter",
-    "timeFieldExit"
-  ]
+  "eventTypes": ["hit", "jump", "laser", "spawn", "splash", "timeFieldEnter", "timeFieldExit"]
 }

@@ -14,27 +14,33 @@ import { AUDIO_CUES, VOICES } from "../../src/audio/voices";
 import { listAssetReferences } from "../../src/assets/loader";
 import { TOUCH_DATA_ATTRIBUTE } from "../../src/input/touch";
 import { TITLE_COPY } from "../../src/ui/title";
-import { codeOnly, lineOf, manifest, readRepoFile, sourceFiles, sourceFilesIn, techStack } from "./helpers";
+import {
+  codeOnly,
+  lineOf,
+  manifest,
+  readRepoFile,
+  sourceFiles,
+  sourceFilesIn,
+  techStack,
+} from "./helpers";
 
 const files = sourceFiles();
 const clockPath = "src/app/clock.ts";
 const loaderPath = "src/assets/loader.ts";
 
 /** Every src file except the two the contract explicitly exempts. */
-const exceptExempt = files.filter(
-  (file) => file.path !== clockPath && file.path !== loaderPath,
-);
+const exceptExempt = files.filter((file) => file.path !== clockPath && file.path !== loaderPath);
 
 describe("determinism guardrails", () => {
   const banned: ReadonlyArray<readonly [string, RegExp, string]> = [
-    ["Math.random", /\bMath\s*\.\s*random\b/, "Use the seeded Mulberry32 streams in src/util/rng.ts."],
+    [
+      "Math.random",
+      /\bMath\s*\.\s*random\b/,
+      "Use the seeded Mulberry32 streams in src/util/rng.ts.",
+    ],
     ["Date.now", /\bDate\s*\.\s*now\b/, "Real time lives in src/app/clock.ts only."],
     ["new Date()", /\bnew\s+Date\b/, "A wall clock reading is banned outside src/app/clock.ts."],
-    [
-      "performance.now",
-      /\bperformance\s*\.\s*now\b/,
-      "Real time lives in src/app/clock.ts only.",
-    ],
+    ["performance.now", /\bperformance\s*\.\s*now\b/, "Real time lives in src/app/clock.ts only."],
     [
       "crypto.getRandomValues",
       /\bcrypto\s*\.\s*getRandomValues\b/,
@@ -52,7 +58,10 @@ describe("determinism guardrails", () => {
       const offenders = exceptExempt
         .map((file) => ({ file, code: codeOnly(file.text) }))
         .filter((entry) => pattern.test(entry.code))
-        .map((entry) => `${entry.file.path}:${String(lineOf(entry.code, pattern.exec(entry.code)?.index ?? 0))}`);
+        .map(
+          (entry) =>
+            `${entry.file.path}:${String(lineOf(entry.code, pattern.exec(entry.code)?.index ?? 0))}`,
+        );
       expect(offenders, `${name} is banned. ${fix}`).toEqual([]);
     });
   }
@@ -214,10 +223,18 @@ describe("manifest driven animation names", () => {
 
   it("resolves every animation name to a real animation or alias", () => {
     for (const [characterId, character] of Object.entries(manifest.characters)) {
-      const known = new Set([...Object.keys(character.animations), ...Object.keys(character.aliases)]);
-      const kind = Object.entries({ capybara: "player", orca: "orca", shark: "shark", tarantula: "tarantula", snail: "snail", human: "human" }).find(
-        ([id]) => id === characterId,
-      )?.[1];
+      const known = new Set([
+        ...Object.keys(character.animations),
+        ...Object.keys(character.aliases),
+      ]);
+      const kind = Object.entries({
+        capybara: "player",
+        orca: "orca",
+        shark: "shark",
+        tarantula: "tarantula",
+        snail: "snail",
+        human: "human",
+      }).find(([id]) => id === characterId)?.[1];
       const names = kind === undefined ? [] : (emitted.get(kind) ?? new Set<string>());
       for (const name of names) {
         expect(known.has(name), `${characterId}.${name}`).toBe(true);

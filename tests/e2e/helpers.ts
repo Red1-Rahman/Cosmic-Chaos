@@ -172,7 +172,9 @@ export async function startWithKeyboard(page: Page): Promise<void> {
     await expect.poll(async () => (await cosmic(page)).tick, { timeout: 3_000 }).toBeGreaterThan(0);
   } catch {
     await page.keyboard.press("Enter");
-    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 10_000 }).toBeGreaterThan(0);
+    await expect
+      .poll(async () => (await cosmic(page)).tick, { timeout: 10_000 })
+      .toBeGreaterThan(0);
   }
   await expect(page.locator(".cc-screen--title")).not.toHaveClass(/cc-screen-active/);
 }
@@ -238,11 +240,7 @@ export async function ticksOverFrames(page: Page, frames = 20): Promise<number[]
  * animation frames. A lunge lasts a few frames, so polling from node can easily miss
  * one; sampling inside the page cannot.
  */
-export async function statesOverFrames(
-  page: Page,
-  kind: string,
-  frames = 600,
-): Promise<string[]> {
+export async function statesOverFrames(page: Page, kind: string, frames = 600): Promise<string[]> {
   return page.evaluate(
     async ({ wanted, count }) => {
       const seen = new Set<string>();

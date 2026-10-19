@@ -38,7 +38,9 @@ test.describe("the game is stateless", () => {
     await page.getByRole("button", { name: "Pause" }).click();
     await expect(page.locator(".cc-screen--pause")).toHaveClass(/cc-screen-active/);
     await page.getByRole("button", { name: "Restart" }).click();
-    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 15_000 }).toBeGreaterThan(0);
+    await expect
+      .poll(async () => (await cosmic(page)).tick, { timeout: 15_000 })
+      .toBeGreaterThan(0);
 
     const writes = await page.evaluate(() => window.__storageWrites ?? []);
     expect(writes).toEqual([]);
@@ -102,7 +104,9 @@ test.describe("the game is stateless", () => {
 
     await page.getByRole("button", { name: "Pause" }).click();
     await page.getByRole("button", { name: "Restart" }).click();
-    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 15_000 }).toBeGreaterThan(0);
+    await expect
+      .poll(async () => (await cosmic(page)).tick, { timeout: 15_000 })
+      .toBeGreaterThan(0);
 
     // Everything the run changed is gone: the seed is the only thing that carried
     // over, and the arena is the opening arena again. Positions may have moved by the
@@ -136,11 +140,15 @@ test.describe("the game is stateless", () => {
     page.on("request", (request) => late.push(request.url()));
     await openGame(page, { seed: FRIENDLY_SEED });
     await startWithKeyboard(page);
-    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 15_000 }).toBeGreaterThan(30);
+    await expect
+      .poll(async () => (await cosmic(page)).tick, { timeout: 15_000 })
+      .toBeGreaterThan(30);
     late.length = 0;
     await page.getByRole("button", { name: "Pause" }).click();
     await page.getByRole("button", { name: "Restart" }).click();
-    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 15_000 }).toBeGreaterThan(10);
+    await expect
+      .poll(async () => (await cosmic(page)).tick, { timeout: 15_000 })
+      .toBeGreaterThan(10);
     expect(late).toEqual([]);
   });
 });

@@ -49,7 +49,9 @@ test.describe("served application", () => {
   test("serves a bundle that the document actually references", async ({ request }) => {
     const html = await (await request.get("/")).text();
     const scripts = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((match) => match[1] ?? "");
-    const styles = [...html.matchAll(/<link[^>]+href="([^"]+\.css)"/g)].map((match) => match[1] ?? "");
+    const styles = [...html.matchAll(/<link[^>]+href="([^"]+\.css)"/g)].map(
+      (match) => match[1] ?? "",
+    );
     expect(scripts.length).toBeGreaterThan(0);
     for (const href of [...scripts, ...styles]) {
       const response = await request.get(href.startsWith("/") ? href : `/${href}`);
@@ -71,9 +73,7 @@ test.describe("served application", () => {
 });
 
 test.describe("asset manifest", () => {
-  test("serves the manifest as JSON and it parses with the shipped parser", async ({
-    request,
-  }) => {
+  test("serves the manifest as JSON and it parses with the shipped parser", async ({ request }) => {
     const response = await request.get(`/${manifestUrl}`);
     expect(response.status()).toBe(200);
     expect(response.headers()["content-type"]).toContain("application/json");

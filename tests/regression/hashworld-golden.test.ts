@@ -44,7 +44,9 @@ describe("golden file integrity", () => {
   });
 
   it("still describes the script it was recorded against", () => {
-    expect(golden.phases).toEqual(PHASES.map((phase) => ({ name: phase.name, ticks: phase.ticks })));
+    expect(golden.phases).toEqual(
+      PHASES.map((phase) => ({ name: phase.name, ticks: phase.ticks })),
+    );
     expect(golden.totalTicks).toBe(scriptedInputs().length);
     expect(golden.checkpoints[golden.checkpoints.length - 1]).toBe(TOTAL_TICKS);
   });

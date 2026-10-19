@@ -41,7 +41,10 @@ function nearestPreset(width: number, height: number): string {
 test.describe("every viewport preset", () => {
   test("the manifest still offers the presets the brief names", () => {
     for (const id of ["16:9", "16:10", "4:3", "20:9", "29.5:9", "sqrt2:1", "1:sqrt2"]) {
-      expect(manifest.viewport.presets.map((preset) => preset.id), id).toContain(id);
+      expect(
+        manifest.viewport.presets.map((preset) => preset.id),
+        id,
+      ).toContain(id);
     }
     expect(manifest.viewport.presets.map((preset) => preset.id)).toContain("9:20");
   });
@@ -164,8 +167,10 @@ test.describe("resizing", () => {
     const box = await canvasBox(page);
     expect(box.width).toBeLessThanOrEqual(1001 + 1);
     expect(box.height).toBeLessThanOrEqual(999 + 1);
-    expect((1001 - box.width > 1) && (999 - box.height > 1)).toBe(false);
-    const bodyBackground = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    expect(1001 - box.width > 1 && 999 - box.height > 1).toBe(false);
+    const bodyBackground = await page.evaluate(
+      () => getComputedStyle(document.body).backgroundColor,
+    );
     expect(toHex(bodyBackground)).toBe(BAR_COLOR);
   });
 });

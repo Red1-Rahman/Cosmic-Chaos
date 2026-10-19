@@ -768,7 +768,11 @@ describe("seeded stream contract", () => {
     const first = createRng(SEED).fork("sim");
     const second = createRng(SEED).fork("sim");
     expect(first.next()).toBe(second.next());
-    expect(createRng(SEED).fork("sim").next()).not.toBe(createRng(SEED + 1).fork("sim").next());
+    expect(createRng(SEED).fork("sim").next()).not.toBe(
+      createRng(SEED + 1)
+        .fork("sim")
+        .next(),
+    );
   });
 
   it("never puts an enemy outside the arena after a long unforced run", () => {

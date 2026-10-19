@@ -105,9 +105,9 @@ test.describe("virtual touch controls on a phone viewport", () => {
     // A tap is short, so the assertion is on the input side: the control registered
     // the pointer and released it again without leaving anything stuck down.
     await expect(jump).toHaveAttribute("data-pressed", "false");
-    expect(await page.evaluate(() => document.querySelectorAll("[data-pressed='true']").length)).toBe(
-      0,
-    );
+    expect(
+      await page.evaluate(() => document.querySelectorAll("[data-pressed='true']").length),
+    ).toBe(0);
   });
 
   test("keeps the touch overlay from stealing the whole screen", async ({ page }) => {

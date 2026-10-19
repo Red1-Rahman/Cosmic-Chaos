@@ -93,8 +93,6 @@ describe("characters.json shape", () => {
     expect(characters.world.arenaBackground).toBe(manifest.arena.background);
     expect(characters.milestone1.name).not.toBe("");
     expect(characters.milestone1.spawn.rule).toMatch(/seeded/i);
-    expect(characters.milestone1.spawn.seedDefault).toBe(
-      manifest.arena.spawn.seedDefault,
-    );
+    expect(characters.milestone1.spawn.seedDefault).toBe(manifest.arena.spawn.seedDefault);
   });
 });
