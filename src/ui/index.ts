@@ -11,7 +11,7 @@ import { el } from "./dom.js";
 import { LICENSE_EXIT_KEY } from "./license-text.js";
 import type { HudModel, Screen, Ui, UiCallbacks } from "./types.js";
 
-export type { HudModel, LevelView, ObjectiveView, Screen, Ui, UiCallbacks } from "./types.js";
+export type { HudModel, LevelView, ObjectiveView, Screen, TutorialView, Ui, UiCallbacks } from "./types.js";
 export type { DialogueView } from "./types.js";
 
 export interface UiOptions {
