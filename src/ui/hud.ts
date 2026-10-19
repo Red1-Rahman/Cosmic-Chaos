@@ -114,6 +114,7 @@ interface Cached {
   riderName: string;
   objectives: string;
   dialogue: string;
+  tutorial: string;
   elapsed: number;
   dodge: number;
   parry: number;
@@ -132,6 +133,7 @@ const NOTHING: Cached = {
   riderName: "",
   objectives: "",
   dialogue: "",
+  tutorial: "",
   elapsed: Number.NaN,
   dodge: Number.NaN,
   parry: Number.NaN,
