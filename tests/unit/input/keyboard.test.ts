@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { createKeyboard, isGameKeyCode } from "../../../src/input/keyboard.js";
-import { FakeDomEvent, FakeWindow, asWindow } from "./fakes.js";
+import { createKeyboard, isEditableTarget, isGameKeyCode } from "../../../src/input/keyboard.js";
+import { FakeDomEvent, FakeElement, FakeWindow, asWindow } from "./fakes.js";
 
 function setup(): { win: FakeWindow; target: Window; press: (code: string) => FakeDomEvent } {
   const win = new FakeWindow();
@@ -205,5 +205,90 @@ describe("keyboard", () => {
       parry: false,
     });
     expect(win.listenerCount("keydown")).toBe(0);
+  });
+
+  it("recognises editable targets by duck type", () => {
+    expect(isEditableTarget(new FakeElement("input"))).toBe(true);
+    expect(isEditableTarget(new FakeElement("textarea"))).toBe(true);
+    expect(isEditableTarget(new FakeElement("select"))).toBe(true);
+    expect(isEditableTarget({ isContentEditable: true })).toBe(true);
+    expect(isEditableTarget(new FakeElement("button"))).toBe(false);
+    expect(isEditableTarget({ tagName: "input", type: "checkbox" })).toBe(false);
+    expect(isEditableTarget({ tagName: "input", type: "range" })).toBe(false);
+    expect(isEditableTarget(null)).toBe(false);
+    expect(isEditableTarget(undefined)).toBe(false);
+  });
+
+  it("leaves keystrokes to a focused text field", () => {
+    const { win, target } = setup();
+    let marks = 0;
+    const keys = createKeyboard(target, {
+      markActive: () => {
+        marks += 1;
+      },
+    });
+    const field = new FakeElement("input");
+
+    const steer = win.dispatch(new FakeDomEvent("keydown", { code: "KeyW", target: field }));
+    const hop = win.dispatch(new FakeDomEvent("keydown", { code: "Space", target: field }));
+
+    expect(steer.defaultPrevented).toBe(false);
+    expect(hop.defaultPrevented).toBe(false);
+    expect(marks).toBe(0);
+    expect(keys.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
+  });
+
+  it("drops held keys when focus lands in a field", () => {
+    const { win, target, press } = setup();
+    const keys = createKeyboard(target);
+    press("KeyD");
+    expect(keys.poll().moveX).toBe(1);
+
+    win.document.dispatch(new FakeDomEvent("focusin", { target: new FakeElement("input") }));
+
+    expect(keys.poll().moveX).toBe(0);
+  });
+
+  it("keeps focus outside a field steering", () => {
+    const { win, target, press } = setup();
+    const keys = createKeyboard(target);
+
+    win.document.dispatch(new FakeDomEvent("focusin", { target: new FakeElement("button") }));
+    press("KeyD");
+
+    expect(keys.poll().moveX).toBe(1);
+  });
+
+  it("releases without preventing default when the keyup lands in a field", () => {
+    const { win, target, press } = setup();
+    const keys = createKeyboard(target);
+    press("KeyD");
+    expect(keys.poll().moveX).toBe(1);
+
+    const up = win.dispatch(
+      new FakeDomEvent("keyup", { code: "KeyD", target: new FakeElement("input") }),
+    );
+
+    expect(up.defaultPrevented).toBe(false);
+    expect(keys.poll().moveX).toBe(0);
+  });
+
+  it("treats a contenteditable node as a field", () => {
+    const { win, target } = setup();
+    const keys = createKeyboard(target);
+
+    const event = win.dispatch(
+      new FakeDomEvent("keydown", { code: "KeyA", target: { isContentEditable: true } }),
+    );
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(keys.poll().moveX).toBe(0);
   });
 });

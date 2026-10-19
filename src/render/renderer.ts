@@ -1,10 +1,18 @@
 // Arena renderer. Reads the world, draws a frame, mutates nothing.
 //
 // The canvas internal buffer is the viewport preset's logical size, which is
-// not the 1408x768 arena box. So every frame maps the arena box into the canvas
-// with a contain fit (`computeArenaView`) and draws in arena coordinates inside
-// that transform. Because the fit is always contain, the whole arena is on
-// screen at every preset, and the play band is therefore always fully visible.
+// not the 1408x768 arena box. Every frame maps the arena box into the canvas
+// with a camera transform (`computeArenaView`) and draws in arena coordinates
+// inside it. The camera zooms onto the play band instead of contain fitting
+// the whole arena: the scale never drops below cover (so the arena always
+// fills the canvas, never a gap), the play band keeps at least 45% of the
+// canvas height wherever the width allows it, and the focus follows the
+// player horizontally, clamped so the art edges stay on screen. Without a
+// player the focus rests on the band centre.
+//
+// The background is art rather than a coordinate space, but it is drawn inside
+// the same transform, cover fitted to the arena box: it then pans with the
+// camera, and the clamped offsets keep it full bleed at every preset.
 //
 // Rules: this file holds none. It reads positions, the animation name and the
 // handful of `entity.props` scratch numbers the sim already publishes, and it
@@ -15,7 +23,7 @@ import type { Atlas } from "../assets/atlas";
 import { pickBackground } from "../assets/backgrounds";
 import type { BackgroundChoice } from "../assets/backgrounds";
 import type { DecodedImage } from "../assets/loader";
-import type { Manifest, ProceduralProp } from "../assets/manifest-types";
+import type { Manifest, PlayBand, ProceduralProp } from "../assets/manifest-types";
 import type { Entity, GameEvent, World } from "../sim/types";
 import {
   clamp01,
@@ -101,20 +109,57 @@ export interface ArenaView {
   readonly height: number;
 }
 
+/** Share of the canvas height the play band fills, when the width cap allows it. */
+export const BAND_HEIGHT_FILL = 0.45;
+
+/** Share of the canvas width that stays on the band once the width cap bites. */
+export const BAND_WIDTH_KEEP = 0.65;
+
+/** Where the band centre sits on the canvas, as a share of the canvas height. */
+export const BAND_ANCHOR_Y = 0.6;
+
+/** Keep a value inside [min, max] whichever order the bounds arrive in. */
+const clampTo = (value: number, min: number, max: number): number =>
+  min <= max ? Math.min(Math.max(value, min), max) : Math.min(Math.max(value, max), min);
+
 /**
- * Contain fit of the arena box into the canvas box. Always contain, never cover
- * and never stretch, so no preset can push the play band off screen.
+ * The camera: arena box mapped into the canvas box, zoomed onto the play band.
+ *
+ * The scale never drops below cover, so the arena always fills the canvas and
+ * the background can never leave a gap. Above cover it grows until the band
+ * holds `BAND_HEIGHT_FILL` of the canvas height, capped so at least
+ * `BAND_WIDTH_KEEP` of the band's width stays visible. Offsets are clamped to
+ * the arena edges, which keeps coverage true at any scale: horizontal focus is
+ * the player (`focusX`), or the band centre without one, vertical is fixed on
+ * the band at `BAND_ANCHOR_Y`.
  */
-export function computeArenaView(arena: Size, logical: Size): ArenaView {
-  const scale = Math.min(logical.w / arena.w, logical.h / arena.h);
-  const width = arena.w * scale;
-  const height = arena.h * scale;
+export function computeArenaView(
+  arena: Size,
+  logical: Size,
+  band: PlayBand,
+  focusX?: number,
+): ArenaView {
+  const cover = Math.max(logical.w / arena.w, logical.h / arena.h);
+  const bandW = Math.max(1, band.maxX - band.minX);
+  const bandH = Math.max(1, band.maxY - band.minY);
+  const desired = (BAND_HEIGHT_FILL * logical.h) / bandH;
+  const widthCap = logical.w / (bandW * BAND_WIDTH_KEEP);
+  const scale = Math.max(cover, Math.min(desired, widthCap));
+
+  const focus = focusX ?? (band.minX + band.maxX) / 2;
+  const bandMidY = (band.minY + band.maxY) / 2;
+  const offsetX = clampTo(logical.w / 2 - focus * scale, logical.w - arena.w * scale, 0);
+  const offsetY = clampTo(
+    logical.h * BAND_ANCHOR_Y - bandMidY * scale,
+    logical.h - arena.h * scale,
+    0,
+  );
   return {
     scale,
-    offsetX: (logical.w - width) / 2,
-    offsetY: (logical.h - height) / 2,
-    width,
-    height,
+    offsetX,
+    offsetY,
+    width: arena.w * scale,
+    height: arena.h * scale,
   };
 }
 

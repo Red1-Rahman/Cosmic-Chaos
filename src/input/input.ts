@@ -1,12 +1,14 @@
-// Merged input: keyboard, gamepad and virtual touch, one InputState per frame.
-// Merge rule: the most recently active device wins, and diagonal movement is
-// clamped so the Capybara never moves faster on a diagonal.
+// Merged input: keyboard, gamepad, virtual touch and the mouse trigger, one
+// InputState per frame. Merge rule: the most recently active device wins,
+// except the water cannon trigger, which any device may hold at once, and
+// diagonal movement is clamped so the Capybara never moves faster on a diagonal.
 //
 // InputState is imported from src/sim/types.ts. Nothing here imports the sim
 // for anything but that type, and nothing here touches the simulation itself.
 import type { InputState } from "../sim/types.js";
 import { createGamepad } from "./gamepad.js";
 import { createKeyboard } from "./keyboard.js";
+import { createPointer } from "./pointer.js";
 import { createTouchState, mountTouchOverlay, shouldShowTouchControls } from "./touch.js";
 
 export type { InputState };
@@ -91,6 +93,7 @@ export function createInput(target: Window): InputSource {
       overlay?.dispose();
     },
   };
+  const pointer = createPointer(target);
 
   const applyVisibility = (): void => {
     const overlayRoot = overlay?.root;
@@ -116,7 +119,12 @@ export function createInput(target: Window): InputSource {
       const afterGamepad = best(gamepad.poll(), gamepadAt, afterKeyboard.state, afterKeyboard.at);
       const afterTouch = best(touch.poll(), touchAt, afterGamepad.state, afterGamepad.at);
 
-      return afterTouch.state === null ? NEUTRAL_INPUT : toState(afterTouch.state);
+      // The mouse trigger is shared, never ranked: it adds action to whatever
+      // device won the steering contest, so W A S D and a click both count.
+      const pointerState = pointer.poll();
+      const base = afterTouch.state ?? (isActive(pointerState) ? pointerState : null);
+      if (base === null) return NEUTRAL_INPUT;
+      return toState(pointerState.action ? { ...base, action: true } : base);
     },
     dispose(): void {
       target.removeEventListener("resize", applyVisibility);
@@ -124,6 +132,7 @@ export function createInput(target: Window): InputSource {
       keyboard.dispose();
       gamepad.dispose();
       touch.dispose();
+      pointer.dispose();
     },
   };
 }

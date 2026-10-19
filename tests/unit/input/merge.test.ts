@@ -128,6 +128,51 @@ describe("createInput merge", () => {
     expect(input.poll()).toEqual(NEUTRAL);
   });
 
+  it("fires from the mouse alone", () => {
+    const { win, input } = setup();
+    win.dispatch(
+      new FakeDomEvent("pointerdown", { pointerId: 1, button: 0, target: { id: "stage" } }),
+    );
+
+    expect(input.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: false,
+      action: true,
+      dodge: false,
+      parry: false,
+    });
+  });
+
+  it("adds a mouse press to whatever device is steering", () => {
+    const { win, input } = setup();
+    win.dispatch(new FakeDomEvent("keydown", { code: "KeyD" }));
+    win.dispatch(
+      new FakeDomEvent("pointerdown", { pointerId: 1, button: 0, target: { id: "stage" } }),
+    );
+
+    const state = input.poll();
+    expect(state.moveX).toBe(1);
+    expect(state.action).toBe(true);
+  });
+
+  it("keeps steering while the mouse press lifts", () => {
+    const { win, input } = setup();
+    win.dispatch(new FakeDomEvent("keydown", { code: "KeyW" }));
+    win.dispatch(
+      new FakeDomEvent("pointerdown", { pointerId: 1, button: 0, target: { id: "stage" } }),
+    );
+    expect(input.poll().action).toBe(true);
+
+    win.dispatch(
+      new FakeDomEvent("pointerup", { pointerId: 1, button: 0, target: { id: "stage" } }),
+    );
+
+    const state = input.poll();
+    expect(state.moveY).toBe(-1);
+    expect(state.action).toBe(false);
+  });
+
   it("shows the overlay class for the current viewport", () => {
     const { win } = setup();
     const root = win.document.body.children[0];

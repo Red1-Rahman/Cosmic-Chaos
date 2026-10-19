@@ -16,7 +16,7 @@ export const CONTROLS_COPY = {
   rows: [
     ["Move", "W A S D, or the arrow keys, or the left stick"],
     ["Hop", "Space, or the south gamepad button"],
-    ["Water cannon", "J or Shift, or the west gamepad button"],
+    ["Water cannon", "J or Shift, click or tap the water, or the west gamepad button"],
     ["Dodge", "K, or the north gamepad button"],
     ["Parry", "L or Q, or the east gamepad button"],
     ["Pause", "The pause button in the corner"],

@@ -118,7 +118,7 @@ export const LEVELS: readonly LevelDefinition[] = Object.freeze([
     cores: 4,
     obstacles: [reef(330, 600), pillar(640, 500), reef(880, 646)],
     roster: FULL_ROSTER,
-    hint: "Ride over a core to pick it up. Space hops, J sprays the water cannon.",
+    hint: "Ride over a core to pick it up. Space hops; J or a click sprays the water cannon.",
   },
   {
     id: 2,

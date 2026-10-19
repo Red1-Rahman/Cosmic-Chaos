@@ -10,6 +10,10 @@ export interface FakeEvent {
 interface FakeEventInit {
   pointerId?: number;
   code?: string;
+  button?: number;
+  buttons?: number;
+  /** Event target, set by tests that need target-aware handlers. */
+  target?: unknown;
 }
 
 export class FakeDomEvent implements FakeEvent {
@@ -17,11 +21,17 @@ export class FakeDomEvent implements FakeEvent {
   defaultPrevented = false;
   readonly pointerId: number | undefined;
   readonly code: string | undefined;
+  readonly button: number | undefined;
+  readonly buttons: number | undefined;
+  readonly target: unknown;
 
   constructor(type: string, init: FakeEventInit = {}) {
     this.type = type;
     this.pointerId = init.pointerId;
     this.code = init.code;
+    this.button = init.button;
+    this.buttons = init.buttons;
+    this.target = init.target;
   }
 
   preventDefault(): void {
