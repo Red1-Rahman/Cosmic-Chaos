@@ -73,7 +73,7 @@ test.describe("the game is stateless", () => {
     expect((await cosmic(page)).tick).toBeGreaterThan(0);
 
     await page.reload();
-    await page.waitForFunction(() => typeof window.__cosmic === "object" && window.__cosmic !== null);
+    await page.waitForFunction(() => window.__cosmic !== undefined);
     const reloaded = await cosmic(page);
     expect(reloaded.tick).toBe(0);
     expect(reloaded.entities.map((entity) => [entity.id, entity.x, entity.y, entity.hp])).toEqual(

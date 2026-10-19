@@ -143,7 +143,9 @@ export function codeOnly(text: string): string {
       out += '""';
       continue;
     }
-    out += ch;
+    // charAt, not text[i]: an index past the end yields undefined and the scanner is
+    // explicitly allowed to run off the end while it is inside a string.
+    out += text.charAt(i);
     i += 1;
   }
   return out;

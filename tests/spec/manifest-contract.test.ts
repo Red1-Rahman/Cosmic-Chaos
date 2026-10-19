@@ -40,10 +40,11 @@ describe("assets.json shape", () => {
     for (const sprite of manifest.sprites) {
       expect(characterIds, `${sprite.id} character`).toContain(sprite.character);
     }
-    for (const character of Object.values(manifest.characters)) {
+    for (const [characterId, character] of Object.entries(manifest.characters)) {
+      // The record key is the character id; the definition carries no id of its own.
       for (const animation of Object.values(character.animations)) {
         for (const keyframe of animation.keyframes) {
-          expect(spriteIds, `${character.id} ${keyframe.sprite}`).toContain(keyframe.sprite);
+          expect(spriteIds, `${characterId} ${keyframe.sprite}`).toContain(keyframe.sprite);
         }
       }
     }

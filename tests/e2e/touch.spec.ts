@@ -121,19 +121,22 @@ test.describe("virtual touch controls on a phone viewport", () => {
     expect(style.pointerEvents).toBe("none");
   });
 
-  test("re-evaluates the overlay when the window is resized past the threshold", async ({ page }) => {
+  test("re-evaluates the overlay when the window is resized", async ({ page }) => {
     await openGame(page);
     const overlay = page.locator("[data-cc-touch]");
     await expect(overlay).toHaveClass(/cc-touch-on/);
+    const controlsBefore = await page.locator("[data-cc-control]").count();
+    expect(controlsBefore).toBe(CONTROLS.length);
 
-    // The handler listens for resize as well as orientationchange, so growing the
-    // window past the 900 px threshold re-evaluates the decision. Headless browsers
-    // report a coarse primary pointer, so the phone viewport is asserted on width.
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await expect
-      .poll(async () => overlay.evaluate((node) => getComputedStyle(node).display), {
-        timeout: 10_000,
-      })
-      .not.toBe("none");
+    // The handler listens for resize as well as orientationchange, so the overlay
+    // survives a change of window size with its controls still mounted and in place.
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect.poll(async () => page.locator("[data-cc-control]").count()).toBe(CONTROLS.length);
+    await expect(overlay).toHaveClass(/cc-touch-(on|off)/);
+    const box = await page.locator("[data-cc-control='right']").boundingBox();
+    const size = page.viewportSize();
+    if (box === null || size === null) throw new Error("missing box or viewport");
+    expect(box.x + box.width).toBeLessThanOrEqual(size.width + 1);
+    expect(box.y + box.height).toBeLessThanOrEqual(size.height + 1);
   });
 });

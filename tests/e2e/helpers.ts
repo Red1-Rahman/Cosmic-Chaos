@@ -128,12 +128,17 @@ export async function openGame(
   params.set("test", options.test === false ? "0" : "1");
   if (options.seed !== undefined) params.set("seed", String(options.seed));
   await page.goto(`/?${params.toString()}`);
-  await page.waitForFunction(() => typeof window.__cosmic === "object" && window.__cosmic !== null);
+  await page.waitForFunction(() => window.__cosmic !== undefined);
 }
 
 /** The live snapshot. Always a fresh object, so it can never be stale. */
 export async function cosmic(page: Page): Promise<CosmicSnapshot> {
-  return page.evaluate(() => JSON.parse(JSON.stringify(window.__cosmic)) as CosmicSnapshot);
+  return page.evaluate(() => {
+    const snapshot = window.__cosmic;
+    if (snapshot === undefined) throw new Error("window.__cosmic is not installed");
+    // A JSON round trip drops the frozen snapshot and gives node plain data.
+    return JSON.parse(JSON.stringify(snapshot)) as CosmicSnapshot;
+  });
 }
 
 export function playerOf(snapshot: CosmicSnapshot): EntitySnapshot {
@@ -199,6 +204,7 @@ export async function releaseAll(page: Page): Promise<void> {
 export async function stateOf(page: Page, kind: string): Promise<string> {
   return page.evaluate((wanted) => {
     const snapshot = window.__cosmic;
+    if (snapshot === undefined) throw new Error("window.__cosmic is not installed");
     return snapshot.entities.find((entity) => entity.kind === wanted)?.state ?? "";
   }, kind);
 }
@@ -211,8 +217,14 @@ export async function ticksOverFrames(page: Page, frames = 20): Promise<number[]
   return page.evaluate(async (count) => {
     const seen = new Set<number>();
     for (let i = 0; i < count; i += 1) {
-      seen.add(window.__cosmic.tick);
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const snapshot = window.__cosmic;
+      if (snapshot === undefined) throw new Error("window.__cosmic is not installed");
+      seen.add(snapshot.tick);
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
     }
     return [...seen];
   }, frames);
@@ -232,9 +244,15 @@ export async function statesOverFrames(
     async ({ wanted, count }) => {
       const seen = new Set<string>();
       for (let i = 0; i < count; i += 1) {
-        const entity = window.__cosmic.entities.find((entry) => entry.kind === wanted);
+        const snapshot = window.__cosmic;
+        if (snapshot === undefined) throw new Error("window.__cosmic is not installed");
+        const entity = snapshot.entities.find((entry) => entry.kind === wanted);
         if (entity !== undefined) seen.add(entity.state);
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
       }
       return [...seen];
     },
@@ -255,13 +273,13 @@ export async function driveToward(
 ): Promise<EntitySnapshot> {
   const tolerance = options.tolerance ?? 40;
   const deadline = Date.now() + (options.timeout ?? 30_000);
-  let last = playerOf(await cosmic(page));
   await releaseAll(page);
   while (Date.now() < deadline) {
-    const snapshot = await cosmic(page);
-    const player = playerOf(snapshot);
-    last = player;
-    if (done(player)) break;
+    const player = playerOf(await cosmic(page));
+    if (done(player)) {
+      await releaseAll(page);
+      return player;
+    }
     const goal = await target();
     const keys: KeyName[] = [];
     if (goal.x - player.x > tolerance) keys.push("right");
@@ -269,11 +287,14 @@ export async function driveToward(
     if (goal.y - player.y > tolerance) keys.push("down");
     else if (goal.y - player.y < -tolerance) keys.push("up");
     await holdKeys(page, keys);
-    await page.waitForFunction(() => window.__cosmic.tick % 4 === 0);
+    // Pace on the simulation itself: four frames of drift per pass.
+    await page.waitForFunction(() => {
+      const snapshot = window.__cosmic;
+      return snapshot !== undefined && snapshot.tick % 4 === 0;
+    });
   }
   await releaseAll(page);
-  last = playerOf(await cosmic(page));
-  return last;
+  return playerOf(await cosmic(page));
 }
 
 /** The preset id the HUD reports for the layout currently applied. */

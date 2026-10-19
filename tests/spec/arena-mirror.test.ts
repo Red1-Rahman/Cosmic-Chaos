@@ -103,11 +103,11 @@ describe("SPAWN_RULES mirrors assets.json", () => {
     ];
     for (const fraction of fractions) {
       expect(fraction.x[0]).toBeGreaterThanOrEqual(0);
-      expect(fraction.x[0]).toBeLessThan(fraction.x[1] ?? 0);
-      expect(fraction.x[1] ?? 0).toBeLessThanOrEqual(1);
+      expect(fraction.x[0]).toBeLessThan(fraction.x[1]);
+      expect(fraction.x[1]).toBeLessThanOrEqual(1);
       expect(fraction.y[0]).toBeGreaterThanOrEqual(0);
-      expect(fraction.y[0]).toBeLessThan(fraction.y[1] ?? 0);
-      expect(fraction.y[1] ?? 0).toBeLessThanOrEqual(1);
+      expect(fraction.y[0]).toBeLessThan(fraction.y[1]);
+      expect(fraction.y[1]).toBeLessThanOrEqual(1);
     }
   });
 
