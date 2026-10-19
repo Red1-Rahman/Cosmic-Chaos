@@ -305,8 +305,6 @@ export function createRenderer(
   const crystals: CrystalSpec = readCrystalGlow(findProp(manifest, "crystal-glow"));
   const stardust = readStardust(findProp(manifest, "stardust"));
 
-  let view: ArenaView | undefined;
-  let appliedLogical: Size | undefined;
   let reducedMotion = options.reducedMotion ?? false;
   let seed = options.seed ?? 0;
   let seedKnown = options.seed !== undefined;
@@ -322,9 +320,15 @@ export function createRenderer(
   let flashY = 0;
   const flashLimiter = createFlashLimiter();
 
-  const applyLayout = (layout: Layout): void => {
-    view = computeArenaView(manifest.arena.logical, layout.logical);
-    appliedLogical = layout.logical;
+  /**
+   * The camera's horizontal focus: the player's x, interpolated between ticks
+   * exactly like its sprite, or undefined so the view rests on the band centre.
+   */
+  const focusXFor = (player: Entity | undefined, t: number, interpolate: boolean): number | undefined => {
+    if (player === undefined) return undefined;
+    if (!interpolate || previous === undefined) return player.x;
+    const cached = previous.positions.get(player.id);
+    return cached === undefined ? player.x : lerp(cached.x, player.x, t);
   };
 
   const ensureSeed = (world: World): void => {
@@ -353,17 +357,21 @@ export function createRenderer(
         ? manifest.arena.background
         : levelById(world.levelId).backgroundId;
     const slot = backgroundFor(backgroundId, layout.preset.id);
+    const arena = manifest.arena.logical;
     const image = slot.image;
+    // Painted inside the camera transform, in arena coordinates: the rect
+    // cover fits the arena box, and the clamped camera offsets keep that box
+    // over the whole canvas at every preset, so there is never a gap.
     if (image === undefined) {
       ctx.fillStyle = FALLBACK_BACKGROUND_COLOR;
-      ctx.fillRect(0, 0, layout.logical.w, layout.logical.h);
+      ctx.fillRect(0, 0, arena.w, arena.h);
       return;
     }
     const rect = coverFit(
       image.width,
       image.height,
-      layout.logical.w,
-      layout.logical.h,
+      arena.w,
+      arena.h,
       slot.choice.focalX,
       slot.choice.focalY,
     );
@@ -528,24 +536,24 @@ export function createRenderer(
     alpha: number,
   ): void => {
     ensureSeed(world);
-    // The view follows the layout handed to render, so a preset change lands on
-    // the very next frame even when resize was never called.
-    const logicalChanged =
-      appliedLogical === undefined ||
-      appliedLogical.w !== layout.logical.w ||
-      appliedLogical.h !== layout.logical.h;
-    if (view === undefined || logicalChanged) applyLayout(layout);
-    const arenaView = view;
-    if (arenaView === undefined) return;
 
     const t = Number.isFinite(alpha) ? (alpha < 0 ? 0 : alpha > 1 ? 1 : alpha) : 1;
     const interpolate = previous !== undefined && previous.tick === world.tick - 1;
-
-    paintBackground(ctx, world, layout);
+    const player = world.entities.find((entity) => entity.kind === "player");
+    // The camera is rebuilt every frame: its focus moves with the player, and
+    // a preset change lands on the very next frame even without a resize.
+    const arenaView = computeArenaView(
+      manifest.arena.logical,
+      layout.logical,
+      manifest.arena.playBand,
+      focusXFor(player, t, interpolate),
+    );
 
     ctx.save();
     ctx.translate(arenaView.offsetX, arenaView.offsetY);
     ctx.scale(arenaView.scale, arenaView.scale);
+
+    paintBackground(ctx, world, layout);
 
     // Shore props sit behind everything: they are on the shore, not in the water.
     drawCrystalGlows(ctx, crystals, world.timeMs, reducedMotion);
@@ -560,7 +568,6 @@ export function createRenderer(
 
     drawCores(ctx, world.cores, CORES.radius, world.timeMs, reducedMotion);
 
-    const player = world.entities.find((entity) => entity.kind === "player");
     if (player !== undefined) {
       const window = player.props["parryWindowMs"] ?? 0;
       if (window > 0) {
@@ -592,7 +599,11 @@ export function createRenderer(
 
   return {
     render,
-    resize: applyLayout,
+    resize: (_layout: Layout): void => {
+      // Nothing to cache: the camera view is rebuilt every frame because its
+      // focus follows the player, and the viewport owns the canvas buffer.
+      // The hook stays so the app has one explicit layout signal.
+    },
     pushEvent: (event: GameEvent): void => {
       if (queued.length < 64) queued.push(event);
     },

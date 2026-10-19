@@ -116,6 +116,29 @@ export type GameEvent =
 
 export type WorldStatus = "playing" | "defeat" | "victory";
 
+/**
+ * The staged onboarding run's private book. Pure data; the logic lives in
+ * `sim/tutorial.ts`. Optional on a world so a normal run is completely unchanged and
+ * every existing fixture keeps working.
+ */
+export interface TutorialState {
+  /** 0..5, the card currently on screen. */
+  stage: number;
+  /** True once the last stage has run its course and nothing is withheld any more. */
+  finished: boolean;
+  /** Pixels the rider has covered since the current stage began. */
+  travelled: number;
+  /** Rider position at the previous step, feeding the travelled accumulator. */
+  lastX: number;
+  lastY: number;
+  /** Steps spent in the current stage, driving every fallback timeout. */
+  stageTicks: number;
+  /** Entities withheld until a later stage reveals them. */
+  pendingEntities: Entity[];
+  /** Cores withheld until the collection stage reveals them. */
+  pendingCores: Core[];
+}
+
 export interface World {
   seed: number;
   tick: number;
@@ -136,4 +159,6 @@ export interface World {
   staggerTally: Record<string, number>;
   /** The line currently on screen, or null. */
   dialogue: DialogueLine | null;
+  /** Staged onboarding book, present only while a tutorial run is in progress. */
+  tutorial?: TutorialState;
 }

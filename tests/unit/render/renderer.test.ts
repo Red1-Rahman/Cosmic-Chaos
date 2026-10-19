@@ -10,6 +10,7 @@ import {
   depthFactor,
   drawSprite,
 } from "../../../src/render/renderer";
+import type { Size } from "../../../src/render/viewport";
 import {
   backgroundImages,
   fakeImage,
@@ -58,30 +59,76 @@ function spriteAnchors(canvas: ReturnType<typeof createFakeCanvas>): SpriteAncho
 }
 
 describe("computeArenaView", () => {
-  it("contain fits the 1408x768 arena into a 1408x792 canvas", () => {
-    const view = computeArenaView({ w: 1408, h: 768 }, { w: 1408, h: 792 });
-    expect(view.scale).toBeCloseTo(1, 10);
-    expect(view.offsetX).toBeCloseTo(0, 10);
-    expect(view.offsetY).toBeCloseTo(12, 10);
-  });
+  const arena = { w: 1408, h: 768 };
+  const band = manifest.arena.playBand;
+  const bandW = band.maxX - band.minX;
+  const bandMidX = (band.minX + band.maxX) / 2;
 
-  it("keeps the whole arena on screen at the widest preset", () => {
-    const view = computeArenaView({ w: 1408, h: 768 }, { w: 1770, h: 540 });
-    expect(view.scale).toBeCloseTo(540 / 768, 10);
-    expect(view.offsetX).toBeGreaterThanOrEqual(0);
-    expect(view.offsetY).toBeCloseTo(0, 10);
-    expect(view.offsetX + view.width).toBeLessThanOrEqual(1770 + 1e-6);
-  });
+  /** The arena box must always contain the canvas box: a zoom may crop, never gap. */
+  const expectCoverage = (view: ReturnType<typeof computeArenaView>, logical: Size): void => {
+    expect(view.offsetX).toBeLessThanOrEqual(1e-6);
+    expect(view.offsetY).toBeLessThanOrEqual(1e-6);
+    expect(view.offsetX + view.width).toBeGreaterThanOrEqual(logical.w - 1e-6);
+    expect(view.offsetY + view.height).toBeGreaterThanOrEqual(logical.h - 1e-6);
+  };
 
-  it("keeps the play band fully visible at the tallest preset", () => {
-    const view = computeArenaView({ w: 1408, h: 768 }, { w: 810, h: 1800 });
-    const band = manifest.arena.playBand;
+  it("zooms onto the play band at the 16:9 preset", () => {
+    const logical = { w: 1408, h: 792 };
+    const view = computeArenaView(arena, logical, band);
+    expect(view.scale).toBeCloseTo(1.65, 10);
+    expect(view.offsetX).toBeCloseTo(-457.6, 10);
+    expect(view.offsetY).toBeCloseTo(-475.2, 10);
     const top = view.offsetY + band.minY * view.scale;
     const bottom = view.offsetY + band.maxY * view.scale;
-    expect(top).toBeGreaterThanOrEqual(0);
-    expect(bottom).toBeLessThanOrEqual(1800);
-    expect(view.offsetX + band.minX * view.scale).toBeGreaterThanOrEqual(0);
-    expect(view.offsetX + band.maxX * view.scale).toBeLessThanOrEqual(810 + 1e-6);
+    // The band fills 45% of the canvas height, its centre anchored at 0.6.
+    expect(bottom - top).toBeCloseTo(0.45 * logical.h, 6);
+    expect((top + bottom) / 2).toBeCloseTo(0.6 * logical.h, 6);
+    expectCoverage(view, logical);
+  });
+
+  it("caps the zoom so two thirds of the band width stays visible at 4:3", () => {
+    const logical = { w: 1024, h: 768 };
+    const view = computeArenaView(arena, logical, band);
+    expect(view.scale).toBeCloseTo(logical.w / (bandW * 0.65), 10);
+    expect(logical.w / view.scale).toBeCloseTo(bandW * 0.65, 6);
+    expectCoverage(view, logical);
+  });
+
+  it("covers every preset and keeps the band's depth on screen", () => {
+    for (const preset of manifest.viewport.presets) {
+      for (const focus of [undefined, band.minX, bandMidX, band.maxX]) {
+        const view = computeArenaView(arena, preset.logical, band, focus);
+        expectCoverage(view, preset.logical);
+        // Never below cover, so the art always fills the canvas.
+        expect(view.scale).toBeGreaterThanOrEqual(
+          Math.max(preset.logical.w / arena.w, preset.logical.h / arena.h) - 1e-9,
+        );
+        // The band's full depth stays visible; only its width may be followed.
+        expect(view.offsetY + band.minY * view.scale).toBeGreaterThanOrEqual(-1e-6);
+        expect(view.offsetY + band.maxY * view.scale).toBeLessThanOrEqual(
+          preset.logical.h + 1e-6,
+        );
+      }
+    }
+  });
+
+  it("rests on the band centre without a player and follows one with it", () => {
+    const logical = { w: 1408, h: 792 };
+    const idle = computeArenaView(arena, logical, band);
+    expect(idle).toEqual(computeArenaView(arena, logical, band, bandMidX));
+
+    const following = computeArenaView(arena, logical, band, 900);
+    expect(following.offsetX + 900 * following.scale).toBeCloseTo(logical.w / 2, 6);
+  });
+
+  it("clamps the focus so the art edges never uncover the canvas", () => {
+    const logical = { w: 1408, h: 792 };
+    const left = computeArenaView(arena, logical, band, 0);
+    const right = computeArenaView(arena, logical, band, arena.w);
+    expect(left.offsetX).toBe(0);
+    expect(right.offsetX + right.width).toBeCloseTo(logical.w, 6);
+    expectCoverage(left, logical);
+    expectCoverage(right, logical);
   });
 });
 
@@ -191,7 +238,8 @@ describe("createRenderer", () => {
     const renderer = createRenderer(manifest, testAtlas(), { backgrounds: backgroundImages() });
     const layout = layoutFor("9:20", { w: 810, h: 1800 });
     renderer.render(fake.ctx, makeWorld(fullRoster()), layout, 0);
-    const view = computeArenaView(manifest.arena.logical, layout.logical);
+    // fullRoster's player sits at x 700, which the camera follows.
+    const view = computeArenaView(manifest.arena.logical, layout.logical, manifest.arena.playBand, 700);
     expect(fake.find("translate")?.args).toEqual([view.offsetX, view.offsetY]);
     expect(fake.find("scale")?.args).toEqual([view.scale, view.scale]);
   });
@@ -224,10 +272,12 @@ describe("createRenderer", () => {
     const y = call?.args[2] as number;
     const w = call?.args[3] as number;
     const h = call?.args[4] as number;
-    expect(x).toBeLessThanOrEqual(0);
-    expect(y).toBeLessThanOrEqual(0);
-    expect(x + w).toBeGreaterThanOrEqual(layout.logical.w);
-    expect(y + h).toBeGreaterThanOrEqual(layout.logical.h);
+    // The rect is arena space; through the camera it must still fill the canvas.
+    const view = computeArenaView(manifest.arena.logical, layout.logical, manifest.arena.playBand);
+    expect(view.offsetX + x * view.scale).toBeLessThanOrEqual(1e-6);
+    expect(view.offsetY + y * view.scale).toBeLessThanOrEqual(1e-6);
+    expect(view.offsetX + (x + w) * view.scale).toBeGreaterThanOrEqual(layout.logical.w - 1e-6);
+    expect(view.offsetY + (y + h) * view.scale).toBeGreaterThanOrEqual(layout.logical.h - 1e-6);
   });
 
   it("falls back to a flat fill when no background art was supplied", () => {
@@ -236,7 +286,12 @@ describe("createRenderer", () => {
     const layout = layoutFor("16:9");
     renderer.render(fake.ctx, makeWorld([]), layout, 0);
     expect(fake.countOf("drawImage")).toBe(0);
-    expect(fake.find("fillRect")?.args).toEqual([0, 0, layout.logical.w, layout.logical.h]);
+    expect(fake.find("fillRect")?.args).toEqual([
+      0,
+      0,
+      manifest.arena.logical.w,
+      manifest.arena.logical.h,
+    ]);
   });
 
   it("draws entities sorted by y so nearer things overlap further ones", () => {
@@ -418,7 +473,7 @@ describe("createRenderer", () => {
     fake.reset();
     const portrait = layoutFor("1:sqrt2", { w: 768, h: 1086 });
     renderer.render(fake.ctx, makeWorld([]), portrait, 0);
-    const view = computeArenaView(manifest.arena.logical, portrait.logical);
+    const view = computeArenaView(manifest.arena.logical, portrait.logical, manifest.arena.playBand);
     expect(fake.find("translate")?.args).toEqual([view.offsetX, view.offsetY]);
     expect(fake.find("scale")?.args).toEqual([view.scale, view.scale]);
   });

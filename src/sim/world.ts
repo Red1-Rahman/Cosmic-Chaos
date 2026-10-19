@@ -35,6 +35,7 @@ import { dialogueDuration, lineFor, type Trigger } from "./dialogue";
 import { ARENA, DODGE, MOVEMENT } from "./game-config";
 import { FIRST_LEVEL_ID, levelById, levelSeed } from "./levels";
 import { createInitialEntities, distance } from "./spawn";
+import { beginTutorial, stepTutorial } from "./tutorial";
 import type { Arena, Entity, GameEvent, InputState, World } from "./types";
 
 const PLAYER_ID = "player";
@@ -60,15 +61,35 @@ function findEntity(world: World, id: string): Entity | undefined {
  * Build the world for a level. The level's own seed offset is applied to the
  * base seed, so `?seed=` still reproduces a run exactly and two levels never
  * deal the same arena by accident.
+ *
+ * With `options.tutorial`, the world opens with only the rider on the water and the
+ * rest of the cast plus the cores held in a backlog that the tutorial hands over one
+ * stage at a time. Every entity keeps the position the seeded spawner gave it, so the
+ * run stays fully deterministic and a revealed character lands where it always would.
  */
-export function createWorld(seed: number, levelId: number = FIRST_LEVEL_ID): World {
+export function createWorld(
+  seed: number,
+  levelId: number = FIRST_LEVEL_ID,
+  options: { tutorial?: boolean } = {},
+): World {
   const level = levelById(levelId);
   const runSeed = levelSeed(seed, level.id);
   const rng = createRng(runSeed).fork("sim");
   const obstacles = buildObstacles(level);
-  const entities = createInitialEntities(rng, obstacles);
-  const cores = buildCores(level);
+  const allEntities = createInitialEntities(rng, obstacles);
+  const allCores = buildCores(level);
   const objectives = buildObjectives(level);
+
+  const player = allEntities.find((entity) => entity.kind === "player");
+  const tutorial =
+    options.tutorial === true
+      ? beginTutorial(allEntities, allCores, player?.x ?? 0, player?.y ?? 0)
+      : undefined;
+
+  // A tutorial world shows only the rider up front; everything else waits in the backlog.
+  const entities =
+    tutorial === undefined ? allEntities : allEntities.filter((entity) => entity.kind === "player");
+  const cores = tutorial === undefined ? allCores : [];
   const events: GameEvent[] = entities.map((e) => ({
     type: "spawn",
     id: e.id,
@@ -77,7 +98,7 @@ export function createWorld(seed: number, levelId: number = FIRST_LEVEL_ID): Wor
     y: e.y,
   }));
 
-  return {
+  const world: World = {
     seed: runSeed,
     tick: 0,
     timeMs: 0,
@@ -95,6 +116,8 @@ export function createWorld(seed: number, levelId: number = FIRST_LEVEL_ID): Wor
     staggerTally: {},
     dialogue: null,
   };
+  if (tutorial !== undefined) world.tutorial = tutorial;
+  return world;
 }
 
 /** Time scale applied at a point: inside the snail field it slows down. */
@@ -321,6 +344,10 @@ export function step(world: World, input: InputState, fixedDt: number): void {
     player.state = "victory";
     world.events.push({ type: "victory", id: player.id, x: player.x, y: player.y });
   }
+
+  // The tutorial reads this step's events to close a stage. A run that just ended
+  // stops advancing so its card can never change under a victory or defeat screen.
+  if (world.status === "playing") stepTutorial(world, player, mark);
 
   pumpDialogue(world, mark);
 }

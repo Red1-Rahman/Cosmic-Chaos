@@ -33,6 +33,13 @@ export interface DialogueView {
   line: string;
 }
 
+/** One staged onboarding card, resolved to its copy. */
+export interface TutorialView {
+  stage: number;
+  title: string;
+  body: string;
+}
+
 export interface HudModel {
   hp: number; // 0..1
   timeScale: number; // active time scale for the player, 1 outside the snail field
@@ -58,6 +65,8 @@ export interface HudModel {
   parryReady: number;
   cannonReady: number;
   dialogue: DialogueView | null;
+  /** The staged onboarding card, or null while no tutorial stage is showing. */
+  tutorial?: TutorialView | null;
   /** Every level, for the picker and the briefing screen. */
   levels: readonly LevelView[];
   /** Optional extras for the debug overlay. Absent means the overlay shows "n/a". */
