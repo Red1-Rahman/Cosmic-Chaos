@@ -12,7 +12,7 @@ Legend: [human] only a human edits. [agents] agents own it. [shared] agents may 
 |-- tech-stack.json            [shared] tooling source of truth, edit together with package.json
 |-- package.json               [shared] exact pins only, zero runtime dependencies
 |-- package-lock.json          [shared] updated only by npm install, never by hand
-|-- .nvmrc  .npmrc  .editorconfig  .prettierrc.json  .prettierignore   [human]
+|-- .nvmrc  .npmrc  .editorconfig  .gitattributes  .prettierrc.json  .prettierignore   [human]
 |-- tsconfig.json  vite.config.ts  playwright.config.ts  eslint.config.js [shared] never weaken a rule to get green
 |-- index.html                 [agents] Vite entry. Needs <link rel="icon" href="data:,"> and one <canvas>
 |-- .agents/prompts/           [human] reusable role prompts, start at README.md

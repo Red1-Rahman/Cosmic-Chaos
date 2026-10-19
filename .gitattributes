@@ -1,0 +1,14 @@
+# Normalize line endings so the format gate passes on every CI runner.
+#
+# .prettierrc.json pins endOfLine: "lf", but GitHub's windows-latest runner checks out
+# with core.autocrlf=true, which turns the repository's LF into CRLF. Every file would
+# then fail `prettier --check` on that runner while passing on the macOS and Ubuntu
+# runners (and on a local LF checkout). Forcing LF on checkout keeps all three OS runners
+# and every contributor in sync, without relaxing the Prettier rule.
+* text=auto eol=lf
+
+# Art is binary and must never be line-normalised.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
