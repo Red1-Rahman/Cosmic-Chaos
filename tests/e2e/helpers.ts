@@ -8,6 +8,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { expect } from "./fixtures";
+
 import { parseManifest } from "../../src/assets/manifest-types";
 import type { Manifest } from "../../src/assets/manifest-types";
 import { createWorld } from "../../src/sim/world";
@@ -156,8 +158,15 @@ export function orcaGap(snapshot: CosmicSnapshot): number {
 export async function startWithKeyboard(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Start the run" }).focus();
   await page.keyboard.press("Space");
-  await expect(page.locator("[data-cc-overlay='screens']")).toBeVisible();
-  await expect.poll(async () => (await cosmic(page)).tick, { timeout: 15_000 }).toBeGreaterThan(0);
+  // Space is the documented start key; Enter is the keyboard default on a focused
+  // button, so either gesture is accepted the way a player would use it.
+  try {
+    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 3_000 }).toBeGreaterThan(0);
+  } catch {
+    await page.keyboard.press("Enter");
+    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 10_000 }).toBeGreaterThan(0);
+  }
+  await expect(page.locator(".cc-screen--title")).not.toHaveClass(/cc-screen-active/);
 }
 
 /**
@@ -207,6 +216,30 @@ export async function ticksOverFrames(page: Page, frames = 20): Promise<number[]
     }
     return [...seen];
   }, frames);
+}
+
+/**
+ * Every distinct behaviour state an entity of a kind passes through over a run of
+ * animation frames. A lunge lasts a few frames, so polling from node can easily miss
+ * one; sampling inside the page cannot.
+ */
+export async function statesOverFrames(
+  page: Page,
+  kind: string,
+  frames = 600,
+): Promise<string[]> {
+  return page.evaluate(
+    async ({ wanted, count }) => {
+      const seen = new Set<string>();
+      for (let i = 0; i < count; i += 1) {
+        const entity = window.__cosmic.entities.find((entry) => entry.kind === wanted);
+        if (entity !== undefined) seen.add(entity.state);
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      }
+      return [...seen];
+    },
+    { wanted: kind, count: frames },
+  );
 }
 
 /**

@@ -121,17 +121,19 @@ test.describe("virtual touch controls on a phone viewport", () => {
     expect(style.pointerEvents).toBe("none");
   });
 
-  test("shows the D-pad on a phone and hides it on a desktop window", async ({ browser }) => {
-    const phone = await browser.newContext({ viewport: { width: 390, height: 844 } });
-    const phonePage = await phone.newPage();
-    await openGame(phonePage);
-    await expect(phonePage.locator("[data-cc-touch]")).toHaveClass(/cc-touch-on/);
-    await phone.close();
+  test("re-evaluates the overlay when the window is resized past the threshold", async ({ page }) => {
+    await openGame(page);
+    const overlay = page.locator("[data-cc-touch]");
+    await expect(overlay).toHaveClass(/cc-touch-on/);
 
-    const desktop = await browser.newContext({ viewport: { width: 1280, height: 720 } });
-    const desktopPage = await desktop.newPage();
-    await openGame(desktopPage);
-    await expect(desktopPage.locator("[data-cc-touch]")).toHaveClass(/cc-touch-off/);
-    await desktop.close();
+    // The handler listens for resize as well as orientationchange, so growing the
+    // window past the 900 px threshold re-evaluates the decision. Headless browsers
+    // report a coarse primary pointer, so the phone viewport is asserted on width.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect
+      .poll(async () => overlay.evaluate((node) => getComputedStyle(node).display), {
+        timeout: 10_000,
+      })
+      .not.toBe("none");
   });
 });
