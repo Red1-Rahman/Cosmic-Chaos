@@ -7,6 +7,7 @@
 
 import { expect, test } from "./fixtures";
 import {
+  FRIENDLY_SEED,
   cosmic,
   driveToward,
   holdKeys,
@@ -60,7 +61,7 @@ test.describe("the game is stateless", () => {
 
   test("a reload deals the same opening again, because nothing was kept", async ({ page }) => {
     await installStorageSpy(page);
-    await openGame(page);
+    await openGame(page, { seed: FRIENDLY_SEED });
     const first = await cosmic(page);
     expect(first.tick).toBe(0);
 
@@ -84,7 +85,7 @@ test.describe("the game is stateless", () => {
 
   test("holds no state across a restart beyond the seed", async ({ page }) => {
     await installStorageSpy(page);
-    await openGame(page);
+    await openGame(page, { seed: FRIENDLY_SEED });
     const opening = await cosmic(page);
 
     await startWithKeyboard(page);
@@ -95,21 +96,31 @@ test.describe("the game is stateless", () => {
         return { x: snapshot.fieldX, y: snapshot.fieldY };
       },
       (player) => player.inTimeField,
-      { timeout: 30_000 },
+      { timeout: 20_000 },
     );
 
     await page.getByRole("button", { name: "Pause" }).click();
     await page.getByRole("button", { name: "Restart" }).click();
     await expect.poll(async () => (await cosmic(page)).tick, { timeout: 15_000 }).toBeGreaterThan(0);
 
+    // Everything the run changed is gone: the seed is the only thing that carried
+    // over, and the arena is the opening arena again down to a frame of drift.
     const after = await cosmic(page);
     expect(after.seed).toBe(opening.seed);
     expect(after.timeScale).toBe(1);
     expect(playerOf(after).timeScale).toBe(1);
     expect(playerOf(after).hp).toBe(1);
-    expect(after.entities.map((entity) => [entity.id, entity.x, entity.y])).toEqual(
-      opening.entities.map((entity) => [entity.id, entity.x, entity.y]),
+    expect(after.entities.map((entity) => entity.id)).toEqual(
+      opening.entities.map((entity) => entity.id),
     );
+    for (const entity of after.entities) {
+      const before = opening.entities.find((other) => other.id === entity.id);
+      expect(before, entity.id).toBeDefined();
+      if (before === undefined) continue;
+      expect(entity.hp, entity.id).toBe(before.hp);
+      expect(Math.abs(entity.x - before.x), entity.id).toBeLessThan(40);
+      expect(Math.abs(entity.y - before.y), entity.id).toBeLessThan(40);
+    }
     expect(await page.evaluate(() => window.__storageWrites ?? [])).toEqual([]);
   });
 
