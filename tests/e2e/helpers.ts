@@ -125,11 +125,19 @@ export const FRIENDLY_SEED: number = (() => {
 export const STORAGE_SPY = `
 window.__storageWrites = [];
 const record = (kind, detail) => { window.__storageWrites.push(kind + ":" + detail); };
-for (const name of ["localStorage", "sessionStorage"]) {
-  const store = window[name];
+// Patch the prototype, never a storage instance: in Firefox and WebKit an
+// assignment like localStorage.setItem = fn is itself a named-property storage
+// write, which plants the very keys this test counts and leaves the wrapper
+// installed nowhere. The prototype is a plain object, so it is safe everywhere.
+const storageProto = window.Storage && window.Storage.prototype;
+if (storageProto) {
   for (const method of ["setItem", "removeItem", "clear"]) {
-    const original = store[method].bind(store);
-    store[method] = (...args) => { record(name + "." + method, String(args[0])); return original(...args); };
+    const original = storageProto[method];
+    storageProto[method] = function (...args) {
+      const kind = this === window.localStorage ? "localStorage" : "sessionStorage";
+      record(kind + "." + method, String(args[0]));
+      return original.apply(this, args);
+    };
   }
 }
 const cookieDescriptor = Object.getOwnPropertyDescriptor(Document.prototype, "cookie");
@@ -287,17 +295,28 @@ export async function ticksOverFrames(page: Page, frames = 20): Promise<number[]
 /**
  * Every distinct behaviour state an entity of a kind passes through over a run of
  * animation frames. A lunge lasts a few frames, so polling from node can easily miss
- * one; sampling inside the page cannot.
+ * one; sampling inside the page cannot. When `until` names the states a test needs,
+ * the run stops the moment it holds all of them, so a slow frame rate spends only
+ * the frames the cycle actually took and never a budget it no longer needs; the
+ * `frames` cap still bounds a run that never gets there.
  */
-export async function statesOverFrames(page: Page, kind: string, frames = 600): Promise<string[]> {
+export async function statesOverFrames(
+  page: Page,
+  kind: string,
+  frames = 600,
+  until: string[] = [],
+): Promise<string[]> {
   return page.evaluate(
-    async ({ wanted, count }) => {
+    async ({ wanted, count, stopWhen }) => {
       const seen = new Set<string>();
       for (let i = 0; i < count; i += 1) {
         const snapshot = window.__cosmic;
         if (snapshot === undefined) throw new Error("window.__cosmic is not installed");
         const entity = snapshot.entities.find((entry) => entry.kind === wanted);
         if (entity !== undefined) seen.add(entity.state);
+        if (stopWhen.length > 0 && stopWhen.every((state) => seen.has(state))) {
+          return [...seen];
+        }
         await new Promise<void>((resolve) => {
           requestAnimationFrame(() => {
             resolve();
@@ -306,7 +325,7 @@ export async function statesOverFrames(page: Page, kind: string, frames = 600): 
       }
       return [...seen];
     },
-    { wanted: kind, count: frames },
+    { wanted: kind, count: frames, stopWhen: until },
   );
 }
 

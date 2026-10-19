@@ -267,8 +267,9 @@ test.describe("the orca", () => {
     await startWithKeyboard(page);
 
     // The wind-up lasts a handful of frames, so the whole state cycle is sampled
-    // inside the page rather than polled from node, which would miss it.
-    const seen = await statesOverFrames(page, "orca", 900);
+    // inside the page rather than polled from node, which would miss it, and the
+    // sampling stops as soon as the cycle has been seen whole.
+    const seen = await statesOverFrames(page, "orca", 900, ["chase", "telegraph", "lunge"]);
     expect(seen).toContain("chase");
     expect(seen).toContain("telegraph");
     expect(seen).toContain("lunge");
@@ -327,9 +328,18 @@ test.describe("the snail's time field", () => {
       (player) => player.inTimeField,
       { timeout: 25_000 },
     );
+    // A crossing resolves its scale from where the rider stood at the start of
+    // the step, so the flag and the scale only agree from the step after the
+    // rider enters; poll until both say the same thing.
     await expect
-      .poll(async () => playerOf(await cosmic(page)).inTimeField, { timeout: 25_000 })
-      .toBe(true);
+      .poll(
+        async () => {
+          const player = playerOf(await cosmic(page));
+          return player.inTimeField ? player.timeScale : -1;
+        },
+        { timeout: 25_000 },
+      )
+      .toBeCloseTo(manifest.arena.timeScaleInside, 5);
 
     const inside = playerOf(await cosmic(page));
     expect(inside.timeScale).toBeLessThan(1);
@@ -340,14 +350,27 @@ test.describe("the snail's time field", () => {
     await expect(page.locator("[data-cc-field]")).toHaveAttribute("data-cc-field", "in");
 
     const snapshot = await cosmic(page);
-    const stillOutside = snapshot.entities.filter((entity) => !entity.inTimeField);
-    expect(stillOutside.length).toBeGreaterThan(0);
-    for (const entity of stillOutside) {
-      expect(entity.timeScale, entity.id).toBe(1);
-    }
-    for (const entity of snapshot.entities.filter((entity) => entity.inTimeField)) {
-      expect(entity.timeScale, entity.id).toBeCloseTo(manifest.arena.timeScaleInside, 5);
-    }
+    expect(snapshot.entities.filter((entity) => !entity.inTimeField).length).toBeGreaterThan(0);
+    // `inTimeField` measures the field against where an entity stands now, while
+    // `timeScale` was resolved from where it stood at the start of the step it is
+    // stepping, so an entity caught mid-crossing is still scaled for the side it
+    // has just left. Wait for a tick with nobody mid-crossing and hold the
+    // invariant there; that is every tick but the crossing one, and a real
+    // offender never clears, so the poll times out instead of passing.
+    await expect
+      .poll(
+        async () => {
+          const current = await cosmic(page);
+          return current.entities
+            .filter((entity) => {
+              const expected = entity.inTimeField ? manifest.arena.timeScaleInside : 1;
+              return Math.abs(entity.timeScale - expected) > 1e-5;
+            })
+            .map((entity) => entity.id);
+        },
+        { timeout: 15_000 },
+      )
+      .toEqual([]);
   });
 
   test("puts the player back at one after leaving the field", async ({ page }) => {

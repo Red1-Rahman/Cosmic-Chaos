@@ -20,6 +20,9 @@ Release dates are UTC, written as `DD Mon YYYY` (e.g. `19 Oct 2026`).
 ### Fixed
 
 - The spec gate derived its repository root by hand, dropping the leading `/` on macOS and Linux so four content-contract tests failed there; it now reuses the shared root from the spec helpers
+- The e2e storage spy wrote to the stores it was watching: assigning `setItem`, `removeItem` and `clear` onto `localStorage` is itself a named-property write in Firefox and WebKit, which planted exactly the three keys `stateless.spec.ts` counts while leaving the spy uninstalled; the spy now patches `Storage.prototype`, so it records writes on every engine instead of none on those two
+- The snail time-field invariant could sample a tick where an entity has just crossed the boundary, because `timeScale` is resolved from where the entity stood at the start of the step while `inTimeField` measures it where it stands; the assertions now hold on a tick where nothing is mid-crossing, which is every tick but the crossing one
+- The orca state-cycle test needed 900 animation frames to finish inside Playwright's default 30 second timeout, so an engine rendering below 30 fps could not pass it; the sampling now stops the moment `chase`, `telegraph` and `lunge` have all been seen, with the frame cap and the assertions unchanged
 
 ## [0.1.0] - 19 Oct 2026
 
