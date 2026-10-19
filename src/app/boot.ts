@@ -170,12 +170,8 @@ export async function boot(): Promise<void> {
       onStart(levelId): void {
         audio.unlock();
         audio.play("ui");
-        state.levelId = levelById(levelId).id;
         // Restart reuses the same seed and level, so a retry is the same run.
-        world = createWorld(config.seed, state.levelId);
-        state.started = true;
-        state.paused = false;
-        setScreen("playing");
+        startLevel(levelId);
       },
       onBrief(levelId): void {
         audio.unlock();
