@@ -1,11 +1,14 @@
 // Gamepad source, standard mapping only. Left stick and D-pad move,
-// south button jumps, west button acts. Connect and disconnect are silent.
+// south button jumps, west button acts, north button dodges, east button parries.
+// Connect and disconnect are silent.
 import type { InputState } from "./input.js";
 
 export const GAMEPAD_DEADZONE = 0.2;
 
 const BUTTON_SOUTH = 0;
+const BUTTON_EAST = 1;
 const BUTTON_WEST = 2;
+const BUTTON_NORTH = 3;
 const BUTTON_DPAD_UP = 12;
 const BUTTON_DPAD_DOWN = 13;
 const BUTTON_DPAD_LEFT = 14;
@@ -85,11 +88,17 @@ export function createGamepad(target: GamepadHost, options: GamepadOptions = {})
 
   return {
     poll(): InputState {
+      const idle: InputState = {
+        moveX: 0,
+        moveY: 0,
+        jump: false,
+        action: false,
+        dodge: false,
+        parry: false,
+      };
       const gamepad = firstGamepad(target);
-      if (gamepad === null) return { moveX: 0, moveY: 0, jump: false, action: false };
-      if (gamepad.mapping !== undefined && gamepad.mapping !== "standard") {
-        return { moveX: 0, moveY: 0, jump: false, action: false };
-      }
+      if (gamepad === null) return idle;
+      if (gamepad.mapping !== undefined && gamepad.mapping !== "standard") return idle;
 
       const stick = applyDeadzone(axisValue(gamepad, 0), axisValue(gamepad, 1));
       let moveX = stick.x;
@@ -104,8 +113,16 @@ export function createGamepad(target: GamepadHost, options: GamepadOptions = {})
         moveY,
         jump: buttonDown(gamepad, BUTTON_SOUTH),
         action: buttonDown(gamepad, BUTTON_WEST),
+        dodge: buttonDown(gamepad, BUTTON_NORTH),
+        parry: buttonDown(gamepad, BUTTON_EAST),
       };
-      const active = state.moveX !== 0 || state.moveY !== 0 || state.jump || state.action;
+      const active =
+        state.moveX !== 0 ||
+        state.moveY !== 0 ||
+        state.jump ||
+        state.action ||
+        state.dodge ||
+        state.parry;
       if (active && !wasActive) markActive();
       wasActive = active;
       return state;

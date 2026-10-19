@@ -25,6 +25,16 @@ function model(overrides: Partial<HudModel> = {}): HudModel {
     status: "playing",
     counts: { orca: 1, human: 5 },
     frame: { x: 0, y: 0, w: 1408, h: 792 },
+    riderName: "the Capybara",
+    levelId: 1,
+    levelName: "First Breach",
+    elapsedSec: 0,
+    objectives: [],
+    dodgeReady: 1,
+    parryReady: 1,
+    cannonReady: 1,
+    dialogue: null,
+    levels: [],
     ...overrides,
   };
 }

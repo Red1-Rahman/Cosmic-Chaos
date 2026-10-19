@@ -13,7 +13,7 @@ test.use({
   hasTouch: true,
 });
 
-const CONTROLS = ["up", "down", "left", "right", "jump", "action"] as const;
+const CONTROLS = ["up", "down", "left", "right", "jump", "action", "dodge", "parry"] as const;
 
 test.describe("virtual touch controls on a phone viewport", () => {
   test("mounts the overlay and shows it for a coarse, narrow viewport", async ({ page }) => {

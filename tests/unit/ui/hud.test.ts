@@ -16,8 +16,15 @@ import { asDocument, FakeDocument, type FakeElement } from "./fake-dom.js";
 const NO_CALLBACKS: UiCallbacks = {
   onStart: (): void => undefined,
   onRestart: (): void => undefined,
+  onHome: (): void => undefined,
+  onOpenLevels: (): void => undefined,
+  onOpenControls: (): void => undefined,
+  onOpenLicense: (): void => undefined,
+  onCloseOverlay: (): void => undefined,
   onTogglePause: (): void => undefined,
   onToggleMute: (): void => undefined,
+  onSetRiderName: (): void => undefined,
+  onNextLevel: (): void => undefined,
 };
 
 function model(overrides: Partial<HudModel> = {}): HudModel {
@@ -33,6 +40,16 @@ function model(overrides: Partial<HudModel> = {}): HudModel {
     status: "playing",
     counts: { player: 1, orca: 1, human: 5 },
     frame: { x: 0, y: 0, w: 1408, h: 792 },
+    riderName: "the Capybara",
+    levelId: 1,
+    levelName: "First Breach",
+    elapsedSec: 0,
+    objectives: [{ id: "cores", label: "Collect the cores", count: 1, target: 4, done: false }],
+    dodgeReady: 1,
+    parryReady: 1,
+    cannonReady: 1,
+    dialogue: null,
+    levels: [],
     ...overrides,
   };
 }

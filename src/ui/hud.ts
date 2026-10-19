@@ -1,7 +1,10 @@
-// The in-game HUD: hull meter, the Snail's time field readout, the seed, the viewport
-// preset and the two always-reachable buttons. It reads a HudModel and never writes one.
-// The overlay itself is pointer-transparent, so the touch D-pad below keeps every tap.
-import type { HudModel, UiCallbacks } from "./types.js";
+// The in-game HUD: hull meter, the Snail's time field readout, the level and
+// objective board, the three action readiness meters, the dialogue box and the
+// two always-reachable buttons. It reads a HudModel and never writes one.
+//
+// The overlay itself is pointer-transparent, so the touch D-pad below it keeps
+// every tap.
+import type { DialogueView, HudModel, ObjectiveView, UiCallbacks } from "./types.js";
 import {
   clamp,
   clamp01,
@@ -15,6 +18,7 @@ import {
   px,
   text,
 } from "./dom.js";
+import { objectiveProgressText } from "./title.js";
 
 /**
  * Font size of the HUD, as a fraction of the letterboxed area's SHORT side. The short side
@@ -69,6 +73,35 @@ export function applyFrame(root: HTMLElement, frame: HudModel["frame"]): void {
   cssVar(root, "--cc-font-size", `${String(Number(fontSizeFor({ x, y, w, h }).toFixed(3)))}px`);
 }
 
+/** One of the three readiness meters: dodge, parry and the water cannon. */
+interface Meter {
+  readonly root: HTMLElement;
+  readonly fill: HTMLElement;
+  value: number;
+}
+
+function createReadyMeter(doc: Document, label: string, key: string, attribute: string): Meter {
+  const root = el(doc, "cc-ready");
+  root.setAttribute(attribute, "");
+  const name = el(doc, "cc-ready-label");
+  text(name, label);
+  const track = el(doc, "cc-ready-track");
+  const fill = el(doc, "cc-ready-fill");
+  track.append(fill);
+  const keyNode = el(doc, "cc-ready-key");
+  text(keyNode, key);
+  root.append(name, track, keyNode);
+  return { root, fill, value: Number.NaN };
+}
+
+function updateReadyMeter(meter: Meter, value: number): void {
+  if (value === meter.value) return;
+  meter.value = value;
+  const percent = `${String(Math.round(clamp01(value) * 100))}%`;
+  cssVar(meter.fill, "width", percent);
+  meter.root.classList.toggle("cc-ready--cooling", clamp01(value) < 1);
+}
+
 interface Cached {
   hp: number;
   timeScale: number;
@@ -77,6 +110,14 @@ interface Cached {
   presetId: string | null;
   muted: boolean;
   paused: boolean;
+  levelName: string;
+  riderName: string;
+  objectives: string;
+  dialogue: string;
+  elapsed: number;
+  dodge: number;
+  parry: number;
+  cannon: number;
 }
 
 const NOTHING: Cached = {
@@ -87,7 +128,19 @@ const NOTHING: Cached = {
   presetId: null,
   muted: false,
   paused: false,
+  levelName: "",
+  riderName: "",
+  objectives: "",
+  dialogue: "",
+  elapsed: Number.NaN,
+  dodge: Number.NaN,
+  parry: Number.NaN,
+  cannon: Number.NaN,
 };
+
+function objectiveSignature(objectives: readonly ObjectiveView[]): string {
+  return objectives.map((objective) => `${objective.id}:${String(objective.count)}`).join("|");
+}
 
 export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
   const root = el(doc, "cc-hud");
@@ -133,14 +186,27 @@ export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
   field.append(fieldDot, fieldName, fieldState, fieldScale);
   vitals.append(field);
 
-  // Seed and viewport preset.
+  // Level chip and clock, on the same row as the seed and preset chips.
   const meta = el(doc, "cc-hud-block cc-hud-meta");
+  const levelChip = el(doc, "cc-hud-chip cc-hud-level");
+  levelChip.setAttribute("data-cc-level-chip", "");
+  const clock = el(doc, "cc-hud-chip");
+  clock.setAttribute("data-cc-clock", "");
   const seed = el(doc, "cc-hud-chip");
   seed.setAttribute("data-cc-seed", "");
   const preset = el(doc, "cc-hud-chip");
   preset.setAttribute("data-cc-preset", "");
-  meta.append(seed, preset);
+  meta.append(levelChip, clock, seed, preset);
   stack.append(meta);
+
+  // The three readiness meters. They sit on the left so they never collide with the
+  // touch cluster on the right.
+  const ready = el(doc, "cc-hud-block cc-hud-ready");
+  const dodgeMeter = createReadyMeter(doc, "Dodge", "K", "data-cc-dodge-ready");
+  const parryMeter = createReadyMeter(doc, "Parry", "L", "data-cc-parry-ready");
+  const cannonMeter = createReadyMeter(doc, "Cannon", "J", "data-cc-cannon-ready");
+  ready.append(dodgeMeter.root, parryMeter.root, cannonMeter.root);
+  stack.append(ready);
 
   // Always-reachable controls. Top right, clear of the touch D-pad and the jump buttons.
   const actions = el(doc, "cc-hud-block cc-hud-actions");
@@ -165,7 +231,52 @@ export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
   actions.append(pauseButton, muteButton);
   root.append(actions);
 
+  // The objective board, bottom left: what has to happen and how far along it is.
+  const board = el(doc, "cc-objective-board");
+  const boardTitle = el(doc, "cc-board-title");
+  const boardList = el(doc, "cc-board-list");
+  const boardRider = el(doc, "cc-board-rider");
+  boardRider.setAttribute("data-cc-rider", "");
+  board.append(boardTitle, boardList, boardRider);
+  root.append(board);
+
+  // Dialogue, centred over the waterline so it never covers the rider.
+  const dialogue = el(doc, "cc-dialogue");
+  dialogue.setAttribute("data-cc-dialogue", "");
+  dialogue.setAttribute("role", "status");
+  const speakerNode = el(doc, "cc-dialogue-speaker");
+  const lineNode = el(doc, "cc-dialogue-line");
+  dialogue.append(speakerNode, lineNode);
+  root.append(dialogue);
+
   const last: Cached = { ...NOTHING };
+
+  const renderObjectives = (objectives: readonly ObjectiveView[]): void => {
+    const signature = objectiveSignature(objectives);
+    if (signature === last.objectives) return;
+    last.objectives = signature;
+    text(boardTitle, "Objectives");
+    while (boardList.children.length > 0) boardList.children[0]?.remove();
+    for (const objective of objectives) {
+      const row = el(doc, "cc-board-row");
+      row.setAttribute("data-cc-board", objective.id);
+      row.classList.toggle("cc-board-row--done", objective.done);
+      const label = el(doc, "cc-board-label");
+      text(label, objectiveProgressText(objective));
+      row.append(label);
+      boardList.append(row);
+    }
+  };
+
+  const renderDialogue = (line: DialogueView | null, riderName: string): void => {
+    const body = line === null ? "" : line.line.split("{rider}").join(riderName);
+    const shown = line === null ? "" : `${line.speaker}: ${body}`;
+    if (shown === last.dialogue) return;
+    last.dialogue = shown;
+    dialogue.classList.toggle("cc-dialogue--on", shown !== "");
+    text(speakerNode, line?.speaker ?? "");
+    text(lineNode, body);
+  };
 
   return {
     root,
@@ -215,6 +326,42 @@ export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
         pauseButton.setAttribute("data-cc-paused", paused ? "true" : "false");
         text(pauseButton, paused ? "Paused" : "Pause");
         last.paused = paused;
+      }
+
+      const levelName = `${String(model.levelId)}. ${model.levelName}`;
+      if (levelName !== last.levelName) {
+        text(levelChip, levelName);
+        last.levelName = levelName;
+      }
+      // The rider name is editable on the home screen, so it gets its own cache key:
+      // sharing the level chip's would freeze it at whatever it was on the first frame.
+      if (model.riderName !== last.riderName) {
+        text(boardRider, model.riderName);
+        last.riderName = model.riderName;
+      }
+
+      const elapsed = finite(model.elapsedSec, 0);
+      if (elapsed !== last.elapsed) {
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = Math.floor(elapsed % 60);
+        text(clock, `${String(minutes)}:${String(seconds).padStart(2, "0")}`);
+        last.elapsed = elapsed;
+      }
+
+      renderObjectives(model.objectives);
+      renderDialogue(model.dialogue, model.riderName);
+
+      if (model.dodgeReady !== last.dodge) {
+        updateReadyMeter(dodgeMeter, model.dodgeReady);
+        last.dodge = model.dodgeReady;
+      }
+      if (model.parryReady !== last.parry) {
+        updateReadyMeter(parryMeter, model.parryReady);
+        last.parry = model.parryReady;
+      }
+      if (model.cannonReady !== last.cannon) {
+        updateReadyMeter(cannonMeter, model.cannonReady);
+        last.cannon = model.cannonReady;
       }
     },
   };

@@ -1,8 +1,8 @@
 // Seeded initial placement. Everything here is pure: same stream, same result.
 
 import type { Rng } from "../util/rng";
-import { ARENA, SPAWN_RULES } from "./game-config";
-import type { Entity, EntityKind } from "./types";
+import { ARENA, OBSTACLES, SPAWN_RULES } from "./game-config";
+import type { Entity, EntityKind, Obstacle } from "./types";
 
 export interface Placement {
   x: number;
@@ -21,6 +21,20 @@ function pointInFraction(rng: Rng, f: Fraction): Placement {
 
 function inBand(p: Placement): boolean {
   return p.x >= ARENA.minX && p.x <= ARENA.maxX && p.y >= ARENA.minY && p.y <= ARENA.maxY;
+}
+
+/** Clearance a spawn needs from any reef: the reef plus a body width. */
+const SPAWN_CLEARANCE = OBSTACLES.reefRadius + 26;
+
+/** True when the point is far enough from every piece of level geometry. */
+export function clearOfObstacles(p: Placement, obstacles: readonly Obstacle[]): boolean {
+  for (const obstacle of obstacles) {
+    const dx = p.x - obstacle.x;
+    const dy = p.y - obstacle.y;
+    const reach = obstacle.r + SPAWN_CLEARANCE;
+    if (dx * dx + dy * dy < reach * reach) return false;
+  }
+  return true;
 }
 
 export function distance(ax: number, ay: number, bx: number, by: number): number {
@@ -84,11 +98,13 @@ function makeEntity(
 
 /**
  * One player, one snail, one orca, one shark, one tarantula and 3 to 6 humans.
- * Enemies stay at least spawnMinDistance from the player and nothing is placed
- * inside the snail's time field, including the player.
+ * Enemies stay at least spawnMinDistance from the player, nothing is placed
+ * inside the snail's time field, and nothing spawns inside a reef.
  */
-export function createInitialEntities(rng: Rng): Entity[] {
-  const playerSpot = findSpot(rng, SPAWN_RULES.playerFraction, inBand);
+export function createInitialEntities(rng: Rng, obstacles: readonly Obstacle[] = []): Entity[] {
+  const openWater = (p: Placement): boolean => clearOfObstacles(p, obstacles);
+
+  const playerSpot = findSpot(rng, SPAWN_RULES.playerFraction, (p) => inBand(p) && openWater(p));
   const player = makeEntity("player", "player", playerSpot, { vx: 0, vy: 0 });
 
   // The snail owns the time field, so it goes down before anything that must
@@ -98,7 +114,7 @@ export function createInitialEntities(rng: Rng): Entity[] {
   const snailSpot = findSpot(
     rng,
     SPAWN_RULES.enemyFraction,
-    (p) => distance(p.x, p.y, player.x, player.y) >= fieldMargin,
+    (p) => distance(p.x, p.y, player.x, player.y) >= fieldMargin && openWater(p),
   );
   const snail = makeEntity("snail", "snail", snailSpot);
 
@@ -106,23 +122,20 @@ export function createInitialEntities(rng: Rng): Entity[] {
     distance(p.x, p.y, snail.x, snail.y) >= fieldMargin;
   const awayFromPlayer = (p: Placement): boolean =>
     distance(p.x, p.y, player.x, player.y) >= SPAWN_RULES.spawnMinDistance;
+  const enemySpot = (): Placement =>
+    findSpot(
+      rng,
+      SPAWN_RULES.enemyFraction,
+      (p) => awayFromPlayer(p) && outsideField(p) && openWater(p),
+    );
 
-  const orca = makeEntity(
-    "orca-1",
-    "orca",
-    findSpot(rng, SPAWN_RULES.enemyFraction, (p) => awayFromPlayer(p) && outsideField(p)),
-  );
-  const shark = makeEntity(
-    "shark-1",
-    "shark",
-    findSpot(rng, SPAWN_RULES.enemyFraction, (p) => awayFromPlayer(p) && outsideField(p)),
-    { dashPhase: 0, dirX: rng.next() < 0.5 ? -1 : 1, dirY: rng.next() < 0.5 ? -1 : 1 },
-  );
-  const tarantula = makeEntity(
-    "tarantula-1",
-    "tarantula",
-    findSpot(rng, SPAWN_RULES.enemyFraction, (p) => awayFromPlayer(p) && outsideField(p)),
-  );
+  const orca = makeEntity("orca-1", "orca", enemySpot());
+  const shark = makeEntity("shark-1", "shark", enemySpot(), {
+    dashPhase: 0,
+    dirX: rng.next() < 0.5 ? -1 : 1,
+    dirY: rng.next() < 0.5 ? -1 : 1,
+  });
+  const tarantula = makeEntity("tarantula-1", "tarantula", enemySpot());
 
   const humans: Entity[] = [];
   const humanCount = rng.int(SPAWN_RULES.humanCount.min, SPAWN_RULES.humanCount.max);
@@ -131,7 +144,7 @@ export function createInitialEntities(rng: Rng): Entity[] {
       makeEntity(
         `human-${String(i + 1)}`,
         "human",
-        findSpot(rng, SPAWN_RULES.ambientFraction, outsideField),
+        findSpot(rng, SPAWN_RULES.ambientFraction, (p) => outsideField(p) && openWater(p)),
         { vx: 0, vy: 0 },
       ),
     );

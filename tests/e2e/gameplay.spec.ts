@@ -18,29 +18,64 @@ import {
   ofKind,
   openGame,
   orcaGap,
+  playThroughHome,
   playerOf,
   releaseAll,
   startWithKeyboard,
-  stateOf,
   statesOverFrames,
   ticksOverFrames,
 } from "./helpers";
 
-test.describe("title screen", () => {
-  test("boots to the title screen with the cast already in the arena and nothing simulating", async ({
+test.describe("home screen", () => {
+  test("boots to the home screen with the cast already in the arena and nothing simulating", async ({
     page,
   }) => {
     await openGame(page);
-    const title = page.locator(".cc-screen--title");
-    await expect(title).toBeVisible();
-    await expect(title).toHaveClass(/cc-screen-active/);
-    await expect(page.getByRole("button", { name: "Start the run" })).toBeVisible();
+    const home = page.locator(".cc-screen--home");
+    await expect(home).toBeVisible();
+    await expect(home).toHaveClass(/cc-screen-active/);
+    for (const action of ["Play", "Levels", "Controls", "License"]) {
+      await expect(page.getByRole("button", { name: action, exact: true })).toBeVisible();
+    }
     expect((await cosmic(page)).tick).toBe(0);
+  });
+
+  test("takes a rider name without storing anything", async ({ page }) => {
+    await openGame(page);
+    const input = page.locator("[data-cc-name-input]");
+    await expect(input).toBeVisible();
+    await input.fill("Captain Capybara");
+    // The name shows in the HUD from the first frame of a run.
+    await playThroughHome(page);
+    await expect(page.locator("[data-cc-rider]")).toHaveText("Captain Capybara");
+  });
+
+  test("opens the level picker, the controls and the licence reader, and Escape closes them", async ({
+    page,
+  }) => {
+    await openGame(page);
+
+    await page.getByRole("button", { name: "Levels", exact: true }).click();
+    await expect(page.locator(".cc-screen--levels")).toHaveClass(/cc-screen-active/);
+    await expect(page.locator("[data-cc-level]").first()).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".cc-screen--levels")).not.toHaveClass(/cc-screen-active/);
+
+    await page.getByRole("button", { name: "Controls", exact: true }).click();
+    await expect(page.locator("[data-cc-controls]")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".cc-screen--controls")).not.toHaveClass(/cc-screen-active/);
+
+    await page.getByRole("button", { name: "License", exact: true }).click();
+    await expect(page.locator("[data-cc-license-text]")).toContainText("Apache License");
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".cc-screen--license")).not.toHaveClass(/cc-screen-active/);
+    await expect(page.locator(".cc-screen--home")).toHaveClass(/cc-screen-active/);
   });
 
   test("hides the test hooks unless ?test=1 asked for them", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator(".cc-screen--title")).toBeVisible();
+    await expect(page.locator(".cc-screen--home")).toBeVisible();
     expect(await page.evaluate(() => "__cosmic" in window)).toBe(false);
   });
 });
@@ -48,12 +83,11 @@ test.describe("title screen", () => {
 test.describe("starting and steering", () => {
   test("starts on a keypress and the waterbike answers every direction key", async ({ page }) => {
     await openGame(page, { seed: FRIENDLY_SEED });
-    await page.getByRole("button", { name: "Start the run" }).focus();
-    await page.keyboard.press("Enter");
+    await playThroughHome(page);
     await expect
       .poll(async () => (await cosmic(page)).tick, { timeout: 10_000 })
       .toBeGreaterThan(0);
-    await expect(page.locator(".cc-screen--title")).not.toHaveClass(/cc-screen-active/);
+    await expect(page.locator(".cc-screen--home")).not.toHaveClass(/cc-screen-active/);
 
     // Idle first: nothing is held, so the bike is parked and plays idle.
     await expect
@@ -110,11 +144,67 @@ test.describe("starting and steering", () => {
       .poll(async () => playerOf(await cosmic(page)).anim, { timeout: 10_000 })
       .toBe("idle");
 
-    // The tarantula reacts to exactly one laser, so its reaction state is the browser
-    // visible proof that the action event reached the simulation.
+    // The tarantula reacts to exactly one shot, so its reaction counter going up is
+    // the browser visible proof that the water cannon event reached the simulation.
+    // The counter is read rather than the transient "react" state, which lasts under
+    // a second and is easy to poll straight through on a loaded machine.
     await page.keyboard.down("KeyJ");
-    await expect.poll(async () => stateOf(page, "tarantula"), { timeout: 20_000 }).toBe("react");
+    await expect
+      .poll(async () => ofKind(await cosmic(page), "tarantula")[0]?.reactions ?? 0, {
+        timeout: 20_000,
+      })
+      .toBe(1);
     await page.keyboard.up("KeyJ");
+  });
+
+  test("sprays the water cannon, dodges and parries from the keyboard", async ({ page }) => {
+    await openGame(page, { seed: FRIENDLY_SEED });
+    await startWithKeyboard(page);
+
+    // The cannon puts real pellets in the world.
+    await page.keyboard.down("KeyJ");
+    await expect
+      .poll(async () => (await cosmic(page)).pellets.length, { timeout: 10_000 })
+      .toBeGreaterThan(0);
+    await page.keyboard.up("KeyJ");
+
+    // The dodge is a burst with invulnerability, so it can cross the arena fast.
+    const before = playerOf(await cosmic(page));
+    await page.keyboard.down("KeyD");
+    await page.keyboard.press("KeyK");
+    await expect
+      .poll(async () => playerOf(await cosmic(page)).x, { timeout: 10_000 })
+      .toBeGreaterThan(before.x + 40);
+
+    // The parry opens a short window and then goes on cooldown.
+    await page.keyboard.press("KeyL");
+    await expect
+      .poll(async () => page.locator("[data-cc-parry-ready]").getAttribute("data-cc-parry-ready"))
+      .not.toBeNull();
+    await page.keyboard.up("KeyD");
+  });
+
+  test("shows the objective board and the rider name while the run is on screen", async ({
+    page,
+  }) => {
+    await openGame(page, { seed: FRIENDLY_SEED });
+    await startWithKeyboard(page);
+    await expect(page.locator(".cc-objective-board")).toBeVisible();
+    await expect(page.locator("[data-cc-board='cores']")).toContainText("Collect the loose cosmic");
+    await expect(page.locator("[data-cc-level-chip]")).toContainText("First Breach");
+    await expect(page.locator("[data-cc-dodge-ready]")).toBeVisible();
+    await expect(page.locator("[data-cc-parry-ready]")).toBeVisible();
+    await expect(page.locator("[data-cc-cannon-ready]")).toBeVisible();
+  });
+
+  test("says something back when the player picks up a core", async ({ page }) => {
+    await openGame(page, { seed: FRIENDLY_SEED });
+    await startWithKeyboard(page);
+    // The dialogue box exists from the first frame; it fills when something happens.
+    await expect(page.locator("[data-cc-dialogue]")).toBeAttached();
+    const snapshot = await cosmic(page);
+    expect(snapshot.coresLeft).toBeGreaterThan(0);
+    expect(snapshot.objectives.length).toBeGreaterThan(0);
   });
 
   test("spawns all six characters from the seeded stream, and repeats that opening", async ({
@@ -276,12 +366,14 @@ test.describe("the snail's time field", () => {
       .poll(async () => playerOf(await cosmic(page)).inTimeField, { timeout: 25_000 })
       .toBe(true);
 
-    // Drive to the far side of the arena, well outside the field radius.
+    // Drive to the far side of the arena, comfortably outside the field radius. The
+    // test aims just past the rim rather than at the far wall, so the ride stays
+    // short: every extra hundred pixels is another hundred pixels past a reef.
     await driveToward(
       page,
       async () => {
         const snapshot = await cosmic(page);
-        return { x: snapshot.fieldX + snapshot.fieldRadius * 4, y: snapshot.fieldY };
+        return { x: snapshot.fieldX + snapshot.fieldRadius * 2.4, y: snapshot.fieldY };
       },
       (player) => !player.inTimeField,
       { timeout: 25_000 },

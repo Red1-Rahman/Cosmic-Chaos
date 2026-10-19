@@ -507,3 +507,361 @@ export function drawCrystalGlows(
   }
   ctx.globalAlpha = 1;
 }
+
+// ---------------------------------------------------------------------------
+// Level geometry and pickups (procedural: no art exists for any of these)
+// ---------------------------------------------------------------------------
+
+/** Palette for reefs and pillars. Mirrors the arena art: cold rock, warm kelp. */
+export const OBSTACLE_COLORS = {
+  reefBody: "#2c3550",
+  reefShade: "#171d31",
+  reefEdge: "#6d86b8",
+  reefMoss: "#4d8f8a",
+  pillarBody: "#2f6b5e",
+  pillarEdge: "#8fe0c4",
+} as const;
+
+/** Loose cosmic cores: the collect half of every objective. */
+export const CORE_COLORS = {
+  glow: "#7fe8ff",
+  body: "#dff6ff",
+  edge: "#3aa8ff",
+} as const;
+
+/** Water cannon pellets. */
+export const PELLET_COLORS = {
+  core: "#ffffff",
+  trail: "#7fe8ff",
+} as const;
+
+/**
+ * A speed streak trailing the rider while a dodge burst is running. Three
+ * chevrons fading out behind the hull, drawn in the direction the dodge went.
+ */
+export function drawDodgeEcho(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  dirX: number,
+  dirY: number,
+  strength: number,
+  scale: number,
+): void {
+  const power = clamp01(strength);
+  if (power <= 0) return;
+  const len = Math.sqrt(dirX * dirX + dirY * dirY) || 1;
+  const ux = dirX / len;
+  const uy = dirY / len;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (let i = 0; i < 3; i += 1) {
+    const offset = (18 + i * 20) * scale;
+    const fade = power * (1 - i / 3);
+    const halfWidth = (10 - i * 2) * scale;
+    ctx.globalAlpha = fade * 0.55;
+    ctx.strokeStyle = DODGE_TINT;
+    ctx.lineWidth = Math.max(1, 3 * scale);
+    ctx.beginPath();
+    ctx.moveTo(ux * offset - uy * halfWidth, uy * offset + ux * halfWidth);
+    ctx.lineTo(ux * (offset - 16 * scale), uy * (offset - 16 * scale));
+    ctx.lineTo(ux * offset + uy * halfWidth, uy * offset - ux * halfWidth);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+/** Colour of the dodge streak. */
+export const DODGE_TINT = "#9fe8ff";
+
+/** Parry shield ring. */
+export const PARRY_COLORS = {
+  ring: "#ffd27f",
+  glow: "#fff3d0",
+} as const;
+
+/**
+ * Deterministic lumpiness for a reef outline. `phase` is a stable 0..1 value from
+ * the level data, so the same rock always has the same silhouette.
+ */
+function reefShape(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  r: number,
+  phase: number,
+): void {
+  const lobes = 7;
+  ctx.beginPath();
+  for (let i = 0; i <= lobes; i += 1) {
+    const t = i / lobes;
+    const angle = t * TAU;
+    // Three fixed harmonics of the phase: no randomness, no clock.
+    const bump =
+      1 +
+      0.12 * Math.sin(angle * 3 + phase * TAU) +
+      0.07 * Math.sin(angle * 5 - phase * TAU * 2) +
+      0.04 * Math.sin(angle * 2 + phase * TAU * 3);
+    const radius = r * bump;
+    const x = cx + Math.cos(angle) * radius;
+    const y = cy + Math.sin(angle) * radius * 0.86;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+/** One reef rock: a lump silhouette, a shaded underside and a mossy crown. */
+export function drawReef(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  phase: number,
+): void {
+  ctx.save();
+  // A flat contact shadow sells the rock as sitting on the water, not floating.
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = OBSTACLE_COLORS.reefShade;
+  ctx.beginPath();
+  ctx.ellipse(x, y + r * 0.5, r * 1.05, r * 0.34, 0, 0, TAU);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  reefShape(ctx, x, y, r, phase);
+  ctx.fillStyle = OBSTACLE_COLORS.reefBody;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = OBSTACLE_COLORS.reefEdge;
+  ctx.stroke();
+
+  // Shaded lower half.
+  ctx.save();
+  reefShape(ctx, x, y, r, phase);
+  ctx.clip();
+  ctx.globalAlpha = 0.5;
+  ctx.fillStyle = OBSTACLE_COLORS.reefShade;
+  ctx.fillRect(x - r * 1.4, y + r * 0.1, r * 2.8, r * 1.6);
+  ctx.globalAlpha = 0.65;
+  ctx.fillStyle = OBSTACLE_COLORS.reefMoss;
+  ctx.beginPath();
+  ctx.ellipse(x - r * 0.15, y - r * 0.5, r * 0.55, r * 0.2, phase, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+/** One kelp pillar: a stalk with two fronds and a sway that reads as underwater. */
+export function drawPillar(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  phase: number,
+  timeMs: number,
+  reducedMotion: boolean,
+): void {
+  const sway = reducedMotion ? 0 : Math.sin((timeMs / 1000) * 0.9 + phase * TAU) * r * 0.4;
+  const height = r * 4.2;
+  ctx.save();
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle = OBSTACLE_COLORS.reefShade;
+  ctx.beginPath();
+  ctx.ellipse(x, y + r * 0.4, r * 0.9, r * 0.28, 0, 0, TAU);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  ctx.lineCap = "round";
+  ctx.lineWidth = r * 0.9;
+  ctx.strokeStyle = OBSTACLE_COLORS.pillarBody;
+  ctx.beginPath();
+  ctx.moveTo(x, y + r * 0.3);
+  ctx.quadraticCurveTo(x + sway * 0.4, y - height * 0.5, x + sway, y - height);
+  ctx.stroke();
+  ctx.lineWidth = Math.max(1, r * 0.24);
+  ctx.strokeStyle = OBSTACLE_COLORS.pillarEdge;
+  ctx.stroke();
+
+  for (let i = 0; i < 2; i += 1) {
+    const t = 0.42 + i * 0.3;
+    const side = i === 0 ? -1 : 1;
+    const bx = x + sway * t;
+    const by = y - height * t;
+    ctx.lineWidth = Math.max(1, r * 0.2);
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.quadraticCurveTo(bx + side * r * 1.3, by - r * 0.6, bx + side * r * 1.7, by + r * 0.5);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+/** Draw the level's static geometry, farthest first so near rocks overlap. */
+export function drawObstacles(
+  ctx: CanvasRenderingContext2D,
+  obstacles: readonly {
+    readonly id: string;
+    readonly kind: string;
+    readonly x: number;
+    readonly y: number;
+    readonly r: number;
+    readonly phase: number;
+  }[],
+  timeMs: number,
+  reducedMotion: boolean,
+): void {
+  const ordered = [...obstacles].sort((a, b) => a.y - b.y);
+  for (const obstacle of ordered) {
+    if (obstacle.kind === "pillar") {
+      drawPillar(ctx, obstacle.x, obstacle.y, obstacle.r, obstacle.phase, timeMs, reducedMotion);
+    } else {
+      drawReef(ctx, obstacle.x, obstacle.y, obstacle.r, obstacle.phase);
+    }
+  }
+}
+
+/** One loose cosmic core: a bobbing diamond inside a soft halo. */
+export function drawCore(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  timeMs: number,
+  reducedMotion: boolean,
+): void {
+  const beat = pulse(timeMs * 1.4, 0.9, reducedMotion);
+  const bob = reducedMotion ? 0 : Math.sin((timeMs / 1000) * 2.2) * r * 0.18;
+  ctx.save();
+  ctx.translate(x, y + bob);
+  ctx.globalAlpha = 0.25 + 0.2 * beat;
+  const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 3);
+  gradient.addColorStop(0, CORE_COLORS.glow);
+  gradient.addColorStop(1, "rgba(127, 232, 255, 0)");
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 3, 0, TAU);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  ctx.rotate((timeMs / 1000) * 1.4);
+  ctx.beginPath();
+  ctx.moveTo(0, -r);
+  ctx.lineTo(r * 0.72, 0);
+  ctx.lineTo(0, r);
+  ctx.lineTo(-r * 0.72, 0);
+  ctx.closePath();
+  ctx.fillStyle = CORE_COLORS.body;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = CORE_COLORS.edge;
+  ctx.stroke();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+/** Every core still floating. */
+export function drawCores(
+  ctx: CanvasRenderingContext2D,
+  cores: readonly { readonly x: number; readonly y: number; readonly taken: boolean }[],
+  radius: number,
+  timeMs: number,
+  reducedMotion: boolean,
+): void {
+  for (const core of cores) {
+    if (core.taken) continue;
+    drawCore(ctx, core.x, core.y, radius, timeMs, reducedMotion);
+  }
+}
+
+/**
+ * A water-cannon pellet: a bright head with a short tail pointing back along its
+ * own velocity, so a stream of shots reads as a line rather than as dots.
+ */
+export function drawPellet(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  vx: number,
+  vy: number,
+): void {
+  const len = Math.sqrt(vx * vx + vy * vy) || 1;
+  const ux = vx / len;
+  const uy = vy / len;
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = PELLET_COLORS.trail;
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(x - ux * 22, y - uy * 22);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  ctx.globalAlpha = 0.95;
+  ctx.strokeStyle = PELLET_COLORS.core;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(x - ux * 9, y - uy * 9);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = PELLET_COLORS.core;
+  ctx.beginPath();
+  ctx.arc(x, y, 3.5, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+/** Every live pellet. */
+export function drawPellets(
+  ctx: CanvasRenderingContext2D,
+  pellets: readonly {
+    readonly x: number;
+    readonly y: number;
+    readonly vx: number;
+    readonly vy: number;
+  }[],
+): void {
+  for (const pellet of pellets) {
+    drawPellet(ctx, pellet.x, pellet.y, pellet.vx, pellet.vy);
+  }
+}
+
+/**
+ * The parry shield: a ring that closes from wide to the deflect radius over the
+ * window, so the player can see exactly how long they have left.
+ */
+export function drawParryShield(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  windowMs: number,
+  totalMs: number,
+  radius: number,
+): void {
+  const ratio = clamp01(1 - windowMs / totalMs);
+  const current = radius * (1.35 - 0.35 * ratio);
+  ctx.save();
+  ctx.globalAlpha = 0.25 + 0.35 * (1 - ratio);
+  ctx.strokeStyle = PARRY_COLORS.ring;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(x, y, current, 0, TAU);
+  ctx.stroke();
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = PARRY_COLORS.glow;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = PARRY_COLORS.glow;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, TAU);
+  ctx.stroke();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}

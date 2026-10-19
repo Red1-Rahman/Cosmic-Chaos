@@ -52,7 +52,14 @@ describe("gamepad", () => {
     pad.setAxes(0.15, 0);
     const gamepad = createGamepad({ navigator: { getGamepads: () => [pad] } });
 
-    expect(gamepad.poll()).toEqual({ moveX: 0, moveY: 0, jump: false, action: false });
+    expect(gamepad.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("uses the D-pad for full speed movement", () => {
@@ -61,7 +68,14 @@ describe("gamepad", () => {
     pad.press(DPAD_DOWN);
     const gamepad = createGamepad({ navigator: { getGamepads: () => [pad] } });
 
-    expect(gamepad.poll()).toEqual({ moveX: -1, moveY: 1, jump: false, action: false });
+    expect(gamepad.poll()).toEqual({
+      moveX: -1,
+      moveY: 1,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("overrides the stick with the D-pad", () => {
@@ -88,13 +102,27 @@ describe("gamepad", () => {
   it("is quiet with no pad attached", () => {
     const gamepad = createGamepad({ navigator: { getGamepads: () => [null] } });
 
-    expect(gamepad.poll()).toEqual({ moveX: 0, moveY: 0, jump: false, action: false });
+    expect(gamepad.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("is quiet when the browser has no Gamepad API", () => {
     const gamepad = createGamepad({});
 
-    expect(gamepad.poll()).toEqual({ moveX: 0, moveY: 0, jump: false, action: false });
+    expect(gamepad.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("stops reading a disconnected pad without complaining", () => {
@@ -102,7 +130,14 @@ describe("gamepad", () => {
     pad.connected = false;
     const gamepad = createGamepad({ navigator: { getGamepads: () => [pad] } });
 
-    expect(gamepad.poll()).toEqual({ moveX: 0, moveY: 0, jump: false, action: false });
+    expect(gamepad.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("ignores non standard mappings", () => {
@@ -111,7 +146,14 @@ describe("gamepad", () => {
     pad.press(SOUTH);
     const gamepad = createGamepad({ navigator: { getGamepads: () => [pad] } });
 
-    expect(gamepad.poll()).toEqual({ moveX: 0, moveY: 0, jump: false, action: false });
+    expect(gamepad.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("marks the device active while the pad is used", () => {

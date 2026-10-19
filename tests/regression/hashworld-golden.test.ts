@@ -99,7 +99,7 @@ describe("a different seed or script must not match the golden", () => {
     const tweaked = scriptedInputs();
     const first = tweaked[0];
     if (first === undefined) throw new Error("empty script");
-    tweaked[0] = { moveX: -1, moveY: 0, jump: false, action: false };
+    tweaked[0] = { moveX: -1, moveY: 0, jump: false, action: false, dodge: false, parry: false };
     expect(tweaked).not.toEqual(scriptedInputs());
     const result = replay(GOLDEN_SEED);
     expect(result.checkpoints["60"]).toBe(golden.hashes["60"]);

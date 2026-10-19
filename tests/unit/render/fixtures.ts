@@ -112,6 +112,13 @@ export function makeWorld(entities: Entity[], overrides: Partial<World> = {}): W
     fieldTimeScale: 1,
     status: "playing",
     events: [],
+    levelId: 1,
+    obstacles: [],
+    pellets: [],
+    cores: [],
+    objectives: [],
+    staggerTally: {},
+    dialogue: null,
     ...overrides,
   };
 }

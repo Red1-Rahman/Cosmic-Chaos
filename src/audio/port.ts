@@ -4,7 +4,20 @@ import { scheduleVoice } from "./schedule";
 import { VOICES } from "./voices";
 
 export type AudioCue =
-  "laser" | "splash" | "hit" | "jump" | "defeat" | "ui" | "timeFieldEnter" | "timeFieldExit";
+  | "laser"
+  | "splash"
+  | "hit"
+  | "jump"
+  | "defeat"
+  | "ui"
+  | "timeFieldEnter"
+  | "timeFieldExit"
+  | "dodge"
+  | "parry"
+  | "collect"
+  | "stagger"
+  | "block"
+  | "victory";
 
 export interface AudioPort {
   unlock(): void;

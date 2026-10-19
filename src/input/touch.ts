@@ -1,9 +1,10 @@
-// Virtual touch controls: a DOM overlay with a D-pad, a jump button and an action
-// button. Pointer events and multi touch, so steering and jumping work at once.
-// The pure state machine is separate from the DOM so it can be tested in node.
+// Virtual touch controls: a DOM overlay with a D-pad plus jump, water cannon,
+// dodge and parry buttons. Pointer events and multi touch, so steering, firing
+// and dodging all work at once. The pure state machine is separate from the DOM
+// so it can be tested in node.
 import type { InputState } from "./input.js";
 
-export type TouchControl = "up" | "down" | "left" | "right" | "jump" | "action";
+export type TouchControl = "up" | "down" | "left" | "right" | "jump" | "action" | "dodge" | "parry";
 
 export const TOUCH_CONTROLS: readonly TouchControl[] = [
   "up",
@@ -12,6 +13,8 @@ export const TOUCH_CONTROLS: readonly TouchControl[] = [
   "right",
   "jump",
   "action",
+  "dodge",
+  "parry",
 ];
 
 export const TOUCH_DATA_ATTRIBUTE = "data-cc-control";
@@ -51,6 +54,8 @@ export function createTouchState(options: TouchStateOptions = {}): TouchState {
       let moveY = 0;
       let jump = false;
       let action = false;
+      let dodge = false;
+      let parry = false;
       for (const control of held.values()) {
         if (control === "left") moveX -= 1;
         if (control === "right") moveX += 1;
@@ -58,8 +63,10 @@ export function createTouchState(options: TouchStateOptions = {}): TouchState {
         if (control === "down") moveY += 1;
         if (control === "jump") jump = true;
         if (control === "action") action = true;
+        if (control === "dodge") dodge = true;
+        if (control === "parry") parry = true;
       }
-      return { moveX, moveY, jump, action };
+      return { moveX, moveY, jump, action, dodge, parry };
     },
   };
 }
@@ -139,15 +146,20 @@ export function mountTouchOverlay(
   }
   root.append(pad);
 
-  for (const control of ["jump", "action"] as const) {
+  // A column of two big buttons on the right: cannon below, dodge above, and the
+  // parry tucked under the cannon so a thumb never has to travel far.
+  const cluster = doc.createElement("div");
+  cluster.className = "cc-touch-cluster";
+  for (const control of ["action", "jump", "dodge", "parry"] as const) {
     const button = doc.createElement("button");
     button.type = "button";
-    button.className = `cc-touch-button cc-touch-${control}`;
+    button.className = `cc-touch-button cc-touch-${control} cc-touch-button--${control}`;
     button.setAttribute(TOUCH_DATA_ATTRIBUTE, control);
     button.setAttribute("aria-label", control);
     bindControl(button, control, state, onInteract);
-    root.append(button);
+    cluster.append(button);
   }
+  root.append(cluster);
 
   doc.body.append(root);
   return {

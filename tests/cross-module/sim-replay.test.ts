@@ -7,7 +7,14 @@ import { MOVEMENT } from "../../src/sim/game-config";
 import { ARENA } from "../../src/sim/game-config";
 import type { Entity, GameEvent, InputState, World } from "../../src/sim/types";
 
-const NEUTRAL: InputState = { moveX: 0, moveY: 0, jump: false, action: false };
+const NEUTRAL: InputState = {
+  moveX: 0,
+  moveY: 0,
+  jump: false,
+  action: false,
+  dodge: false,
+  parry: false,
+};
 
 function need(world: World, kind: Entity["kind"]): Entity {
   const found = world.entities.find((e) => e.kind === kind);
@@ -38,6 +45,13 @@ function script(): InputState[] {
   phase(30, input({ action: true, jump: true }));
   phase(120, input({ moveX: 0.8, moveY: -0.3 }));
   phase(110, input({ moveX: -0.6 }));
+  // The reef field breaks the straight line, so the run keeps driving to make
+  // sure both edges of the snail's field are crossed in both directions.
+  phase(150, input({ moveX: 1, moveY: 0.4 }));
+  phase(150, input({ moveX: -1 }));
+  phase(120, input({ dodge: true, moveX: -1 }));
+  phase(120, input({ parry: true, action: true, moveX: 1 }));
+  phase(120, input({ moveX: -1, moveY: 0.6, action: true }));
   return list;
 }
 
@@ -52,13 +66,15 @@ function replay(seed: number, inputs: InputState[]): World {
   return world;
 }
 
-describe("seeded 600 step replay", () => {
+describe("seeded 1260 step replay", () => {
   const inputs = script();
 
   it("covers every scripted input kind", () => {
-    expect(inputs).toHaveLength(600);
+    expect(inputs).toHaveLength(1260);
     expect(inputs.some((i) => i.jump)).toBe(true);
     expect(inputs.some((i) => i.action)).toBe(true);
+    expect(inputs.some((i) => i.dodge)).toBe(true);
+    expect(inputs.some((i) => i.parry)).toBe(true);
     expect(inputs.some((i) => i.moveX !== 0)).toBe(true);
     expect(inputs.some((i) => i.moveY !== 0)).toBe(true);
   });

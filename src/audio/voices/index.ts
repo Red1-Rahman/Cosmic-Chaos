@@ -1,4 +1,5 @@
 import type { AudioCue } from "../port";
+import { block, collect, dodge, parry, stagger, victory } from "./actions";
 import { defeat } from "./defeat";
 import { engineSpec, type EngineSpec } from "./engine";
 import { hit } from "./hit";
@@ -11,7 +12,22 @@ import { ui } from "./ui";
 
 export * from "./spec";
 export * from "./engine";
-export { laser, splash, ui, hit, jump, defeat, timeFieldEnter, timeFieldExit };
+export {
+  laser,
+  splash,
+  ui,
+  hit,
+  jump,
+  defeat,
+  timeFieldEnter,
+  timeFieldExit,
+  dodge,
+  parry,
+  collect,
+  stagger,
+  block,
+  victory,
+};
 
 /** Every one-shot cue, keyed by the name the game asks for. */
 export const VOICES: Readonly<Record<AudioCue, VoiceSpec>> = {
@@ -23,6 +39,12 @@ export const VOICES: Readonly<Record<AudioCue, VoiceSpec>> = {
   ui,
   timeFieldEnter,
   timeFieldExit,
+  dodge,
+  parry,
+  collect,
+  stagger,
+  block,
+  victory,
 };
 
 export const DEFAULT_ENGINE: EngineSpec = engineSpec;
@@ -37,4 +59,10 @@ export const AUDIO_CUES: readonly AudioCue[] = [
   "ui",
   "timeFieldEnter",
   "timeFieldExit",
+  "dodge",
+  "parry",
+  "collect",
+  "stagger",
+  "block",
+  "victory",
 ];

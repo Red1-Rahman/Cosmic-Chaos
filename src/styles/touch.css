@@ -67,11 +67,20 @@
   right: 0;
 }
 
-.cc-touch-button {
+.cc-touch-cluster {
   position: absolute;
-  right: calc(env(safe-area-inset-right, 0px) + 20px);
-  width: 76px;
-  height: 76px;
+  right: calc(env(safe-area-inset-right, 0px) + 18px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+  display: grid;
+  grid-template-columns: 68px 68px;
+  grid-template-rows: 68px 68px;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.cc-touch-button {
+  width: 68px;
+  height: 68px;
   margin: 0;
   padding: 0;
   border: 2px solid rgb(190 232 255 / 55%);
@@ -79,19 +88,40 @@
   background: rgb(12 22 40 / 45%);
   color: rgb(226 244 255 / 90%);
   font: inherit;
-  font-size: 14px;
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   pointer-events: auto;
   touch-action: none;
 }
 
-.cc-touch-jump {
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 104px);
+/* Water cannon gets the front bottom right slot: it is the button pressed most. */
+.cc-touch-button--action,
+.cc-touch-action {
+  grid-column: 2;
+  grid-row: 2;
+  width: 78px;
+  height: 78px;
+  font-size: 13px;
+  border-color: rgb(150 226 255 / 75%);
 }
 
-.cc-touch-action {
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+.cc-touch-button--jump,
+.cc-touch-jump {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.cc-touch-button--dodge,
+.cc-touch-dodge {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.cc-touch-button--parry,
+.cc-touch-parry {
+  grid-column: 1;
+  grid-row: 1;
 }
 
 .cc-touch-button:active,

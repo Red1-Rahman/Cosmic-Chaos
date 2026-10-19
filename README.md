@@ -2,7 +2,6 @@
   <img src="public/assets/Cosmic Chaos.png" alt="Cosmic Chaos banner" width="100%">
 </p>
 
-
 # Cosmic Chaos
 
 A vibe-coded web game made of random bs.

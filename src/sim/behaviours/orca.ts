@@ -1,10 +1,12 @@
-// Orca: Warden of the Rule. Chase, telegraph, lunge, recover.
+// Orca: Warden of the Rule. Chase, telegraph, lunge, recover, and get out of
+// the water when the water cannon puts it down.
 //
 // Every speed below is px per second and is multiplied by the caller's
 // time-scaled dt, so the same constants make the Orca visibly slower inside
 // the snail's time field without any extra code here.
 
 import { clamp } from "../../util/rng";
+import { updateStagger } from "../arena-objects";
 import type { Entity } from "../types";
 import { hitPlayer } from "./player";
 import type { BehaviourContext } from "./shared";
@@ -36,9 +38,11 @@ export const ORCA = {
   hitPower: 0.22,
   /** Repeat wind-ups cannot start again until this cooldown clears. */
   cooldownMs: 500,
+  /** How fast a cannon knockback decays, per second. */
+  knockbackDrag: 3.4,
 } as const;
 
-export type OrcaState = "idle" | "chase" | "telegraph" | "lunge" | "recover";
+export type OrcaState = "idle" | "chase" | "telegraph" | "lunge" | "recover" | "staggered";
 
 function beginTelegraph(orca: Entity): void {
   orca.state = "telegraph";
@@ -65,12 +69,24 @@ function beginRecover(orca: Entity): void {
   orca.anim = "swim";
 }
 
+/** Knockback from a pellet decays exponentially, exactly like the player's drag. */
+function applyKnockback(orca: Entity, dt: number): { x: number; y: number } {
+  const damp = Math.exp(-ORCA.knockbackDrag * dt);
+  const x = (orca.props.pushX ?? 0) * damp;
+  const y = (orca.props.pushY ?? 0) * damp;
+  orca.props.pushX = Math.abs(x) < 0.5 ? 0 : x;
+  orca.props.pushY = Math.abs(y) < 0.5 ? 0 : y;
+  return { x: orca.props.pushX, y: orca.props.pushY };
+}
+
 function resolveLungeContact(orca: Entity, ctx: BehaviourContext): void {
   const player = ctx.world.entities.find((e) => e.kind === "player");
   if (!player) return;
   const reach = ORCA.contactRadius * ORCA.contactRadius;
   if (dist2(orca.x, orca.y, player.x, player.y) > reach) return;
-  hitPlayer(ctx.world, player, ORCA.hitPower, orca.x, orca.y);
+  hitPlayer(ctx.world, player, ORCA.hitPower, orca.x, orca.y, orca);
+  // A spent lunge always ends in recovery, whether it connected, was dodged or
+  // was parried: the Orca has committed either way.
   beginRecover(orca);
 }
 
@@ -80,6 +96,17 @@ export function updateOrca(orca: Entity, ctx: BehaviourContext): void {
   const dt = ctx.dt;
   const pvx = player.props.vx ?? 0;
   const pvy = player.props.vy ?? 0;
+
+  const push = applyKnockback(orca, dt);
+  const active = updateStagger(orca, ctx);
+  if (!active) {
+    // Toppled: drift with whatever the last hit gave it, and do nothing else.
+    moveInBand(orca, ctx.arena, push.x, push.y, dt);
+    orca.state = "staggered";
+    orca.anim = "idle";
+    orca.props.dist2 = dist2(orca.x, orca.y, player.x, player.y);
+    return;
+  }
 
   switch (orca.state as OrcaState) {
     case "idle": {
@@ -102,6 +129,7 @@ export function updateOrca(orca: Entity, ctx: BehaviourContext): void {
         ORCA.chaseSpeed,
         dt,
       );
+      moveInBand(orca, ctx.arena, push.x, push.y, dt);
       faceFromDX(orca, player.x + leadX - orca.x);
       const cd = Math.max(0, (orca.props.cooldown ?? 0) - dt * 1000);
       orca.props.cooldown = cd;
@@ -122,8 +150,8 @@ export function updateOrca(orca: Entity, ctx: BehaviourContext): void {
       moveInBand(
         orca,
         ctx.arena,
-        (orca.props.dirX ?? 0) * ORCA.lungeSpeed,
-        (orca.props.dirY ?? 0) * ORCA.lungeSpeed,
+        (orca.props.dirX ?? 0) * ORCA.lungeSpeed + push.x,
+        (orca.props.dirY ?? 0) * ORCA.lungeSpeed + push.y,
         dt,
       );
       resolveLungeContact(orca, ctx);

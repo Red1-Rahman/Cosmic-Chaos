@@ -23,8 +23,26 @@ export function cueForEvent(event: GameEvent): AudioCue | undefined {
       return "timeFieldExit";
     case "defeat":
       return "defeat";
+    case "victory":
+      return "victory";
     case "ui":
       return "ui";
+    case "dodge":
+      return "dodge";
+    case "parry":
+      return "parry";
+    case "parrySuccess":
+      return "parry";
+    case "collect":
+      return "collect";
+    case "stagger":
+      return "stagger";
+    case "blocked":
+      return "block";
+    case "objective":
+      return "collect";
+    case "dialogue":
+      return undefined;
     case "spawn":
       return undefined;
     default:

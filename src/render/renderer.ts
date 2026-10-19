@@ -19,7 +19,12 @@ import type { Manifest, ProceduralProp } from "../assets/manifest-types";
 import type { Entity, GameEvent, World } from "../sim/types";
 import {
   clamp01,
+  drawCores,
   drawCrystalGlows,
+  drawDodgeEcho as drawDodgeEchoProp,
+  drawObstacles,
+  drawParryShield,
+  drawPellets,
   drawTimeField,
   drawWaterbike,
   readCrystalGlow,
@@ -27,8 +32,11 @@ import {
   readWaterbike,
 } from "./props";
 import type { CrystalSpec, TimeFieldSpec, WaterbikeSpec } from "./props";
+import { CORE_COLORS, PARRY_COLORS } from "./props";
 import { MAX_FLASH_HZ, createFlashLimiter, createParticleSystem, readStardust } from "./particles";
 import type { ParticleSystem } from "./particles";
+import { SPLASH_COLOR as SPLASH_TINT } from "./particles";
+import { CORES, DODGE, PARRY } from "../sim/game-config";
 import type { Layout, Size } from "./viewport";
 
 /** Which manifest character draws a given sim entity kind. */
@@ -49,6 +57,27 @@ export const LIFT_PIXELS = 44;
  * Display only: the renderer never reads the sim movement constants.
  */
 export const PROP_SPEED_REFERENCE = 260;
+
+/** Streak drawn behind a rider that is mid dodge. */
+const drawDodgeEcho = (
+  ctx: CanvasRenderingContext2D,
+  player: Entity,
+  reducedMotion: boolean,
+): void => {
+  if (reducedMotion) return;
+  const burst = player.props["dodgeBurstMs"] ?? 0;
+  if (burst <= 0) return;
+  const scale = clamp01((player.props["speed"] ?? 0) / PROP_SPEED_REFERENCE) * 0.6 + 0.4;
+  drawDodgeEchoProp(
+    ctx,
+    player.x,
+    player.y,
+    player.props["dodgeDirX"] ?? player.facing,
+    player.props["dodgeDirY"] ?? 0,
+    burst / DODGE.burstMs,
+    scale,
+  );
+};
 
 /** Maximum hull tilt in radians, so the bike never looks broken. */
 export const MAX_TILT_RAD = 0.28;
@@ -395,6 +424,30 @@ export function createRenderer(
         case "laser":
           particles.emitPing(event.x, event.y, event.x >= flashX ? 1 : -1, 0);
           break;
+        case "collect":
+          particles.emitRing(event.x, event.y, 26, CORE_COLORS.glow, 380);
+          particles.emitSparks(event.x, event.y, 8, 0.5);
+          break;
+        case "stagger":
+          particles.emitSparks(event.x, event.y, 20, 0.9);
+          particles.emitRing(event.x, event.y, 44, CORE_COLORS.edge, 460);
+          break;
+        case "parrySuccess":
+          particles.emitRing(event.x, event.y, 62, PARRY_COLORS.ring, 420);
+          particles.emitSparks(event.x, event.y, 16, 0.7);
+          flash = Math.max(flash, 0.35);
+          flashX = event.x;
+          flashY = event.y;
+          break;
+        case "dodge":
+          particles.emitRing(event.x, event.y, 34, SPLASH_TINT, 300);
+          break;
+        case "blocked":
+          particles.emitSparks(event.x, event.y, 5, 0.3);
+          break;
+        case "victory":
+          particles.emitRing(event.x, event.y, 120, CORE_COLORS.body, 900);
+          break;
         default:
           break;
       }
@@ -444,9 +497,23 @@ export function createRenderer(
     // Shore props sit behind everything: they are on the shore, not in the water.
     drawCrystalGlows(ctx, crystals, world.timeMs, reducedMotion);
 
+    // Level geometry sits in the water, behind everything that swims in it.
+    drawObstacles(ctx, world.obstacles, world.timeMs, reducedMotion);
+
     const snail = world.entities.find((entity) => entity.kind === "snail");
     if (snail !== undefined) {
       drawTimeField(ctx, timeField, snail.x, snail.y, world.timeMs, reducedMotion);
+    }
+
+    drawCores(ctx, world.cores, CORES.radius, world.timeMs, reducedMotion);
+
+    const player = world.entities.find((entity) => entity.kind === "player");
+    if (player !== undefined) {
+      const window = player.props["parryWindowMs"] ?? 0;
+      if (window > 0) {
+        drawParryShield(ctx, player.x, player.y, window, PARRY.windowMs, PARRY.radius);
+      }
+      drawDodgeEcho(ctx, player, reducedMotion);
     }
 
     const ordered = world.entities
@@ -454,6 +521,7 @@ export function createRenderer(
       .sort((a, b) => (a.entity.y === b.entity.y ? a.index - b.index : a.entity.y - b.entity.y));
     for (const entry of ordered) drawEntity(ctx, world, entry.entity, t, interpolate);
 
+    drawPellets(ctx, world.pellets);
     drainEvents();
     particles.draw(ctx);
     paintFlash(ctx, world.timeMs);

@@ -1,10 +1,24 @@
-// The screens that sit on top of the arena: the title screen, the pause panel and the
-// defeat panel. They own nothing but text and buttons. Every action calls a callback,
-// never audio, never storage. Restarting reuses the seed the app already holds.
-import type { UiCallbacks } from "./types.js";
-import { el, focusQuietly, text, createButton, type ButtonOptions } from "./dom.js";
+// The screens that bracket a run: the level briefing, the pause panel, the
+// victory panel and the defeat panel. They own text and buttons and nothing else.
+//
+// Every action calls a callback, never audio, never storage. Restarting reuses
+// the seed and the level the app already holds, so a retry is the same run.
 
-/** Copy lives here so the world tone can be edited in one place. Logged in docs/decisions.md. */
+import { LEVELS } from "../sim/levels.js";
+import { el, formatSeconds, text } from "./dom.js";
+import { createPanel } from "./panels.js";
+import type { ScreenHandle } from "./panels.js";
+import { createControlsScreen, createLicenseScreen } from "./reader.js";
+import type { HomeHandle } from "./home.js";
+import { createHomeScreen } from "./home.js";
+import type { LevelsHandle } from "./levels.js";
+import { createLevelsScreen } from "./levels.js";
+import type { LevelView, ObjectiveView, UiCallbacks } from "./types.js";
+
+/**
+ * Copy for the title screen is kept here so the world tone can be edited in one
+ * place, and because the spec gate asserts on it. Logged in docs/decisions.md.
+ */
 export const TITLE_COPY = {
   kicker: "Cosmic Chaos",
   headline: "The Capybara broke a fundamental rule of the universe.",
@@ -17,122 +31,159 @@ export const TITLE_COPY = {
   startHint: "Enter, Space or tap to start",
 } as const;
 
+export const BRIEFING_COPY = {
+  kicker: "Briefing",
+  headline: "What has to happen",
+  start: "Launch",
+  hint: "Enter or Space to launch",
+} as const;
+
 export const PAUSE_COPY = {
   title: "Paused",
   body: "The cosmos is holding still for a moment.",
   resume: "Resume",
   restart: "Restart",
+  levels: "Levels",
+  home: "Home",
+} as const;
+
+export const VICTORY_COPY = {
+  title: "Correction postponed.",
+  kicker: "Cleared",
+  body: "Every objective on the board is done. The water is yours for the moment.",
+  next: "Next level",
+  lastOne: "That was the last one",
+  replay: "Run it again",
+  home: "Home",
 } as const;
 
 export const DEFEAT_COPY = {
   title: "Corrected.",
-  body: "The Warden closed the case on this seed. Run it again and see whether the chaos holds.",
-  restart: "Restart with the same seed",
+  kicker: "Down",
+  body: "The Warden closed the case on this run. Nothing is lost but the attempt.",
+  restart: "Try again",
+  home: "Home",
 } as const;
 
-export interface ScreenHandle {
+/** Progress text for one objective. Survive objectives show a clock, not a count. */
+export function objectiveProgressText(objective: ObjectiveView): string {
+  if (objective.id === "survive") {
+    return `${objective.label}  ${formatSeconds(objective.count)}/${formatSeconds(objective.target)}`;
+  }
+  const shown = String(Math.min(objective.count, objective.target));
+  return `${objective.label}  ${shown}/${String(objective.target)}`;
+}
+
+export interface ObjectiveListHandle {
   readonly root: HTMLElement;
-  /** The action a keyboard, gamepad or touch user hits first. */
-  readonly primary: HTMLButtonElement;
-  /** Set when this screen is the visible one. */
-  activate(): void;
-  deactivate(): void;
-  focusPrimary(): void;
+  render(objectives: readonly ObjectiveView[]): void;
 }
 
-const ACTIVE_CLASS = "cc-screen-active";
-
-interface ScreenSpec {
-  className: string;
-  role: string;
-  label: string;
-  kicker: string | undefined;
-  headline: string;
-  body: readonly string[];
-  actions: readonly ButtonOptions[];
-  primaryIndex: number;
-}
-
-function createPanel(doc: Document, spec: ScreenSpec): ScreenHandle {
-  const root = el(doc, `cc-screen cc-screen--${spec.className}`);
-  root.setAttribute("role", spec.role);
-  root.setAttribute("aria-label", spec.label);
-
-  const panel = el(doc, "cc-panel");
-  root.append(panel);
-
-  if (spec.kicker !== undefined) {
-    const kicker = el(doc, "cc-kicker");
-    text(kicker, spec.kicker);
-    panel.append(kicker);
-  }
-
-  const headline = el(doc, "cc-headline");
-  text(headline, spec.headline);
-  panel.append(headline);
-
-  for (const line of spec.body) {
-    const paragraph = el(doc, "cc-copy");
-    text(paragraph, line);
-    panel.append(paragraph);
-  }
-
-  const buttons = el(doc, "cc-actions-row");
-  panel.append(buttons);
-  const created: HTMLButtonElement[] = [];
-  for (const action of spec.actions) {
-    const button = createButton(doc, action);
-    buttons.append(button);
-    created.push(button);
-  }
-  const primaryButton = created[spec.primaryIndex];
-  if (primaryButton === undefined) {
-    throw new Error(
-      `ui: the ${spec.className} screen needs an action at index ${String(spec.primaryIndex)}.`,
-    );
-  }
+/** The objectives block shared by the briefing and the victory panel. */
+export function createObjectiveList(doc: Document): ObjectiveListHandle {
+  const root = el(doc, "cc-objectives");
+  root.setAttribute("data-cc-objectives", "");
+  let signature = "";
 
   return {
     root,
-    primary: primaryButton,
-    activate(): void {
-      root.classList.add(ACTIVE_CLASS);
-    },
-    deactivate(): void {
-      root.classList.remove(ACTIVE_CLASS);
-    },
-    focusPrimary(): void {
-      focusQuietly(primaryButton);
+    render(objectives: readonly ObjectiveView[]): void {
+      const next = objectives
+        .map((objective) => `${objective.id}:${String(objective.count)}:${String(objective.done)}`)
+        .join("|");
+      if (next === signature) return;
+      signature = next;
+      while (root.children.length > 0) root.children[0]?.remove();
+      for (const objective of objectives) {
+        const row = el(doc, "cc-objective");
+        row.setAttribute("data-cc-objective", objective.id);
+        row.classList.toggle("cc-objective--done", objective.done);
+        const mark = el(doc, "cc-objective-mark");
+        text(mark, objective.done ? "[x]" : "[ ]");
+        const label = el(doc, "cc-objective-label");
+        text(label, objectiveProgressText(objective));
+        row.append(mark, label);
+        root.append(row);
+      }
     },
   };
 }
 
-export function createTitleScreen(doc: Document, callbacks: UiCallbacks): ScreenHandle {
-  const spec: ScreenSpec = {
-    className: "title",
+export interface BriefingHandle extends ScreenHandle {
+  readonly objectives: ObjectiveListHandle;
+  render(level: LevelView | undefined, riderName: string): void;
+}
+
+/** The screen between picking a level and riding into it. */
+export function createBriefingScreen(doc: Document, callbacks: UiCallbacks): BriefingHandle {
+  let currentId = 1;
+
+  const screen = createPanel(doc, {
+    className: "briefing",
     role: "dialog",
-    label: "Cosmic Chaos title screen",
-    kicker: TITLE_COPY.kicker,
-    headline: TITLE_COPY.headline,
-    body: TITLE_COPY.premise,
+    label: "Level briefing",
+    kicker: BRIEFING_COPY.kicker,
+    headline: BRIEFING_COPY.headline,
+    body: [],
     actions: [
       {
         action: "start",
-        label: TITLE_COPY.start,
+        label: BRIEFING_COPY.start,
         className: "cc-btn cc-btn-primary",
         onClick: (): void => {
-          callbacks.onStart();
+          callbacks.onStart(currentId);
+        },
+      },
+      {
+        action: "levels",
+        label: PAUSE_COPY.levels,
+        className: "cc-btn",
+        onClick: (): void => {
+          callbacks.onOpenLevels();
+        },
+      },
+      {
+        action: "home",
+        label: PAUSE_COPY.home,
+        className: "cc-btn",
+        onClick: (): void => {
+          callbacks.onHome();
         },
       },
     ],
     primaryIndex: 0,
-  };
-  const screen = createPanel(doc, spec);
-  const hint = el(doc, "cc-hint");
-  text(hint, TITLE_COPY.startHint);
+    panelClass: "cc-panel--wide",
+  });
+
   const panel = screen.root.firstElementChild;
-  if (panel !== null) panel.append(hint);
-  return screen;
+  const titleNode = el(doc, "cc-briefing-title");
+  const story = el(doc, "cc-story");
+  const objectives = createObjectiveList(doc);
+  const hint = el(doc, "cc-hint");
+  text(hint, BRIEFING_COPY.hint);
+  if (panel !== null) panel.append(titleNode, story, objectives.root, hint);
+
+  return {
+    ...screen,
+    objectives,
+    render(level: LevelView | undefined, riderName: string): void {
+      if (level === undefined) return;
+      currentId = level.id;
+      const definition = LEVELS.find((entry) => entry.id === level.id);
+      text(titleNode, `${String(level.id)}. ${level.name} - ${level.subtitle}`);
+      while (story.children.length > 0) story.children[0]?.remove();
+      for (const line of definition?.brief ?? []) {
+        const paragraph = el(doc, "cc-copy");
+        text(paragraph, line);
+        story.append(paragraph);
+      }
+      const who = el(doc, "cc-copy cc-briefing-rider");
+      text(who, `${riderName} is on the water.`);
+      story.append(who);
+      objectives.render(level.objectives);
+      text(hint, level.hint);
+    },
+  };
 }
 
 export function createPauseScreen(doc: Document, callbacks: UiCallbacks): ScreenHandle {
@@ -160,9 +211,104 @@ export function createPauseScreen(doc: Document, callbacks: UiCallbacks): Screen
           callbacks.onRestart();
         },
       },
+      {
+        action: "levels",
+        label: PAUSE_COPY.levels,
+        className: "cc-btn",
+        onClick: (): void => {
+          callbacks.onOpenLevels();
+        },
+      },
+      {
+        action: "home",
+        label: PAUSE_COPY.home,
+        className: "cc-btn",
+        onClick: (): void => {
+          callbacks.onHome();
+        },
+      },
     ],
     primaryIndex: 0,
   });
+}
+
+export interface VictoryHandle extends ScreenHandle {
+  readonly objectives: ObjectiveListHandle;
+  render(level: LevelView | undefined, objectives: readonly ObjectiveView[]): void;
+}
+
+export function createVictoryScreen(doc: Document, callbacks: UiCallbacks): VictoryHandle {
+  let hasNext = false;
+
+  const screen = createPanel(doc, {
+    className: "victory",
+    role: "dialog",
+    label: "Level cleared",
+    kicker: VICTORY_COPY.kicker,
+    headline: VICTORY_COPY.title,
+    body: [VICTORY_COPY.body],
+    actions: [
+      {
+        action: "next-level",
+        label: VICTORY_COPY.next,
+        className: "cc-btn cc-btn-primary",
+        onClick: (): void => {
+          callbacks.onNextLevel();
+        },
+      },
+      {
+        action: "restart",
+        label: VICTORY_COPY.replay,
+        className: "cc-btn",
+        onClick: (): void => {
+          callbacks.onRestart();
+        },
+      },
+      {
+        action: "home",
+        label: VICTORY_COPY.home,
+        className: "cc-btn",
+        onClick: (): void => {
+          callbacks.onHome();
+        },
+      },
+    ],
+    primaryIndex: 0,
+    panelClass: "cc-panel--wide",
+  });
+
+  // The panel owns one primary action node; the victory screen keeps a live handle
+  // on it so "next level" can grey itself out on the last level.
+  const primary = screen.primary;
+  const story = el(doc, "cc-story");
+  const objectives = createObjectiveList(doc);
+  const panel = screen.root.firstElementChild;
+  if (panel !== null) panel.append(story, objectives.root);
+
+  const syncNext = (): void => {
+    primary.disabled = !hasNext;
+    primary.setAttribute("aria-disabled", hasNext ? "false" : "true");
+    text(primary, hasNext ? VICTORY_COPY.next : VICTORY_COPY.lastOne);
+  };
+  syncNext();
+
+  return {
+    ...screen,
+    objectives,
+    render(level: LevelView | undefined, progress: readonly ObjectiveView[]): void {
+      if (level === undefined) return;
+      hasNext = level.id < LEVELS.length;
+      syncNext();
+      while (story.children.length > 0) story.children[0]?.remove();
+      const definition = LEVELS.find((entry) => entry.id === level.id);
+      for (const line of definition?.outro ?? []) {
+        const paragraph = el(doc, "cc-copy");
+        text(paragraph, line);
+        story.append(paragraph);
+      }
+      objectives.render(progress);
+    },
+  };
 }
 
 export function createDefeatScreen(doc: Document, callbacks: UiCallbacks): ScreenHandle {
@@ -170,7 +316,7 @@ export function createDefeatScreen(doc: Document, callbacks: UiCallbacks): Scree
     className: "defeat",
     role: "dialog",
     label: "Run over",
-    kicker: undefined,
+    kicker: DEFEAT_COPY.kicker,
     headline: DEFEAT_COPY.title,
     body: [DEFEAT_COPY.body],
     actions: [
@@ -182,6 +328,22 @@ export function createDefeatScreen(doc: Document, callbacks: UiCallbacks): Scree
           callbacks.onRestart();
         },
       },
+      {
+        action: "levels",
+        label: PAUSE_COPY.levels,
+        className: "cc-btn",
+        onClick: (): void => {
+          callbacks.onOpenLevels();
+        },
+      },
+      {
+        action: "home",
+        label: DEFEAT_COPY.home,
+        className: "cc-btn",
+        onClick: (): void => {
+          callbacks.onHome();
+        },
+      },
     ],
     primaryIndex: 0,
   });
@@ -189,23 +351,48 @@ export function createDefeatScreen(doc: Document, callbacks: UiCallbacks): Scree
 
 export interface ScreensHandle {
   readonly root: HTMLElement;
-  readonly title: ScreenHandle;
+  readonly home: HomeHandle;
+  readonly levels: LevelsHandle;
+  readonly controls: ScreenHandle;
+  readonly license: ScreenHandle;
+  readonly briefing: BriefingHandle;
   readonly paused: ScreenHandle;
+  readonly victory: VictoryHandle;
   readonly defeat: ScreenHandle;
   dispose(): void;
 }
 
+/** Build every screen and append them in one place, so show() has one switch. */
 export function createScreens(doc: Document, callbacks: UiCallbacks): ScreensHandle {
   const root = el(doc, "cc-screens");
   root.setAttribute("data-cc-overlay", "screens");
-  const title = createTitleScreen(doc, callbacks);
+  const home = createHomeScreen(doc, callbacks);
+  const levels = createLevelsScreen(doc, callbacks);
+  const controls = createControlsScreen(doc, callbacks);
+  const license = createLicenseScreen(doc, callbacks);
+  const briefing = createBriefingScreen(doc, callbacks);
   const paused = createPauseScreen(doc, callbacks);
+  const victory = createVictoryScreen(doc, callbacks);
   const defeat = createDefeatScreen(doc, callbacks);
-  root.append(title.root, paused.root, defeat.root);
+  root.append(
+    home.root,
+    levels.root,
+    controls.root,
+    license.root,
+    briefing.root,
+    paused.root,
+    victory.root,
+    defeat.root,
+  );
   return {
     root,
-    title,
+    home,
+    levels,
+    controls,
+    license,
+    briefing,
     paused,
+    victory,
     defeat,
     dispose(): void {
       root.remove();

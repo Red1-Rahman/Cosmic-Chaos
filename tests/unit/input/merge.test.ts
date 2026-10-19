@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { clampMove, createInput } from "../../../src/input/input.js";
 import { FakeDomEvent, FakeGamepad, FakeWindow, asWindow, setGamepad } from "./fakes.js";
 
-const NEUTRAL = { moveX: 0, moveY: 0, jump: false, action: false };
+const NEUTRAL = { moveX: 0, moveY: 0, jump: false, action: false, dodge: false, parry: false };
 
 function setup(): { win: FakeWindow; input: ReturnType<typeof createInput>; pad: FakeGamepad } {
   const win = new FakeWindow();
@@ -43,7 +43,14 @@ describe("createInput merge", () => {
     const { win, input } = setup();
     win.dispatch(new FakeDomEvent("keydown", { code: "KeyD" }));
 
-    expect(input.poll()).toEqual({ moveX: 1, moveY: 0, jump: false, action: false });
+    expect(input.poll()).toEqual({
+      moveX: 1,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("clamps a keyboard diagonal so speed never exceeds one", () => {
@@ -95,7 +102,14 @@ describe("createInput merge", () => {
     const upKey = win.document.body.children[0]?.children[0]?.children[0];
     upKey?.dispatch(new FakeDomEvent("pointerdown", { pointerId: 3 }));
 
-    expect(input.poll()).toEqual({ moveX: 0, moveY: -1, jump: false, action: false });
+    expect(input.poll()).toEqual({
+      moveX: 0,
+      moveY: -1,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("returns neutral when nothing is held", () => {

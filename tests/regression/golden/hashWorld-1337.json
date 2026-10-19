@@ -2,8 +2,8 @@
   "readme": "Golden hashWorld checkpoints for the scripted replay in tests/regression/script.ts. Regenerate only for an intended simulation change, and record why in docs/decisions.md.",
   "seed": 1337,
   "fixedDt": 0.016666666666666666,
-  "totalTicks": 840,
-  "checkpoints": [60, 150, 210, 255, 300, 420, 570, 660, 720, 840],
+  "totalTicks": 1010,
+  "checkpoints": [60, 150, 210, 255, 300, 420, 570, 660, 720, 840, 880, 920, 1010],
   "phases": [
     {
       "name": "idle on the water",
@@ -44,21 +44,47 @@
     {
       "name": "coast",
       "ticks": 120
+    },
+    {
+      "name": "dodge burst",
+      "ticks": 40
+    },
+    {
+      "name": "parry window",
+      "ticks": 40
+    },
+    {
+      "name": "sweep the water",
+      "ticks": 90
     }
   ],
-  "finalHash": "9b930875",
+  "finalHash": "fe16d7e2",
   "hashes": {
-    "0": "e7d4ca7f",
-    "60": "01c52002",
-    "150": "c765682a",
-    "210": "7b51d4e6",
-    "255": "72c9c402",
-    "300": "f93a14c3",
-    "420": "0aaaff2e",
-    "570": "57c71bc3",
-    "660": "24ee8628",
-    "720": "d533e9ca",
-    "840": "9b930875"
+    "0": "4b99a7be",
+    "60": "b0635d9b",
+    "150": "25c901c4",
+    "210": "5c0e81a4",
+    "255": "224668e7",
+    "300": "ea55787f",
+    "420": "2c7df69e",
+    "570": "5f18d104",
+    "660": "8337faca",
+    "720": "decd34cb",
+    "840": "688b456a",
+    "880": "a82698bc",
+    "920": "6516317b",
+    "1010": "fe16d7e2"
   },
-  "eventTypes": ["hit", "jump", "laser", "spawn", "splash", "timeFieldEnter", "timeFieldExit"]
+  "eventTypes": [
+    "collect",
+    "dodge",
+    "hit",
+    "jump",
+    "laser",
+    "parry",
+    "spawn",
+    "splash",
+    "timeFieldEnter",
+    "timeFieldExit"
+  ]
 }

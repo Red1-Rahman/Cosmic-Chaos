@@ -8,9 +8,11 @@ import { createDebugOverlay, type DebugHandle } from "./debug.js";
 import { applyFrame, createHud, type HudHandle } from "./hud.js";
 import { createScreens, type ScreensHandle } from "./title.js";
 import { el } from "./dom.js";
+import { LICENSE_EXIT_KEY } from "./license-text.js";
 import type { HudModel, Screen, Ui, UiCallbacks } from "./types.js";
 
-export type { HudModel, Screen, Ui, UiCallbacks } from "./types.js";
+export type { HudModel, LevelView, ObjectiveView, Screen, Ui, UiCallbacks } from "./types.js";
+export type { DialogueView } from "./types.js";
 
 export interface UiOptions {
   /** Forces the debug overlay on or off. When omitted it reads ?debug= from the URL. */
@@ -65,17 +67,50 @@ function resolveDocument(host: HTMLElement): Document | undefined {
   return fallback ?? undefined;
 }
 
+/** Every screen, so `show()` is one lookup rather than a chain of branches. */
+const SCREENS: readonly Screen[] = [
+  "home",
+  "levels",
+  "controls",
+  "license",
+  "briefing",
+  "playing",
+  "paused",
+  "victory",
+  "defeat",
+];
+
+function handleOf(screens: ScreensHandle, screen: Screen): { root: HTMLElement } | null {
+  switch (screen) {
+    case "home":
+      return screens.home;
+    case "levels":
+      return screens.levels;
+    case "controls":
+      return screens.controls;
+    case "license":
+      return screens.license;
+    case "briefing":
+      return screens.briefing;
+    case "paused":
+      return screens.paused;
+    case "victory":
+      return screens.victory;
+    case "defeat":
+      return screens.defeat;
+    case "playing":
+      return null;
+    default:
+      return null;
+  }
+}
+
 function focusHost(doc: Document, screen: Screen, screens: ScreensHandle): void {
-  if (screen === "title") {
-    screens.title.focusPrimary();
-    return;
-  }
-  if (screen === "paused") {
-    screens.paused.focusPrimary();
-    return;
-  }
-  if (screen === "defeat") {
-    screens.defeat.focusPrimary();
+  const handle = handleOf(screens, screen);
+  if (handle !== null) {
+    // Every screen handle exposes focusPrimary; the picker needs the same treatment.
+    const focusable = handle as unknown as { focusPrimary?: () => void };
+    focusable.focusPrimary?.();
     return;
   }
   // Playing: hand focus back to the page so Space does not re-trigger a menu button.
@@ -83,6 +118,11 @@ function focusHost(doc: Document, screen: Screen, screens: ScreensHandle): void 
   if (active !== null && typeof (active as HTMLElement).blur === "function") {
     (active as HTMLElement).blur();
   }
+}
+
+/** Escape closes the three overlay screens. Nothing else listens for it. */
+export function isClosableScreen(screen: Screen): boolean {
+  return screen === "levels" || screen === "controls" || screen === "license";
 }
 
 /**
@@ -98,18 +138,19 @@ export function createUi(callbacks: UiCallbacks, options: UiOptions = {}): Ui {
   let hud: HudHandle | null = null;
   let screens: ScreensHandle | null = null;
   let debug: DebugHandle | null = null;
-  let current: Screen = "title";
+  let current: Screen = "home";
   let pendingModel: HudModel | null = null;
+  let onEscape: (() => void) | null = null;
 
   function show(screen: Screen): void {
     current = screen;
     if (root === null || screens === null || hud === null) return;
-    if (screen === "title") screens.title.activate();
-    else screens.title.deactivate();
-    if (screen === "paused") screens.paused.activate();
-    else screens.paused.deactivate();
-    if (screen === "defeat") screens.defeat.activate();
-    else screens.defeat.deactivate();
+    for (const candidate of SCREENS) {
+      const handle = handleOf(screens, candidate);
+      if (handle === null) continue;
+      if (candidate === screen) handle.root.classList.add("cc-screen-active");
+      else handle.root.classList.remove("cc-screen-active");
+    }
     // The pause and mute buttons only make sense while a run is on screen or held.
     hud.root.classList.toggle("cc-hud-playing", screen === "playing" || screen === "paused");
     if (doc !== undefined) focusHost(doc, screen, screens);
@@ -123,6 +164,12 @@ export function createUi(callbacks: UiCallbacks, options: UiOptions = {}): Ui {
     applyFrame(root, model.frame);
     hud.update(model);
     debug?.update(model);
+    if (screens !== null) {
+      screens.levels.render(model.levels);
+      const active = model.levels.find((level) => level.current);
+      screens.briefing.render(active, model.riderName);
+      screens.victory.render(active, model.objectives);
+    }
   }
 
   function mount(host: HTMLElement): void {
@@ -150,6 +197,20 @@ export function createUi(callbacks: UiCallbacks, options: UiOptions = {}): Ui {
     host.append(uiRoot);
     root = uiRoot;
 
+    // Escape closes the overlay screens. It is a document listener rather than a
+    // keyboard-source flag, because the app owns the screen stack.
+    const onKeyDown = (event: Event): void => {
+      const code = (event as KeyboardEvent).code;
+      if (code !== LICENSE_EXIT_KEY && code !== "Escape") return;
+      if (!isClosableScreen(current)) return;
+      event.preventDefault();
+      callbacks.onCloseOverlay();
+    };
+    onEscape = (): void => {
+      ownerDocument.removeEventListener("keydown", onKeyDown);
+    };
+    ownerDocument.addEventListener("keydown", onKeyDown);
+
     const buffered = pendingModel;
     pendingModel = null;
     show(current);
@@ -159,6 +220,8 @@ export function createUi(callbacks: UiCallbacks, options: UiOptions = {}): Ui {
   function destroy(): void {
     hud = null;
     debug = null;
+    onEscape?.();
+    onEscape = null;
     if (screens !== null) screens.dispose();
     screens = null;
     if (root !== null) root.remove();

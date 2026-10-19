@@ -7,7 +7,7 @@ import {
 } from "../../../src/input/touch.js";
 import { FakeDomEvent, FakeDocument, FakeWindow, asWindow } from "./fakes.js";
 
-const NEUTRAL = { moveX: 0, moveY: 0, jump: false, action: false };
+const NEUTRAL = { moveX: 0, moveY: 0, jump: false, action: false, dodge: false, parry: false };
 
 describe("touch state", () => {
   it("is neutral with no pointers down", () => {
@@ -18,7 +18,14 @@ describe("touch state", () => {
     const state = createTouchState();
     state.press(1, "right");
 
-    expect(state.poll()).toEqual({ moveX: 1, moveY: 0, jump: false, action: false });
+    expect(state.poll()).toEqual({
+      moveX: 1,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("holds direction and jump at the same time", () => {
@@ -26,7 +33,14 @@ describe("touch state", () => {
     state.press(1, "up");
     state.press(2, "jump");
 
-    expect(state.poll()).toEqual({ moveX: 0, moveY: -1, jump: true, action: false });
+    expect(state.poll()).toEqual({
+      moveX: 0,
+      moveY: -1,
+      jump: true,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("holds direction and action at the same time", () => {
@@ -34,7 +48,14 @@ describe("touch state", () => {
     state.press(3, "left");
     state.press(4, "action");
 
-    expect(state.poll()).toEqual({ moveX: -1, moveY: 0, jump: false, action: true });
+    expect(state.poll()).toEqual({
+      moveX: -1,
+      moveY: 0,
+      jump: false,
+      action: true,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("keeps other fingers down when one is lifted", () => {
@@ -44,7 +65,14 @@ describe("touch state", () => {
 
     state.release(1);
 
-    expect(state.poll()).toEqual({ moveX: 0, moveY: 0, jump: false, action: true });
+    expect(state.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: false,
+      action: true,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("moves a finger from one control to another", () => {
@@ -91,7 +119,7 @@ describe("touch state", () => {
 });
 
 describe("touch overlay", () => {
-  it("builds a pad plus jump and action buttons", () => {
+  it("builds a pad plus a four button action cluster", () => {
     const doc = new FakeDocument();
     const overlay = mountTouchOverlay(doc as unknown as Document, createTouchState());
 
@@ -104,10 +132,23 @@ describe("touch overlay", () => {
       "right",
       "down",
     ]);
-    expect(root?.children.slice(1).map((key) => key.getAttribute("data-cc-control"))).toEqual([
-      "jump",
+    const cluster = root?.children[1];
+    expect(cluster?.children.map((key) => key.getAttribute("data-cc-control"))).toEqual([
       "action",
+      "jump",
+      "dodge",
+      "parry",
     ]);
+  });
+
+  it("reads the dodge and parry buttons", () => {
+    const state = createTouchState();
+    state.press(1, "dodge");
+    state.press(2, "parry");
+
+    const held = state.poll();
+    expect(held.dodge).toBe(true);
+    expect(held.parry).toBe(true);
   });
 
   it("drives the state from pointer events", () => {
@@ -118,7 +159,8 @@ describe("touch overlay", () => {
     const root = doc.body.children[0];
     const pad = root?.children[0];
     const rightKey = pad?.children[2];
-    const jumpButton = root?.children[1];
+    const cluster = root?.children[1];
+    const jumpButton = cluster?.children[1];
 
     rightKey?.dispatch(new FakeDomEvent("pointerdown", { pointerId: 7 }));
     expect(state.poll().moveX).toBe(1);
@@ -127,7 +169,14 @@ describe("touch overlay", () => {
     expect(state.poll().jump).toBe(true);
 
     rightKey?.dispatch(new FakeDomEvent("pointerup", { pointerId: 7 }));
-    expect(state.poll()).toEqual({ moveX: 0, moveY: 0, jump: true, action: false });
+    expect(state.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: true,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
 
     jumpButton?.dispatch(new FakeDomEvent("pointercancel", { pointerId: 8 }));
     expect(state.poll()).toEqual(NEUTRAL);

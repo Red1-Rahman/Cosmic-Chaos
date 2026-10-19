@@ -47,6 +47,11 @@ export class FakeElement {
     }
   }
   type = "";
+  /** Enough of the input surface for the rider name field. */
+  value = "";
+  placeholder = "";
+  maxLength = 0;
+  disabled = false;
   readonly style = new FakeStyle();
   readonly dataset: Record<string, string> = {};
   readonly attributes = new Map<string, string>();
@@ -200,14 +205,43 @@ export class FakeElement {
       .filter((value) => value !== "")
       .join("\n");
   }
+
+  /** All text in this node's subtree, root excluded. */
+  get subtreeText(): string {
+    return [...this.walk()]
+      .slice(1)
+      .map((node) => node.textContent)
+      .filter((value) => value !== "")
+      .join("\n");
+  }
 }
 
 export class FakeDocument {
   activeElement: FakeElement | null = null;
   readonly body = new FakeElement("body", this);
+  private readonly listeners = new Map<string, Listener[]>();
 
   createElement(tagName: string): FakeElement {
     return new FakeElement(tagName, this);
+  }
+
+  addEventListener(type: string, listener: Listener): void {
+    const list = this.listeners.get(type) ?? [];
+    list.push(listener);
+    this.listeners.set(type, list);
+  }
+
+  removeEventListener(type: string, listener: Listener): void {
+    const list = this.listeners.get(type);
+    if (list === undefined) return;
+    this.listeners.set(
+      type,
+      list.filter((entry) => entry !== listener),
+    );
+  }
+
+  listenerCount(type: string): number {
+    return (this.listeners.get(type) ?? []).length;
   }
 }
 

@@ -423,3 +423,397 @@
     gap: 0.25em;
   }
 }
+
+/* --- home, levels, controls and the licence reader -------------------------- */
+
+/* Wide panels carry the story and the objective lists. The narrow default stays
+   for the short panels, so a phone in portrait never has to scroll a wall of text
+   just to reach the buttons. */
+.cc-panel--wide {
+  max-width: min(52em, 100%);
+  text-align: left;
+}
+
+.cc-panel--wide .cc-kicker,
+.cc-panel--wide .cc-headline {
+  text-align: center;
+}
+
+.cc-story {
+  margin: 0 0 0.6em;
+}
+
+.cc-briefing-title {
+  margin: 0 0 0.6em;
+  font-size: 1.15em;
+  color: rgb(196 240 255);
+}
+
+.cc-briefing-rider {
+  color: rgb(150 214 246);
+}
+
+/* Rider name field */
+
+.cc-field-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  margin: 0.8em 0 0.2em;
+}
+
+.cc-field-input-label,
+.cc-field-input-note {
+  font-size: 0.75em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(150 190 214);
+}
+
+.cc-field-input-note {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: rgb(132 164 186);
+}
+
+.cc-text-input {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 22em;
+  margin: 0 auto;
+  padding: 0.45em 0.7em;
+  border: 2px solid rgb(120 178 224 / 55%);
+  border-radius: 0.45em;
+  background: rgb(5 10 22 / 90%);
+  color: rgb(236 248 255);
+  font: inherit;
+  font-size: 1em;
+  text-align: center;
+}
+
+.cc-text-input:focus-visible {
+  outline: 3px solid rgb(140 224 255);
+  outline-offset: 2px;
+}
+
+/* Level picker */
+
+.cc-level-list {
+  display: grid;
+  gap: 0.5em;
+  margin: 0.4em 0 0.8em;
+}
+
+.cc-level-card {
+  display: grid;
+  gap: 0.2em;
+  padding: 0.6em 0.8em;
+  border: 2px solid rgb(120 178 224 / 40%);
+  border-radius: 0.6em;
+  background: rgb(8 14 30 / 80%);
+}
+
+.cc-level-card--current {
+  border-color: rgb(140 224 255 / 85%);
+}
+
+.cc-level-card--locked {
+  opacity: 0.55;
+}
+
+.cc-level-name {
+  font-size: 1.05em;
+  color: rgb(236 248 255);
+}
+
+.cc-level-sub {
+  font-size: 0.85em;
+  color: rgb(178 214 238);
+}
+
+.cc-level-goals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em 0.9em;
+  margin: 0.15em 0;
+}
+
+.cc-level-goal {
+  font-size: 0.8em;
+  color: rgb(196 226 244);
+}
+
+.cc-level-goal::before {
+  content: "- ";
+  color: rgb(120 180 220);
+}
+
+.cc-level-flag {
+  font-size: 0.75em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(126 232 176);
+}
+
+.cc-level-card-button {
+  justify-self: start;
+  margin-top: 0.3em;
+}
+
+/* Controls table */
+
+.cc-controls-table {
+  display: grid;
+  gap: 0.25em;
+  margin: 0.6em 0;
+}
+
+.cc-controls-row {
+  display: grid;
+  grid-template-columns: minmax(7em, 12em) 1fr;
+  gap: 0.8em;
+  padding: 0.3em 0.5em;
+  border-radius: 0.35em;
+  background: rgb(12 20 40 / 60%);
+}
+
+.cc-controls-action {
+  font-size: 0.85em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(160 220 250);
+}
+
+.cc-controls-keys {
+  font-size: 0.9em;
+  color: rgb(226 242 255);
+}
+
+/* Objectives, on the briefing and victory panels */
+
+.cc-objectives {
+  display: grid;
+  gap: 0.2em;
+  margin: 0.6em 0;
+  padding: 0.5em 0.7em;
+  border: 2px solid rgb(120 178 224 / 40%);
+  border-radius: 0.5em;
+  background: rgb(6 12 26 / 80%);
+}
+
+.cc-objective {
+  display: flex;
+  gap: 0.5em;
+  font-size: 0.9em;
+  color: rgb(206 228 244);
+}
+
+.cc-objective--done {
+  color: rgb(126 232 176);
+}
+
+.cc-objective-mark {
+  color: rgb(140 224 255);
+}
+
+/* --- licence reader --------------------------------------------------------- */
+
+/* A black page and nothing else, with the text crawling upward. The scroll is a
+   CSS animation, not a JavaScript timer, so the ui layer still reads no clock. */
+.cc-screen--reader {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  background: #000;
+}
+
+.cc-screen--reader.cc-screen-active {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  gap: 0.6em;
+  padding: 1.2em;
+}
+
+.cc-license-caption {
+  text-align: center;
+  font-size: 0.9em;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(200 214 232);
+}
+
+.cc-license-viewport {
+  overflow: hidden;
+  border: 1px solid rgb(70 84 104);
+  background: #000;
+}
+
+.cc-license-scroll {
+  --cc-license-scroll: 46s;
+  padding: 1.2em;
+  font-size: 0.72em;
+  line-height: 1.5;
+  color: rgb(214 222 232);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cc-license-scroll {
+    animation: cc-license-scroll var(--cc-license-scroll) linear infinite alternate;
+  }
+}
+
+@keyframes cc-license-scroll {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+.cc-license-close {
+  justify-self: center;
+}
+
+.cc-license-hint {
+  text-align: center;
+  margin: 0;
+}
+
+/* --- in-run objective board and dialogue ------------------------------------ */
+
+/* Bottom left, above the touch pad on a phone: the objectives are what the player
+   is playing for, so they get a permanent home rather than a popup. */
+.cc-objective-board {
+  position: absolute;
+  left: 0.9em;
+  bottom: 0.8em;
+  max-width: 42%;
+  padding: 0.45em 0.7em;
+  border: 2px solid rgb(120 178 224 / 40%);
+  border-radius: 0.55em;
+  background: rgb(6 12 26 / 78%);
+}
+
+.cc-board-title {
+  font-size: 0.7em;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(150 190 214);
+}
+
+.cc-board-list {
+  display: grid;
+  gap: 0.15em;
+  margin-top: 0.2em;
+}
+
+.cc-board-row {
+  font-size: 0.8em;
+  color: rgb(214 234 246);
+}
+
+.cc-board-row--done {
+  color: rgb(126 232 176);
+}
+
+.cc-board-row--done .cc-board-label {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.cc-board-rider {
+  margin-top: 0.25em;
+  font-size: 0.72em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(150 214 246);
+}
+
+/* Dialogue sits just above the waterline, centred, so it never covers the rider. */
+.cc-dialogue {
+  position: absolute;
+  left: 50%;
+  bottom: 16%;
+  transform: translateX(-50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15em;
+  max-width: 70%;
+  padding: 0.4em 0.9em;
+  border: 2px solid rgb(120 178 224 / 45%);
+  border-radius: 0.55em;
+  background: rgb(5 10 22 / 82%);
+  text-align: center;
+}
+
+.cc-dialogue--on {
+  display: flex;
+}
+
+.cc-dialogue-speaker {
+  font-size: 0.7em;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(150 214 246);
+}
+
+.cc-dialogue-line {
+  font-size: 0.88em;
+  color: rgb(232 244 255);
+}
+
+/* The three readiness meters, under the vitals on the left. */
+
+.cc-hud-ready {
+  gap: 0.3em;
+}
+
+.cc-ready {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.2em 0.45em;
+  border: 2px solid rgb(120 178 224 / 32%);
+  border-radius: 0.4em;
+  background: rgb(7 12 26 / 70%);
+}
+
+.cc-ready-label {
+  font-size: 0.68em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(178 214 238);
+}
+
+.cc-ready-key {
+  font-size: 0.68em;
+  color: rgb(150 190 214);
+}
+
+.cc-ready-track {
+  flex: 0 1 3.4em;
+  min-width: 1.6em;
+  height: 0.45em;
+  border-radius: 0.25em;
+  background: rgb(30 44 70 / 90%);
+  overflow: hidden;
+}
+
+.cc-ready-fill {
+  width: 100%;
+  height: 100%;
+  background: rgb(120 224 255);
+}
+
+.cc-ready--cooling .cc-ready-fill {
+  background: rgb(255 176 128);
+}

@@ -1,4 +1,5 @@
-// Keyboard source: WASD and arrows move, Space jumps, J or Shift acts.
+// Keyboard source: WASD and arrows move, Space jumps, J or Shift acts,
+// K dodges, L or Q parries.
 // Axes are raw diagonal sums in [-1, 1]; the merge layer in input.ts clamps them.
 import type { InputState } from "./input.js";
 
@@ -25,6 +26,10 @@ const DIRECTION_CODES: Readonly<Record<Direction, readonly string[]>> = {
 
 const JUMP_CODES: readonly string[] = ["Space"];
 const ACTION_CODES: readonly string[] = ["KeyJ", "ShiftLeft", "ShiftRight"];
+const DODGE_CODES: readonly string[] = ["KeyK"];
+const PARRY_CODES: readonly string[] = ["KeyL", "KeyQ"];
+/** Escape is handled by the app, which owns the screen stack, not by this source. */
+export const ESCAPE_CODE = "Escape";
 
 /** Every key this source reacts to, so default scrolling can be suppressed for them only. */
 export function isGameKeyCode(code: string): boolean {
@@ -34,7 +39,9 @@ export function isGameKeyCode(code: string): boolean {
     DIRECTION_CODES.up.includes(code) ||
     DIRECTION_CODES.down.includes(code) ||
     JUMP_CODES.includes(code) ||
-    ACTION_CODES.includes(code)
+    ACTION_CODES.includes(code) ||
+    DODGE_CODES.includes(code) ||
+    PARRY_CODES.includes(code)
   );
 }
 
@@ -92,6 +99,8 @@ export function createKeyboard(target: Window, options: KeyboardOptions = {}): K
       let moveY = 0;
       let jump = false;
       let action = false;
+      let dodge = false;
+      let parry = false;
       for (const code of pressed) {
         const direction = directionOf(code);
         if (direction !== null) {
@@ -103,9 +112,13 @@ export function createKeyboard(target: Window, options: KeyboardOptions = {}): K
           jump = true;
         } else if (ACTION_CODES.includes(code)) {
           action = true;
+        } else if (DODGE_CODES.includes(code)) {
+          dodge = true;
+        } else if (PARRY_CODES.includes(code)) {
+          parry = true;
         }
       }
-      return { moveX, moveY, jump, action };
+      return { moveX, moveY, jump, action, dodge, parry };
     },
     dispose(): void {
       pressed.clear();

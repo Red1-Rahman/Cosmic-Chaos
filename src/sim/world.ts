@@ -1,18 +1,39 @@
 // Deterministic world simulation. Pure: no DOM, no clocks, no Math.random.
 //
-// The tick, the fixed timestep, the time field and the player waterbike
-// movement live here. Per-character behaviour lives in `sim/behaviours/*` and
-// is dispatched from `step` once every entity has its time scale for this step.
+// The tick, the fixed timestep, the time field, the player waterbike movement,
+// the level geometry, the water cannon, the dodge, the parry, the objective book
+// and the dialogue all live here. Per-character behaviour lives in
+// `sim/behaviours/*` and is dispatched from `step` once every entity has its time
+// scale for this step.
 
 import { clamp, createRng } from "../util/rng";
+import {
+  buildCores,
+  buildObjectives,
+  buildObstacles,
+  collectCores,
+  dodgingThrough,
+  objectivesComplete,
+  resolveObstacleOverlap,
+  stepPellets,
+  updateObjectives,
+} from "./arena-objects";
 import { updateHuman } from "./behaviours/human";
 import { updateOrca } from "./behaviours/orca";
-import { updatePlayerPresentation, updatePlayerVitality } from "./behaviours/player";
+import {
+  startDodge,
+  startParry,
+  updatePlayerPresentation,
+  updatePlayerVitality,
+  updateWaterCannon,
+} from "./behaviours/player";
 import { updateShark } from "./behaviours/shark";
 import type { BehaviourContext } from "./behaviours/shared";
 import { updateSnail } from "./behaviours/snail";
 import { updateTarantula } from "./behaviours/tarantula";
-import { ARENA, MOVEMENT } from "./game-config";
+import { dialogueDuration, lineFor, type Trigger } from "./dialogue";
+import { ARENA, DODGE, MOVEMENT } from "./game-config";
+import { FIRST_LEVEL_ID, levelById, levelSeed } from "./levels";
 import { createInitialEntities, distance } from "./spawn";
 import type { Arena, Entity, GameEvent, InputState, World } from "./types";
 
@@ -35,9 +56,19 @@ function findEntity(world: World, id: string): Entity | undefined {
   return world.entities.find((e) => e.id === id);
 }
 
-export function createWorld(seed: number): World {
-  const rng = createRng(seed).fork("sim");
-  const entities = createInitialEntities(rng);
+/**
+ * Build the world for a level. The level's own seed offset is applied to the
+ * base seed, so `?seed=` still reproduces a run exactly and two levels never
+ * deal the same arena by accident.
+ */
+export function createWorld(seed: number, levelId: number = FIRST_LEVEL_ID): World {
+  const level = levelById(levelId);
+  const runSeed = levelSeed(seed, level.id);
+  const rng = createRng(runSeed).fork("sim");
+  const obstacles = buildObstacles(level);
+  const entities = createInitialEntities(rng, obstacles);
+  const cores = buildCores(level);
+  const objectives = buildObjectives(level);
   const events: GameEvent[] = entities.map((e) => ({
     type: "spawn",
     id: e.id,
@@ -47,7 +78,7 @@ export function createWorld(seed: number): World {
   }));
 
   return {
-    seed,
+    seed: runSeed,
     tick: 0,
     timeMs: 0,
     arena: makeArena(),
@@ -56,6 +87,13 @@ export function createWorld(seed: number): World {
     fieldTimeScale: 1,
     status: "playing",
     events,
+    levelId: level.id,
+    obstacles,
+    pellets: [],
+    cores,
+    objectives,
+    staggerTally: {},
+    dialogue: null,
   };
 }
 
@@ -70,6 +108,21 @@ function timeScaleAt(world: World, x: number, y: number): number {
 function advancePlayer(world: World, player: Entity, input: InputState, dt: number): void {
   const moveX = clamp(input.moveX, -1, 1);
   const moveY = clamp(input.moveY, -1, 1);
+
+  // The dodge and the parry are edge triggered, so a held key fires exactly once.
+  if (input.dodge) startDodge(player, world.events, moveX, moveY);
+  if (input.parry) startParry(player, world.events);
+  if (input.action) updateWaterCannon(world, player, world.events);
+
+  // Read after the triggers: a dodge that begins this step already ignores reefs.
+  const dodging = dodgingThrough(player);
+
+  const bursting = (player.props.dodgeBurstMs ?? 0) > 0 && (player.props.dodgeMs ?? 0) > 0;
+  if (bursting) {
+    player.props.vx = (player.props.vx ?? 0) + (player.props.dodgeDirX ?? 0) * DODGE.impulse;
+    player.props.vy = (player.props.vy ?? 0) + (player.props.dodgeDirY ?? 0) * DODGE.impulse;
+  }
+
   const vx = player.props.vx ?? 0;
   const vy = player.props.vy ?? 0;
 
@@ -79,16 +132,21 @@ function advancePlayer(world: World, player: Entity, input: InputState, dt: numb
   let dampedVx = nextVx * damp;
   let dampedVy = nextVy * damp;
   const speed = Math.sqrt(dampedVx * dampedVx + dampedVy * dampedVy);
-  if (speed > MOVEMENT.maxSpeed) {
-    dampedVx = (dampedVx / speed) * MOVEMENT.maxSpeed;
-    dampedVy = (dampedVy / speed) * MOVEMENT.maxSpeed;
+  const topSpeed = bursting ? MOVEMENT.maxSpeed * 1.9 : MOVEMENT.maxSpeed;
+  if (speed > topSpeed) {
+    dampedVx = (dampedVx / speed) * topSpeed;
+    dampedVy = (dampedVy / speed) * topSpeed;
   }
 
   player.props.vx = dampedVx;
   player.props.vy = dampedVy;
   player.x = clamp(player.x + dampedVx * dt, world.arena.minX, world.arena.maxX);
   player.y = clamp(player.y + dampedVy * dt, world.arena.minY, world.arena.maxY);
-  player.props.speed = Math.min(speed, MOVEMENT.maxSpeed);
+  player.props.speed = Math.min(Math.sqrt(dampedVx * dampedVx + dampedVy * dampedVy), topSpeed);
+
+  if (!dodging) {
+    resolveObstacleOverlap(player, world.arena, world.obstacles);
+  }
 
   if (input.jump && (player.props.jumpMs ?? 0) <= 0) {
     player.props.jumpMs = MOVEMENT.jumpMs;
@@ -110,9 +168,91 @@ function advancePlayer(world: World, player: Entity, input: InputState, dt: numb
   }
 
   if (Math.abs(moveX) > 0.05) player.facing = moveX > 0 ? 1 : -1;
-  if (input.action) {
-    world.events.push({ type: "laser", id: player.id, x: player.x, y: player.y });
+}
+
+/**
+ * Read the events this step produced and let the cast react. Priority order is
+ * the order a player would notice them in: a victory beats everything, then a
+ * defeat, then whatever just happened to the player.
+ */
+const TRIGGER_PRIORITY: readonly Trigger[] = [
+  "victory",
+  "defeat",
+  "objectiveDone",
+  "parry",
+  "staggerOrca",
+  "staggerShark",
+  "hurt",
+  "dodge",
+  "collect",
+  "timeField",
+];
+
+function triggerOf(event: GameEvent): Trigger | undefined {
+  switch (event.type) {
+    case "victory":
+      return "victory";
+    case "defeat":
+      return "defeat";
+    case "objective":
+      return "objectiveDone";
+    case "parrySuccess":
+      return "parry";
+    case "stagger":
+      return event.kind === "orca" ? "staggerOrca" : "staggerShark";
+    case "hit":
+      return "hurt";
+    case "dodge":
+      return "dodge";
+    case "collect":
+      return "collect";
+    case "timeFieldEnter":
+      return "timeField";
+    default:
+      return undefined;
   }
+}
+
+/** Counter per trigger, so a repeated trigger walks its own line list. */
+const triggerCounts = new WeakMap<World, Map<Trigger, number>>();
+
+function pumpDialogue(world: World, fromIndex: number): void {
+  let counts = triggerCounts.get(world);
+  if (counts === undefined) {
+    counts = new Map<Trigger, number>();
+    triggerCounts.set(world, counts);
+  }
+  const fresh = world.events.slice(fromIndex);
+  if (fresh.length === 0) return;
+
+  const byTrigger = new Map<Trigger, number>();
+  for (const event of fresh) {
+    const trigger = triggerOf(event);
+    if (trigger === undefined) continue;
+    byTrigger.set(trigger, (byTrigger.get(trigger) ?? 0) + 1);
+  }
+  if (byTrigger.size === 0) return;
+
+  for (const trigger of TRIGGER_PRIORITY) {
+    const fired = byTrigger.get(trigger);
+    if (fired === undefined || fired <= 0) continue;
+    const seen = counts.get(trigger) ?? 0;
+    counts.set(trigger, seen + fired);
+    const line = lineFor(trigger, seen);
+    world.dialogue = {
+      speaker: line.speaker,
+      line: line.text,
+      msLeft: dialogueDuration(line.text),
+    };
+    return;
+  }
+}
+
+function tickDialogue(world: World, fixedDt: number): void {
+  const current = world.dialogue;
+  if (current === null) return;
+  current.msLeft -= fixedDt * 1000;
+  if (current.msLeft <= 0) world.dialogue = null;
 }
 
 /** One fixed simulation step. `fixedDt` never changes, not even in the field. */
@@ -120,6 +260,7 @@ export function step(world: World, input: InputState, fixedDt: number): void {
   if (world.status !== "playing") return;
   world.tick += 1;
   world.timeMs += fixedDt * 1000;
+  const mark = world.events.length;
 
   const player = findEntity(world, world.playerId);
   if (!player) return;
@@ -159,10 +300,29 @@ export function step(world: World, input: InputState, fixedDt: number): void {
     else if (entity.kind === "tarantula") updateTarantula(entity, ctx);
     else if (entity.kind === "snail") updateSnail(entity, ctx);
     else updateHuman(entity, ctx);
+    // Reefs are solid for everything on the water. The push is radial, so a
+    // warden chasing into one is steered around it instead of pinned to it.
+    if (entity.kind !== "tarantula") {
+      resolveObstacleOverlap(entity, world.arena, world.obstacles);
+    }
   }
 
   updatePlayerPresentation(world, player, fixedDt * player.timeScale);
   updatePlayerVitality(player, ctxFor(player));
+
+  collectCores(world, player);
+  // Pellets travel on the unscaled step: a slowed rider still fires at full pace.
+  stepPellets(world, player, fixedDt);
+  tickDialogue(world, fixedDt);
+
+  updateObjectives(world, world.tick * fixedDt);
+  if (objectivesComplete(world.objectives)) {
+    world.status = "victory";
+    player.state = "victory";
+    world.events.push({ type: "victory", id: player.id, x: player.x, y: player.y });
+  }
+
+  pumpDialogue(world, mark);
 }
 
 export function drainEvents(world: World): GameEvent[] {
@@ -183,6 +343,7 @@ export function hashWorld(world: World): string {
     `timeMs=${q(world.timeMs)}`,
     `status=${world.status}`,
     `field=${q(world.fieldTimeScale)}`,
+    `level=${String(world.levelId)}`,
   ];
   for (const e of world.entities) {
     parts.push(
@@ -203,6 +364,45 @@ export function hashWorld(world: World): string {
       ].join("|"),
     );
   }
+  for (const obstacle of world.obstacles) {
+    parts.push(["obstacle", obstacle.id, obstacle.kind, q(obstacle.x), q(obstacle.y)].join("|"));
+  }
+  for (const core of world.cores) {
+    parts.push(["core", core.id, q(core.x), q(core.y), String(core.taken)].join("|"));
+  }
+  for (const pellet of world.pellets) {
+    parts.push(
+      [
+        "pellet",
+        pellet.id,
+        q(pellet.x),
+        q(pellet.y),
+        q(pellet.vx),
+        q(pellet.vy),
+        q(pellet.lifeMs),
+      ].join("|"),
+    );
+  }
+  for (const objective of world.objectives) {
+    parts.push(
+      [
+        "objective",
+        objective.id,
+        objective.kind,
+        String(objective.target),
+        String(objective.count),
+        String(objective.done),
+      ].join("|"),
+    );
+  }
+  for (const key of Object.keys(world.staggerTally).sort()) {
+    parts.push(["tally", key, String(world.staggerTally[key] ?? 0)].join("|"));
+  }
+  parts.push(
+    world.dialogue === null
+      ? "dialogue=none"
+      : `dialogue=${world.dialogue.speaker}:${world.dialogue.line}`,
+  );
   return hashString(parts.join("\n"));
 }
 

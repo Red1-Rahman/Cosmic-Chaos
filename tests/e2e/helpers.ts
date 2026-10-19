@@ -12,7 +12,8 @@ import { expect } from "./fixtures";
 
 import { parseManifest } from "../../src/assets/manifest-types";
 import type { Manifest } from "../../src/assets/manifest-types";
-import { createWorld } from "../../src/sim/world";
+import { createWorld, step } from "../../src/sim/world";
+import type { InputState } from "../../src/sim/types";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -43,6 +44,7 @@ export interface EntitySnapshot {
   readonly anim: string;
   readonly timeScale: number;
   readonly inTimeField: boolean;
+  readonly reactions: number;
 }
 
 export interface CosmicSnapshot {
@@ -51,20 +53,42 @@ export interface CosmicSnapshot {
   readonly timeMs: number;
   readonly timeScale: number;
   readonly status: string;
+  readonly levelId: number;
   readonly fieldRadius: number;
   readonly fieldX: number;
   readonly fieldY: number;
+  readonly coresLeft: number;
+  readonly pellets: readonly { readonly x: number; readonly y: number }[];
+  readonly objectives: readonly {
+    readonly id: string;
+    readonly count: number;
+    readonly target: number;
+    readonly done: boolean;
+  }[];
+  readonly dialogue: { readonly speaker: string; readonly line: string } | null;
   readonly entities: readonly EntitySnapshot[];
 }
 
 /**
  * A seed where the snail spawns a short drive away from the player and the orca
- * spawns as far away as the spawn rules allow. Chosen offline with the real spawner,
- * so a browser test never has to spend ten seconds driving across the arena, and
- * never gets jumped on while it does: the Orca needs several seconds just to close
- * that gap, which is far longer than any assertion in the suite takes.
+ * spawns as far away as the spawn rules allow, and where the opening stretch of
+ * open water is actually open: the steering test drives right and then down, so a
+ * reef sitting on the spawn point would wedge it. Chosen offline with the real
+ * spawner and the real movement model, so a browser test never has to spend ten
+ * seconds driving across the arena, and never gets jumped on while it does: the
+ * Orca needs several seconds just to close that gap, which is far longer than any
+ * assertion in the suite takes.
  */
 export const FRIENDLY_SEED: number = (() => {
+  const hold = (patch: Partial<InputState>): InputState => ({
+    moveX: 0,
+    moveY: 0,
+    jump: false,
+    action: false,
+    dodge: false,
+    parry: false,
+    ...patch,
+  });
   let best = 1337;
   let bestOrcaGap = -1;
   for (let seed = 1; seed <= 4000; seed += 1) {
@@ -79,6 +103,18 @@ export const FRIENDLY_SEED: number = (() => {
     if (snailGap < 280 || snailGap > 420) continue;
     const orcaGap = Math.hypot(orca.x - player.x, orca.y - player.y);
     if (orcaGap <= bestOrcaGap) continue;
+    // Replay the exact opening the steering test performs: right, back left, then
+    // down and up. Reefs are solid, so a seed with one on that line would wedge the
+    // rider and the test would time out rather than fail.
+    for (let i = 0; i < 30; i += 1) step(world, hold({ moveX: 1 }), 1 / 60);
+    for (let i = 0; i < 45; i += 1) step(world, hold({ moveX: -1 }), 1 / 60);
+    const beforeDown = { x: player.x, y: player.y };
+    for (let i = 0; i < 45; i += 1) step(world, hold({ moveY: 1 }), 1 / 60);
+    if (player.y < beforeDown.y + 40) continue;
+    if (Math.abs(player.x - beforeDown.x) > 45) continue;
+    const beforeUp = player.y;
+    for (let i = 0; i < 45; i += 1) step(world, hold({ moveY: -1 }), 1 / 60);
+    if (player.y > beforeUp - 20) continue;
     bestOrcaGap = orcaGap;
     best = seed;
   }
@@ -162,21 +198,31 @@ export function orcaGap(snapshot: CosmicSnapshot): number {
   return Math.hypot(orca.x - player.x, orca.y - player.y);
 }
 
-/** Press Start on the title screen with the keyboard and wait for the sim to run. */
+/**
+ * Play: the home menu launches level one straight into the water, so the sim starts
+ * ticking as soon as the Play button is pressed.
+ */
 export async function startWithKeyboard(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Start the run" }).focus();
-  await page.keyboard.press("Space");
-  // Space is the documented start key; Enter is the keyboard default on a focused
-  // button, so either gesture is accepted the way a player would use it.
+  await playThroughHome(page);
+  await expect.poll(async () => (await cosmic(page)).tick, { timeout: 10_000 }).toBeGreaterThan(0);
+  await expect(page.locator(".cc-screen--home")).not.toHaveClass(/cc-screen-active/);
+}
+
+/** Press Play on the home menu. */
+export async function playThroughHome(page: Page): Promise<void> {
+  const play = page.getByRole("button", { name: "Play", exact: true });
+  await play.focus();
+  await page.keyboard.press("Enter");
   try {
-    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 3_000 }).toBeGreaterThan(0);
+    await expect(page.locator(".cc-screen--home")).not.toHaveClass(/cc-screen-active/, {
+      timeout: 3_000,
+    });
   } catch {
-    await page.keyboard.press("Enter");
-    await expect
-      .poll(async () => (await cosmic(page)).tick, { timeout: 10_000 })
-      .toBeGreaterThan(0);
+    await page.keyboard.press("Space");
+    await expect(page.locator(".cc-screen--home")).not.toHaveClass(/cc-screen-active/, {
+      timeout: 10_000,
+    });
   }
-  await expect(page.locator(".cc-screen--title")).not.toHaveClass(/cc-screen-active/);
 }
 
 /**
@@ -292,6 +338,9 @@ export async function driveToward(
   const tolerance = options.tolerance ?? 40;
   const deadline = Date.now() + (options.timeout ?? 20_000);
   await releaseAll(page);
+  let lastGap = Number.POSITIVE_INFINITY;
+  let stalled = 0;
+  let detour = 0;
   while (Date.now() < deadline) {
     const snapshot = await cosmic(page);
     const player = playerOf(snapshot);
@@ -306,6 +355,20 @@ export async function driveToward(
     else if (goal.x - player.x < -tolerance) keys.push("left");
     if (goal.y - player.y > tolerance) keys.push("down");
     else if (goal.y - player.y < -tolerance) keys.push("up");
+    // Reefs are solid. If the rider has stopped closing on the goal, it is wedged
+    // against one, so it backs off and tries again from a different angle.
+    const gap = Math.hypot(goal.x - player.x, goal.y - player.y);
+    if (gap > lastGap - 2) stalled += 1;
+    else stalled = 0;
+    lastGap = gap;
+    if (stalled > 24) {
+      detour = detour === 0 ? 1 : detour === 1 ? 2 : 0;
+      stalled = 0;
+    }
+    if (detour !== 0) {
+      keys.length = 0;
+      keys.push(detour === 1 ? "up" : "down", detour === 2 ? "left" : "right");
+    }
     await holdKeys(page, keys);
     await waitFrames(page);
   }

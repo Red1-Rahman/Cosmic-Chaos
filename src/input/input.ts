@@ -21,6 +21,8 @@ export const NEUTRAL_INPUT: InputState = Object.freeze({
   moveY: 0,
   jump: false,
   action: false,
+  dodge: false,
+  parry: false,
 });
 
 /** Shorten any move vector to length 1, so a diagonal is not faster than a straight run. */
@@ -31,12 +33,26 @@ export function clampMove(x: number, y: number): { moveX: number; moveY: number 
 }
 
 function isActive(state: InputState): boolean {
-  return state.moveX !== 0 || state.moveY !== 0 || state.jump || state.action;
+  return (
+    state.moveX !== 0 ||
+    state.moveY !== 0 ||
+    state.jump ||
+    state.action ||
+    state.dodge ||
+    state.parry
+  );
 }
 
 function toState(source: InputState): InputState {
   const { moveX, moveY } = clampMove(source.moveX, source.moveY);
-  return { moveX, moveY, jump: source.jump, action: source.action };
+  return {
+    moveX,
+    moveY,
+    jump: source.jump,
+    action: source.action,
+    dodge: source.dodge,
+    parry: source.parry,
+  };
 }
 
 export function createInput(target: Window): InputSource {

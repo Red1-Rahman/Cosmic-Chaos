@@ -18,15 +18,36 @@ describe("keyboard", () => {
     const keys = createKeyboard(target);
 
     press("KeyD");
-    expect(keys.poll()).toEqual({ moveX: 1, moveY: 0, jump: false, action: false });
+    expect(keys.poll()).toEqual({
+      moveX: 1,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
     win.dispatch(new FakeDomEvent("keyup", { code: "KeyD" }));
 
     press("KeyW");
-    expect(keys.poll()).toEqual({ moveX: 0, moveY: -1, jump: false, action: false });
+    expect(keys.poll()).toEqual({
+      moveX: 0,
+      moveY: -1,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
     win.dispatch(new FakeDomEvent("keyup", { code: "KeyW" }));
 
     press("ArrowLeft");
-    expect(keys.poll()).toEqual({ moveX: -1, moveY: 0, jump: false, action: false });
+    expect(keys.poll()).toEqual({
+      moveX: -1,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("releases on keyup", () => {
@@ -36,7 +57,14 @@ describe("keyboard", () => {
 
     expect(keys.poll().jump).toBe(true);
     win.dispatch(new FakeDomEvent("keyup", { code: "Space" }));
-    expect(keys.poll()).toEqual({ moveX: 0, moveY: 0, jump: false, action: false });
+    expect(keys.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("combines a held diagonal into both axes", () => {
@@ -45,7 +73,14 @@ describe("keyboard", () => {
     press("KeyD");
     press("KeyS");
 
-    expect(keys.poll()).toEqual({ moveX: 1, moveY: 1, jump: false, action: false });
+    expect(keys.poll()).toEqual({
+      moveX: 1,
+      moveY: 1,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("reads jump and action keys", () => {
@@ -53,7 +88,14 @@ describe("keyboard", () => {
     const keys = createKeyboard(target);
     press("Space");
     press("KeyJ");
-    expect(keys.poll()).toEqual({ moveX: 0, moveY: 0, jump: true, action: true });
+    expect(keys.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: true,
+      action: true,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("resets every held key on blur", () => {
@@ -64,7 +106,14 @@ describe("keyboard", () => {
 
     win.dispatch(new FakeDomEvent("blur"));
 
-    expect(keys.poll()).toEqual({ moveX: 0, moveY: 0, jump: false, action: false });
+    expect(keys.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
   });
 
   it("resets every held key when the document hides", () => {
@@ -89,9 +138,38 @@ describe("keyboard", () => {
   });
 
   it("ignores keys that are not in the game key set", () => {
-    expect(isGameKeyCode("KeyQ")).toBe(false);
+    expect(isGameKeyCode("KeyX")).toBe(false);
     expect(isGameKeyCode("Space")).toBe(true);
     expect(isGameKeyCode("ShiftLeft")).toBe(true);
+    expect(isGameKeyCode("KeyK")).toBe(true);
+    expect(isGameKeyCode("KeyL")).toBe(true);
+    // Escape belongs to the app's screen stack, not to the input layer.
+    expect(isGameKeyCode("Escape")).toBe(false);
+  });
+
+  it("prevents default for game keys only", () => {
+    const { win, target } = setup();
+    createKeyboard(target);
+
+    const game = win.dispatch(new FakeDomEvent("keydown", { code: "Space" }));
+    const other = win.dispatch(new FakeDomEvent("keydown", { code: "KeyX" }));
+
+    expect(game.defaultPrevented).toBe(true);
+    expect(other.defaultPrevented).toBe(false);
+  });
+
+  it("reads the dodge and parry keys", () => {
+    const { win, target, press } = setup();
+    const keys = createKeyboard(target);
+    press("KeyK");
+    press("KeyL");
+
+    const state = keys.poll();
+    expect(state.dodge).toBe(true);
+    expect(state.parry).toBe(true);
+
+    win.dispatch(new FakeDomEvent("keyup", { code: "KeyL" }));
+    expect(keys.poll().parry).toBe(false);
   });
 
   it("marks the device active once per key down", () => {
@@ -118,7 +196,14 @@ describe("keyboard", () => {
 
     press("KeyD");
 
-    expect(keys.poll()).toEqual({ moveX: 0, moveY: 0, jump: false, action: false });
+    expect(keys.poll()).toEqual({
+      moveX: 0,
+      moveY: 0,
+      jump: false,
+      action: false,
+      dodge: false,
+      parry: false,
+    });
     expect(win.listenerCount("keydown")).toBe(0);
   });
 });

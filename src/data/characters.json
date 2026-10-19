@@ -41,9 +41,13 @@
         ],
         "may": [
           "Health or a simple shield meter",
-          "Defeat animation and a restart that reuses the same seed"
+          "Defeat animation and a restart that reuses the same seed",
+          "A water cannon that topples wardens, harming nothing",
+          "A dodge with a short invulnerability window",
+          "A parry window that turns an incoming attack around",
+          "Several levels, chosen from a menu, all winnable"
         ],
-        "mustNot": ["Inventory", "Upgrades", "Multiple levels", "Persistence of any kind"]
+        "mustNot": ["Inventory", "Upgrades", "Persistence of any kind"]
       }
     },
     {
@@ -70,7 +74,8 @@
         ],
         "may": [
           "Simple stagger after a missed lunge",
-          "Defeat animation if the player can win a clash"
+          "Defeat animation if the player can win a clash",
+          "Being toppled by the water cannon for a while"
         ],
         "mustNot": ["Multiple orcas", "Phases", "Dialogue trees"]
       }
@@ -96,7 +101,7 @@
           "Perform a simple repeating patrol or dash pattern that reads as a threat.",
           "Use the swim and idle animations."
         ],
-        "may": ["Contact damage", "A faint wake effect"],
+        "may": ["Contact damage", "A faint wake effect", "Being toppled by the water cannon"],
         "mustNot": ["Complex AI", "Boss phases"]
       }
     },

@@ -10,10 +10,14 @@ import { PROP_SPEED_REFERENCE, createRenderer } from "../render/renderer";
 import type { Renderer } from "../render/renderer";
 import { createViewport, readViewportConfig } from "../render/viewport";
 import type { ViewportHandle } from "../render/viewport";
+import { dodgeReady01, parryReady01, cannonReady01 } from "../sim/behaviours/player";
+import { speakerName } from "../sim/dialogue";
+import { FIRST_LEVEL_ID, LEVELS, levelById } from "../sim/levels";
 import { createWorld, drainEvents, step } from "../sim/world";
 import type { Entity, GameEvent, InputState, World } from "../sim/types";
 import { createUi } from "../ui";
-import type { HudModel, Screen, Ui } from "../ui";
+import { DEFAULT_RIDER_NAME, riderNameOr } from "../ui/dom";
+import type { HudModel, LevelView, ObjectiveView, Screen, Ui } from "../ui";
 import { createRealClock } from "./clock";
 import { readConfig } from "./config";
 import { cueForEvent, engineForState } from "./event-audio";
@@ -27,16 +31,52 @@ interface GameState {
   paused: boolean;
   started: boolean;
   muted: boolean;
+  levelId: number;
+  /** Levels cleared this session. Never written anywhere; it dies with the tab. */
+  cleared: Set<number>;
+  riderName: string;
 }
 
 const CANVAS_ID = "stage";
 
+/** Turn the sim's objective book into the plain shape the ui layer renders. */
+function objectiveViews(world: World): ObjectiveView[] {
+  return world.objectives.map((objective) => ({
+    id: objective.id,
+    label: objective.label,
+    count: objective.count,
+    target: objective.target,
+    done: objective.done,
+  }));
+}
+
+/** Turn the level table plus the session's cleared set into picker rows. */
+function levelViews(state: GameState): LevelView[] {
+  return LEVELS.map((level) => ({
+    id: level.id,
+    name: level.name,
+    subtitle: level.subtitle,
+    blurb: level.blurb,
+    hint: level.hint,
+    objectives: level.objectives.map((objective) => ({
+      id: objective.id,
+      label: objective.label,
+      count: 0,
+      target: objective.target,
+      done: false,
+    })),
+    cleared: state.cleared.has(level.id),
+    unlocked: level.id === FIRST_LEVEL_ID || state.cleared.has(level.id - 1),
+    current: level.id === state.levelId,
+  }));
+}
+
 /**
  * Wires the layers together. This module owns the only real-time surface, the fixed-step
- * accumulator, the sim-to-audio mapping and the ordering of a frame.
+ * accumulator, the sim-to-audio mapping, the screen stack and the ordering of a frame.
  *
- * The arena only starts simulating once the player has started the game from the title
- * screen, so nothing can be defeated behind a menu.
+ * The arena only starts simulating once the player has launched a level from the
+ * briefing screen, so nothing can be defeated behind a menu.
  */
 export async function boot(): Promise<void> {
   const config = readConfig(window.location.search);
@@ -78,30 +118,64 @@ export async function boot(): Promise<void> {
 
   let world: World = createWorld(config.seed);
   const state: GameState = {
-    screen: "title",
+    screen: "home",
     paused: false,
     started: false,
     muted: config.startMuted,
+    levelId: FIRST_LEVEL_ID,
+    cleared: new Set<number>(),
+    riderName: DEFAULT_RIDER_NAME,
   };
 
   let inputState: InputState = input.poll();
   let previousJump = false;
 
+  function setScreen(screen: Screen): void {
+    state.screen = screen;
+    ui.show(screen);
+  }
+
   const ui: Ui = createUi(
     {
-      onStart(): void {
+      onStart(levelId): void {
         audio.unlock();
+        audio.play("ui");
+        state.levelId = levelById(levelId).id;
+        // Restart reuses the same seed and level, so a retry is the same run.
+        world = createWorld(config.seed, state.levelId);
         state.started = true;
         state.paused = false;
         setScreen("playing");
       },
       onRestart(): void {
         audio.unlock();
-        // Restart reuses the same seed, so the run is identical up to the player's input.
-        world = createWorld(config.seed);
+        audio.play("ui");
+        world = createWorld(config.seed, state.levelId);
         state.started = true;
         state.paused = false;
         setScreen("playing");
+      },
+      onHome(): void {
+        audio.play("ui");
+        state.started = false;
+        state.paused = false;
+        setScreen("home");
+      },
+      onOpenLevels(): void {
+        audio.play("ui");
+        setScreen("levels");
+      },
+      onOpenControls(): void {
+        audio.play("ui");
+        setScreen("controls");
+      },
+      onOpenLicense(): void {
+        audio.play("ui");
+        setScreen("license");
+      },
+      onCloseOverlay(): void {
+        audio.play("ui");
+        setScreen(state.started ? "paused" : "home");
       },
       onTogglePause(): void {
         if (!state.started) return;
@@ -113,17 +187,25 @@ export async function boot(): Promise<void> {
         state.muted = !state.muted;
         audio.setMuted(state.muted);
       },
+      onSetRiderName(name): void {
+        state.riderName = riderNameOr(name);
+      },
+      onNextLevel(): void {
+        const next = levelById(state.levelId + 1);
+        if (next.id <= state.levelId) return;
+        audio.play("ui");
+        state.levelId = next.id;
+        world = createWorld(config.seed, state.levelId);
+        state.started = true;
+        state.paused = false;
+        setScreen("playing");
+      },
     },
     { debug: config.debug },
   );
 
   ui.mount(document.body);
-  ui.show("title");
-
-  function setScreen(screen: Screen): void {
-    state.screen = screen;
-    ui.show(screen);
-  }
+  ui.show("home");
 
   const playerOf = (): Entity | undefined => world.entities.find((e) => e.id === world.playerId);
 
@@ -138,6 +220,10 @@ export async function boot(): Promise<void> {
     const cue = cueForEvent(event);
     if (cue !== undefined) audio.play(cue);
     if (event.type === "defeat" && state.screen === "playing") setScreen("defeat");
+    if (event.type === "victory" && state.screen === "playing") {
+      state.cleared.add(world.levelId);
+      setScreen("victory");
+    }
   };
 
   const buildModel = (layout: { scale: number }): HudModel => {
@@ -149,6 +235,7 @@ export async function boot(): Promise<void> {
       entityTimeScales[entity.id] = entity.timeScale;
     }
     const inTimeField = player !== undefined && player.timeScale !== 1;
+    const level = levelById(world.levelId);
     return {
       hp: player?.hp ?? 0,
       timeScale: world.fieldTimeScale,
@@ -168,6 +255,19 @@ export async function boot(): Promise<void> {
       },
       entityTimeScales,
       canvasScale: layout.scale,
+      riderName: state.riderName,
+      levelId: level.id,
+      levelName: level.name,
+      elapsedSec: world.tick / 60,
+      objectives: objectiveViews(world),
+      dodgeReady: player === undefined ? 0 : dodgeReady01(player),
+      parryReady: player === undefined ? 0 : parryReady01(player),
+      cannonReady: player === undefined ? 0 : cannonReady01(player),
+      dialogue:
+        world.dialogue === null
+          ? null
+          : { speaker: speakerName(world.dialogue.speaker), line: world.dialogue.line },
+      levels: levelViews(state),
     };
   };
 
@@ -187,8 +287,7 @@ export async function boot(): Promise<void> {
       step(world, inputState, dt);
     },
     onFrame(alpha): void {
-      if (state.started && !state.paused) consumeEvents();
-      else consumeEvents();
+      consumeEvents();
 
       const layout = viewport.layout();
       // The canvas is positioned over the page, so the letterbox bars are the page itself.

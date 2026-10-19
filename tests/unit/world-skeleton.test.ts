@@ -3,7 +3,14 @@ import { createWorld, drainEvents, hashWorld, step } from "../../src/sim/world";
 import { ARENA, MOVEMENT } from "../../src/sim/game-config";
 import type { Entity, InputState, World } from "../../src/sim/types";
 
-const NEUTRAL: InputState = { moveX: 0, moveY: 0, jump: false, action: false };
+const NEUTRAL: InputState = {
+  moveX: 0,
+  moveY: 0,
+  jump: false,
+  action: false,
+  dodge: false,
+  parry: false,
+};
 
 function input(patch: Partial<InputState> = {}): InputState {
   return { ...NEUTRAL, ...patch };

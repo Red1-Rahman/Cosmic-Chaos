@@ -26,7 +26,6 @@ game:
 # Characters
 # ---------------------------------------------------------------------------
 characters:
-
   capybara:
     role: Mad Scientist
     lore: The one who broke the rule of the universe. Reckless, brilliant, the root cause of the chaos.
@@ -174,7 +173,6 @@ characters:
 # Backgrounds / canvases
 # ---------------------------------------------------------------------------
 backgrounds:
-
   - file: canvas-01.jpeg
     size: [1408, 768]
     style: Pixel art

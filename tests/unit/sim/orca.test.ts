@@ -7,7 +7,14 @@ import { ORCA } from "../../../src/sim/behaviours/orca";
 import { dist2 } from "../../../src/sim/behaviours/shared";
 import type { Entity, InputState, World } from "../../../src/sim/types";
 
-const NEUTRAL: InputState = { moveX: 0, moveY: 0, jump: false, action: false };
+const NEUTRAL: InputState = {
+  moveX: 0,
+  moveY: 0,
+  jump: false,
+  action: false,
+  dodge: false,
+  parry: false,
+};
 
 function input(patch: Partial<InputState> = {}): InputState {
   return { ...NEUTRAL, ...patch };

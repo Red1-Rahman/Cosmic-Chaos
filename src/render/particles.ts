@@ -133,6 +133,8 @@ export interface ParticleSystem {
   emitSplashRing(x: number, y: number, power: number): void;
   /** Small forward ping from a `laser` event. */
   emitPing(x: number, y: number, dirX: number, dirY: number): void;
+  /** Expanding ring from a `collect` or `parrySuccess` event. */
+  emitRing(x: number, y: number, radius: number, color: string, lifeMs: number): void;
   /** Advance every particle by `dtMs`. */
   update(dtMs: number): void;
   /** Draw in arena coordinates. The caller owns the transform. */
@@ -248,6 +250,24 @@ export function createParticleSystem(
     }
   };
 
+  /** A named colour ring: the parry deflect and the core pickup share it. */
+  const emitRing = (x: number, y: number, radius: number, color: string, lifeMs: number): void => {
+    if (motion() === 0) return;
+    const life = Number.isFinite(lifeMs) && lifeMs > 0 ? lifeMs : 300;
+    push({
+      kind: "ring",
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life,
+      maxLife: life,
+      size: Math.max(1, radius),
+      color,
+      drag: 0,
+    });
+  };
+
   const update = (dtMs: number): void => {
     if (!Number.isFinite(dtMs) || dtMs <= 0) return;
     const seconds = dtMs / 1000;
@@ -296,6 +316,7 @@ export function createParticleSystem(
     emitSparks,
     emitSplashRing,
     emitPing,
+    emitRing,
     update,
     draw,
     clear: (): void => {

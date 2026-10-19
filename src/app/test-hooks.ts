@@ -15,6 +15,16 @@ export interface CosmicEntitySnapshot {
   readonly anim: string;
   readonly timeScale: number;
   readonly inTimeField: boolean;
+  /** Behaviour counter published as `props.reactions` (the Tarantula's look and jump). */
+  readonly reactions: number;
+}
+
+export interface CosmicObjectiveSnapshot {
+  readonly id: string;
+  readonly label: string;
+  readonly count: number;
+  readonly target: number;
+  readonly done: boolean;
 }
 
 export interface CosmicSnapshot {
@@ -23,9 +33,16 @@ export interface CosmicSnapshot {
   readonly timeMs: number;
   readonly timeScale: number;
   readonly status: World["status"];
+  readonly levelId: number;
   readonly fieldRadius: number;
   readonly fieldX: number;
   readonly fieldY: number;
+  /** Cores still floating in the water. */
+  readonly coresLeft: number;
+  /** Live water-cannon pellets. */
+  readonly pellets: readonly { readonly x: number; readonly y: number }[];
+  readonly objectives: readonly CosmicObjectiveSnapshot[];
+  readonly dialogue: { readonly speaker: string; readonly line: string } | null;
   readonly entities: readonly CosmicEntitySnapshot[];
 }
 
@@ -53,6 +70,7 @@ const freezeEntity = (
     anim: entity.anim,
     timeScale: entity.timeScale,
     inTimeField: insideField,
+    reactions: entity.props["reactions"] ?? 0,
   });
 };
 
@@ -62,15 +80,37 @@ export function snapshotWorld(world: World): CosmicSnapshot {
   const fieldRadius = typeof snail?.props.fieldRadius === "number" ? snail.props.fieldRadius : 0;
   const fieldX = typeof snail?.props.fieldX === "number" ? snail.props.fieldX : 0;
   const fieldY = typeof snail?.props.fieldY === "number" ? snail.props.fieldY : 0;
+  let coresLeft = 0;
+  for (const core of world.cores) if (!core.taken) coresLeft += 1;
   return Object.freeze({
     tick: world.tick,
     seed: world.seed,
     timeMs: world.timeMs,
     timeScale: world.fieldTimeScale,
     status: world.status,
+    levelId: world.levelId,
     fieldRadius,
     fieldX,
     fieldY,
+    coresLeft,
+    pellets: Object.freeze(
+      world.pellets.map((pellet) => Object.freeze({ x: pellet.x, y: pellet.y })),
+    ),
+    objectives: Object.freeze(
+      world.objectives.map((objective) =>
+        Object.freeze({
+          id: objective.id,
+          label: objective.label,
+          count: objective.count,
+          target: objective.target,
+          done: objective.done,
+        }),
+      ),
+    ),
+    dialogue:
+      world.dialogue === null
+        ? null
+        : Object.freeze({ speaker: world.dialogue.speaker, line: world.dialogue.line }),
     entities: Object.freeze(
       world.entities.map((entity) => freezeEntity(entity, fieldRadius, fieldX, fieldY)),
     ),

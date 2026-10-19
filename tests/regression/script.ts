@@ -10,7 +10,14 @@
 import type { InputState } from "../../src/sim/types";
 import { MOVEMENT } from "../../src/sim/game-config";
 
-const NEUTRAL: InputState = Object.freeze({ moveX: 0, moveY: 0, jump: false, action: false });
+const NEUTRAL: InputState = Object.freeze({
+  moveX: 0,
+  moveY: 0,
+  jump: false,
+  action: false,
+  dodge: false,
+  parry: false,
+});
 
 export function input(patch: Partial<InputState>): InputState {
   return { ...NEUTRAL, ...patch };
@@ -33,6 +40,9 @@ export const PHASES: readonly Phase[] = Object.freeze([
   { name: "leave the field", ticks: 90, input: input({ moveX: -0.6 }) },
   { name: "settle", ticks: 60, input: input({ moveX: 1, moveY: 0.25 }) },
   { name: "coast", ticks: 120, input: NEUTRAL },
+  { name: "dodge burst", ticks: 40, input: input({ moveX: 1, dodge: true }) },
+  { name: "parry window", ticks: 40, input: input({ parry: true, action: true }) },
+  { name: "sweep the water", ticks: 90, input: input({ moveX: 1, moveY: -0.5, action: true }) },
 ]);
 
 /** The full input list, one entry per fixed step. */

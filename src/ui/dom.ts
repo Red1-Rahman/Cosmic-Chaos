@@ -65,7 +65,20 @@ export function focusQuietly(node: HTMLElement): void {
 /** Marks every actionable control, so e2e tests and the app can find them by name. */
 export const ACTION_ATTRIBUTE = "data-cc-action";
 
-export type ActionId = "start" | "pause" | "mute" | "resume" | "restart";
+export type ActionId =
+  | "play"
+  | "levels"
+  | "controls"
+  | "license"
+  | "close-overlay"
+  | "start"
+  | "pause"
+  | "mute"
+  | "resume"
+  | "restart"
+  | "home"
+  | "next-level"
+  | "select-level";
 
 export interface ButtonOptions {
   action: ActionId;
@@ -85,4 +98,71 @@ export function createButton(doc: Document, options: ButtonOptions): HTMLButtonE
     options.onClick();
   });
   return button;
+}
+
+/** Longest rider name the game will show. Bounded so the HUD cannot overflow. */
+export const RIDER_NAME_MAX = 18;
+
+/** Shown when the player leaves the name field empty. */
+export const DEFAULT_RIDER_NAME = "the Capybara";
+
+/** Control and format characters, which would break a single line label. */
+const INVISIBLE = /[\p{Cc}\p{Cf}]/u;
+
+/** Strip invisibles and clamp the length. Pure, so tests can assert it. */
+export function sanitizeRiderName(raw: string): string {
+  let out = "";
+  for (const ch of raw.trim()) {
+    if (INVISIBLE.test(ch)) continue;
+    out += ch;
+    if (out.length >= RIDER_NAME_MAX) break;
+  }
+  return out;
+}
+
+/** The name to display: whatever was typed, or the default when it was empty. */
+export function riderNameOr(raw: string): string {
+  const clean = sanitizeRiderName(raw);
+  return clean === "" ? DEFAULT_RIDER_NAME : clean;
+}
+
+export interface NameFieldHandle {
+  readonly root: HTMLElement;
+  /** Current, sanitised value. */
+  value(): string;
+}
+
+/**
+ * The rider name field. The value lives in this node and in the app's memory for
+ * the length of the session: there is no storage of any kind behind it.
+ */
+export function createNameField(doc: Document, onInput: (value: string) => void): NameFieldHandle {
+  const wrapper = el(doc, "cc-field-input");
+  const label = el(doc, "cc-field-input-label");
+  text(label, "Rider name");
+  const input = el(doc, "cc-text-input", "input") as HTMLInputElement;
+  input.type = "text";
+  input.maxLength = RIDER_NAME_MAX;
+  input.placeholder = DEFAULT_RIDER_NAME;
+  input.setAttribute("aria-label", "Rider name");
+  input.setAttribute("data-cc-name-input", "");
+  input.value = "";
+  input.addEventListener("input", (): void => {
+    onInput(sanitizeRiderName(input.value));
+  });
+  const note = el(doc, "cc-field-input-note");
+  text(note, "Kept in this tab only. Nothing is stored.");
+  wrapper.append(label, input, note);
+  return {
+    root: wrapper,
+    value: (): string => sanitizeRiderName(input.value),
+  };
+}
+
+/** "1:05" from a count of seconds. Used by the survive objective. */
+export function formatSeconds(seconds: number): string {
+  const total = Math.max(0, Math.floor(finite(seconds, 0)));
+  const minutes = Math.floor(total / 60);
+  const rest = total % 60;
+  return `${String(minutes)}:${String(rest).padStart(2, "0")}`;
 }

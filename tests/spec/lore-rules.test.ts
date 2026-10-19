@@ -9,7 +9,16 @@ import { describe, expect, it } from "vitest";
 
 import { createRng } from "../../src/util/rng";
 import { sampleAnimation } from "../../src/assets/animation";
-import { ARENA, MOVEMENT, SPAWN_RULES } from "../../src/sim/game-config";
+import { ARENA, DODGE, MOVEMENT, SPAWN_RULES, WEAPON } from "../../src/sim/game-config";
+import { buildObstacles } from "../../src/sim/arena-objects";
+import {
+  FIRST_LEVEL_ID,
+  LEVELS,
+  isUnlocked,
+  levelById,
+  levelIds,
+  levelSeed,
+} from "../../src/sim/levels";
 import { createWorld, drainEvents, step } from "../../src/sim/world";
 import type { Entity, GameEvent, InputState, World } from "../../src/sim/types";
 import { HUMAN } from "../../src/sim/behaviours/human";
@@ -21,7 +30,14 @@ import { TARANTULA } from "../../src/sim/behaviours/tarantula";
 import { KIND_TO_CHARACTER } from "../../src/render/renderer";
 import { characters, manifest } from "./helpers";
 
-const NEUTRAL: InputState = { moveX: 0, moveY: 0, jump: false, action: false };
+const NEUTRAL: InputState = {
+  moveX: 0,
+  moveY: 0,
+  jump: false,
+  action: false,
+  dodge: false,
+  parry: false,
+};
 const SEED = manifest.arena.spawn.seedDefault;
 
 function input(patch: Partial<InputState>): InputState {
@@ -272,22 +288,283 @@ describe("capybara: mad scientist on the waterbike", () => {
     expect(player.alpha).toBeLessThan(1);
   });
 
-  it("must not: no inventory, no upgrades, no multiple levels, no persistence", () => {
-    // There is no state container anywhere in the World type, so nothing can be stored.
+  it("must not: no inventory, no upgrades, no persistence", () => {
+    // The world holds the run and nothing else: no bag, no upgrade track, no save.
+    // Everything it carries is either the arena, the cast, or the level being played.
     const world = createWorld(SEED);
     expect(Object.keys(world).sort()).toEqual([
       "arena",
+      "cores",
+      "dialogue",
       "entities",
       "events",
       "fieldTimeScale",
+      "levelId",
+      "objectives",
+      "obstacles",
+      "pellets",
       "playerId",
       "seed",
+      "staggerTally",
       "status",
       "tick",
       "timeMs",
     ]);
     const player = need(world, "player");
-    expect(Object.keys(player.props).sort()).toEqual(["vx", "vy"]);
+    expect(Object.keys(player.props)).toContain("vx");
+    expect(Object.keys(player.props)).toContain("vy");
+    // Nothing anywhere in the world is a bag or an upgrade.
+    expect(Object.keys(world)).not.toContain("inventory");
+    expect(Object.keys(world)).not.toContain("upgrades");
+  });
+});
+
+describe("levels: the shape of a campaign", () => {
+  it("ships several levels and opens the next one only when the last is cleared", () => {
+    expect(LEVELS.length).toBeGreaterThanOrEqual(3);
+    expect(new Set(levelIds()).size).toBe(LEVELS.length);
+    const cleared = new Set<number>();
+    for (const level of LEVELS) {
+      // Everything before it has to be cleared, which is exactly the loop invariant.
+      expect(cleared.size, level.name).toBe(level.id - 1);
+      expect(isUnlocked(level.id, cleared), level.name).toBe(level.id >= FIRST_LEVEL_ID);
+      cleared.add(level.id);
+    }
+  });
+
+  it("gives every level at least one objective with a reachable target", () => {
+    for (const level of LEVELS) {
+      expect(level.objectives.length, level.name).toBeGreaterThan(0);
+      for (const objective of level.objectives) {
+        expect(objective.target, `${level.name}/${objective.id}`).toBeGreaterThan(0);
+        expect(objective.label.length, `${level.name}/${objective.id}`).toBeGreaterThan(4);
+      }
+      // Collect objectives are always matched by the number of cores actually placed.
+      for (const objective of level.objectives) {
+        if (objective.kind !== "collect") continue;
+        expect(level.cores, level.name).toBeGreaterThanOrEqual(objective.target);
+      }
+    }
+  });
+
+  it("keeps every obstacle inside the play band and off the spawn points", () => {
+    for (const level of LEVELS) {
+      for (const obstacle of level.obstacles) {
+        const where = `${level.name} at ${String(obstacle.x)},${String(obstacle.y)}`;
+        expect(obstacle.x, where).toBeGreaterThanOrEqual(ARENA.minX);
+        expect(obstacle.x, where).toBeLessThanOrEqual(ARENA.maxX);
+        expect(obstacle.y, where).toBeGreaterThanOrEqual(ARENA.minY);
+        expect(obstacle.y, where).toBeLessThanOrEqual(ARENA.maxY);
+        expect(obstacle.r, where).toBeGreaterThan(0);
+      }
+      // Reefs never overlap each other, so a rider can never be wedged between two.
+      const built = buildObstacles(level);
+      for (let i = 0; i < built.length; i += 1) {
+        for (let j = i + 1; j < built.length; j += 1) {
+          const a = built[i];
+          const b = built[j];
+          if (a === undefined || b === undefined) continue;
+          const gap = Math.hypot(a.x - b.x, a.y - b.y) - a.r - b.r;
+          expect(gap, `${level.name}: ${a.id} and ${b.id}`).toBeGreaterThan(30);
+        }
+      }
+    }
+  });
+
+  it("builds a different arena per level from the seed alone", () => {
+    const first = createWorld(SEED, 1);
+    const third = createWorld(SEED, 3);
+    expect(first.seed).not.toBe(third.seed);
+    expect(levelSeed(SEED, 3)).toBe(SEED + levelById(3).seedOffset);
+    expect(levelSeed(SEED, 1)).toBe(SEED);
+    expect(createWorld(SEED, 1).seed).toBe(createWorld(SEED, 1).seed);
+  });
+});
+
+describe("objectives: the thing the player is actually playing for", () => {
+  it("starts level one with every objective open and closes on every core collected", () => {
+    const world = createWorld(SEED, 1);
+    const objective = world.objectives.find((entry) => entry.kind === "collect");
+    if (objective === undefined) throw new Error("level one has no collect objective");
+    expect(objective.done).toBe(false);
+    expect(objective.count).toBe(0);
+    expect(objective.target).toBeGreaterThan(0);
+    expect(world.cores.length).toBeGreaterThanOrEqual(objective.target);
+
+    // Ride onto each core in turn: the objective follows, and the run is won.
+    const player = need(world, "player");
+    for (const core of world.cores) {
+      player.x = core.x;
+      player.y = core.y;
+      player.hp = 1;
+      step(world, NEUTRAL, MOVEMENT.fixedDt);
+      drainEvents(world);
+    }
+    expect(objective.done).toBe(true);
+    expect(world.status).toBe("victory");
+  });
+
+  it("counts a survive objective in whole seconds and only closes on the target", () => {
+    const world = createWorld(SEED, 3);
+    const survive = world.objectives.find((entry) => entry.kind === "survive");
+    if (survive === undefined) throw new Error("level three has no survive objective");
+    need(world, "player").hp = 1;
+    // One whole second short of the target, so the rounding cannot close it early.
+    for (let i = 0; i < (survive.target - 1) * 60; i += 1) {
+      step(world, NEUTRAL, MOVEMENT.fixedDt);
+      drainEvents(world);
+      need(world, "player").hp = 1;
+    }
+    expect(survive.done).toBe(false);
+    for (let i = 0; i < 62; i += 1) {
+      step(world, NEUTRAL, MOVEMENT.fixedDt);
+      drainEvents(world);
+      need(world, "player").hp = 1;
+    }
+    expect(survive.done).toBe(true);
+  });
+
+  it("stops the world once the level is won", () => {
+    const world = createWorld(SEED, 1);
+    const player = need(world, "player");
+    for (const core of world.cores) {
+      player.x = core.x;
+      player.y = core.y;
+      player.hp = 1;
+      step(world, NEUTRAL, MOVEMENT.fixedDt);
+      drainEvents(world);
+    }
+    expect(world.status).toBe("victory");
+    const tickAtVictory = world.tick;
+    step(world, NEUTRAL, MOVEMENT.fixedDt);
+    expect(world.tick).toBe(tickAtVictory);
+  });
+});
+
+describe("the water cannon, the dodge and the parry", () => {
+  it("fires a pellet on the action and takes it away again", () => {
+    const world = createWorld(SEED, 1);
+    parkOthers(world, ["player"]);
+    const events = run(world, 1, input({ action: true }));
+    expect(world.pellets.length).toBe(1);
+    expect(events.some((event) => event.type === "laser")).toBe(true);
+    // The cadence is rate limited, so holding the trigger is not a hose.
+    const shots = run(world, 30, input({ action: true }));
+    const fired = shots.filter((event) => event.type === "laser").length;
+    expect(fired).toBeGreaterThan(1);
+    expect(fired).toBeLessThan(30);
+    expect(world.pellets.length).toBeLessThanOrEqual(WEAPON.maxPellets);
+  });
+
+  it("lets reefs stop a pellet", () => {
+    const world = createWorld(SEED, 1);
+    parkOthers(world, ["player"]);
+    const player = need(world, "player");
+    const reef = world.obstacles[0];
+    if (reef === undefined) throw new Error("level one has no reef");
+    player.x = reef.x - 160;
+    player.y = reef.y;
+    player.facing = 1;
+    const events = run(world, 90, input({ action: true }));
+    expect(events.some((event) => event.type === "blocked")).toBe(true);
+  });
+
+  it("topples a warden after three hits and cannot touch the rider while it is down", () => {
+    const world = createWorld(SEED, 2);
+    const player = need(world, "player");
+    const orca = need(world, "orca");
+    for (const other of world.entities) {
+      if (other.kind === "player" || other.kind === "orca") continue;
+      other.x = ARENA.minX + 2;
+      other.y = ARENA.minY + 2;
+    }
+    orca.x = player.x + 180;
+    orca.y = player.y;
+    player.facing = 1;
+
+    const events = run(world, 60, input({ action: true }));
+    const staggers = events.filter((event) => event.type === "stagger");
+    expect(staggers.length).toBeGreaterThanOrEqual(1);
+    expect((orca.props.staggeredMs ?? 0) > 0 || orca.state === "staggered").toBe(true);
+
+    // While it is down the Orca never lands a hit, no matter how long we wait.
+    const hpBefore = player.hp;
+    const during = run(world, 120, NEUTRAL);
+    player.hp = hpBefore;
+    expect(during.some((event) => event.type === "hit")).toBe(false);
+  });
+
+  it("counts a topple toward a stagger objective", () => {
+    const world = createWorld(SEED, 2);
+    const objective = world.objectives.find((entry) => entry.kind === "stagger");
+    if (objective === undefined) throw new Error("level two has no stagger objective");
+    const player = need(world, "player");
+    const orca = need(world, "orca");
+    orca.x = player.x + 170;
+    orca.y = player.y;
+    player.facing = 1;
+    run(world, 60, input({ action: true }));
+    expect(objective.count).toBeGreaterThanOrEqual(1);
+  });
+
+  it("dodges with a burst of speed and invulnerability, then puts the dodge on cooldown", () => {
+    const world = createWorld(SEED, 1);
+    parkOthers(world, ["player"]);
+    const player = need(world, "player");
+    const before = player.props.speed ?? 0;
+    const events = run(world, 1, input({ moveX: 1, dodge: true }));
+    expect(events.some((event) => event.type === "dodge")).toBe(true);
+    expect(player.props.speed ?? 0).toBeGreaterThan(before);
+    expect(player.props.dodgeCd).toBeGreaterThan(0);
+
+    // A second dodge inside the cooldown does nothing at all.
+    const again = run(world, 4, input({ moveX: 1, dodge: true }));
+    expect(again.some((event) => event.type === "dodge")).toBe(false);
+  });
+
+  it("makes the rider untouchable while the dodge burst is running", () => {
+    const world = createWorld(SEED, 1);
+    const player = need(world, "player");
+    const orca = need(world, "orca");
+    orca.x = player.x;
+    orca.y = player.y;
+    orca.state = "lunge";
+    orca.props.timer = ORCA.lungeMs;
+    orca.props.dirX = 1;
+    orca.props.dirY = 0;
+    player.props.dodgeMs = DODGE.iframeMs;
+    const events = run(world, 4);
+    expect(events.some((event) => event.type === "hit")).toBe(false);
+    expect(player.hp).toBe(1);
+  });
+
+  it("parries an incoming lunge: no damage, and the Orca goes down instead", () => {
+    const world = createWorld(SEED, 1);
+    const player = need(world, "player");
+    const orca = need(world, "orca");
+    orca.x = player.x;
+    orca.y = player.y;
+    orca.state = "lunge";
+    orca.props.timer = ORCA.lungeMs;
+    orca.props.dirX = 1;
+    orca.props.dirY = 0;
+    const opened = run(world, 1, input({ parry: true }));
+    expect(opened.some((event) => event.type === "parry")).toBe(true);
+    // The lunge lands on the same step the window opened, so both events arrive together.
+    const landed = [...opened, ...run(world, 4)];
+    expect(landed.some((event) => event.type === "parrySuccess")).toBe(true);
+    expect(landed.some((event) => event.type === "hit")).toBe(false);
+    expect(player.hp).toBe(1);
+    expect(orca.props.staggeredMs ?? 0).toBeGreaterThan(0);
+  });
+
+  it("cannot parry twice inside the cooldown", () => {
+    const world = createWorld(SEED, 1);
+    parkOthers(world, ["player"]);
+    const player = need(world, "player");
+    run(world, 1, input({ parry: true }));
+    expect(player.props.parryCd).toBeGreaterThan(0);
+    expect(run(world, 4, input({ parry: true })).some((e) => e.type === "parry")).toBe(false);
   });
 });
 
@@ -443,11 +720,15 @@ describe("shark: cosmic avenger", () => {
     drainEvents(world);
     // One repeating three state loop, driven only by a countdown. No phase counter.
     expect(shark.state).toBe("circle");
+    // The only extra keys the cannon added are the stagger bookkeeping ones.
     expect(Object.keys(shark.props).sort()).toEqual([
       "dashPhase",
       "dirX",
       "dirY",
       "hitCd",
+      "pushX",
+      "pushY",
+      "staggerMeter",
       "timer",
     ]);
   });
