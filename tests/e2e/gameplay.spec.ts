@@ -185,25 +185,21 @@ test.describe("the orca", () => {
     const orca = ofKind(start, "orca")[0];
     if (orca === undefined) throw new Error("no orca");
     const away = orca.x > playerOf(start).x ? "left" : "right";
+    const startOrcaX = orca.x;
     await holdKeys(page, [away]);
     try {
       // The chase aims where the player is going, so the Orca travels with the player
       // rather than sitting on the spot it started from.
-      const travel = away === "left" ? start.x : orca.x;
-      const closing = await expect
+      await expect
         .poll(
           async () => {
-            const snapshot = await cosmic(page);
-            const current = ofKind(snapshot, "orca")[0];
+            const current = ofKind(await cosmic(page), "orca")[0];
             if (current === undefined) throw new Error("no orca");
-            return travel - current.x;
+            return startOrcaX - current.x;
           },
           { timeout: 20_000, intervals: [100] },
         )
-        .toBeGreaterThan(60)
-        .then(() => true)
-        .catch(() => false);
-      expect(closing, "the orca never followed the fleeing player").toBe(true);
+        .toBeGreaterThan(60);
     } finally {
       await releaseAll(page);
     }
