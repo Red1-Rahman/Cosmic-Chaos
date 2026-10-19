@@ -737,11 +737,13 @@
   color: rgb(150 214 246);
 }
 
-/* Dialogue sits just above the waterline, centred, so it never covers the rider. */
+/* Dialogue sits over the far water, clear of the rider in the near water and clear
+   of the objective board. Bottom is a share of the frame, not a fixed offset, so it
+   holds at every preset. */
 .cc-dialogue {
   position: absolute;
   left: 50%;
-  bottom: 16%;
+  bottom: 34%;
   transform: translateX(-50%);
   display: none;
   flex-direction: column;
