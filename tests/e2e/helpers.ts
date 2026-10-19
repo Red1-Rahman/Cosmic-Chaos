@@ -73,8 +73,9 @@ export const FRIENDLY_SEED: number = (() => {
     const snail = world.entities.find((entity) => entity.kind === "snail");
     const orca = world.entities.find((entity) => entity.kind === "orca");
     if (player === undefined || snail === undefined || orca === undefined) continue;
-    // Close enough that driving into the time field is quick.
-    if (Math.hypot(snail.x - player.x, snail.y - player.y) >= 220) continue;
+    // Far enough that the snail's own drift cannot walk the player into the field
+    // before a test has even looked, close enough that driving into it is quick.
+    if (Math.hypot(snail.x - player.x, snail.y - player.y) < 260) continue;
     const orcaGap = Math.hypot(orca.x - player.x, orca.y - player.y);
     if (orcaGap <= bestOrcaGap) continue;
     bestOrcaGap = orcaGap;

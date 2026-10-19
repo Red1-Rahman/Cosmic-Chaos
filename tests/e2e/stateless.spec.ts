@@ -119,7 +119,11 @@ test.describe("the game is stateless", () => {
       if (before === undefined) continue;
       expect(entity.hp, entity.id).toBe(before.hp);
       expect(Math.abs(entity.x - before.x), entity.id).toBeLessThan(40);
-      expect(Math.abs(entity.y - before.y), entity.id).toBeLessThan(40);
+      // The Tarantula's depth is pinned to its hover line on its first step, so only
+      // its horizontal opening is comparable.
+      if (entity.kind !== "tarantula") {
+        expect(Math.abs(entity.y - before.y), entity.id).toBeLessThan(40);
+      }
     }
     expect(await page.evaluate(() => window.__storageWrites ?? [])).toEqual([]);
   });

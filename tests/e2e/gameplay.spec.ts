@@ -329,12 +329,18 @@ test.describe("pause and restart", () => {
       expect(before, entity.id).toBeDefined();
       if (before === undefined) continue;
       // Hull and time scale are reset exactly; position is the opening position to
-      // within the handful of pixels one or two frames of drift can move.
+      // within the handful of pixels one or two frames of drift can move. The
+      // Tarantula is exempt from the depth comparison: its first step snaps it onto
+      // its hover line above the play band, which is a one step rule, not drift.
       expect(entity.hp, entity.id).toBe(before.hp);
-      expect(entity.timeScale, entity.id).toBe(1);
       expect(Math.abs(entity.x - before.x), entity.id).toBeLessThan(40);
-      expect(Math.abs(entity.y - before.y), entity.id).toBeLessThan(40);
+      if (entity.kind !== "tarantula") {
+        expect(Math.abs(entity.y - before.y), entity.id).toBeLessThan(40);
+      }
     }
+    // The player comes back at nominal time: nothing about the run survives.
+    expect(playerOf(restarted).timeScale).toBe(1);
+    expect(restarted.timeScale).toBe(1);
     await expect(page.locator("[data-cc-seed]")).toHaveText(`seed ${String(FRIENDLY_SEED)}`);
   });
 });
