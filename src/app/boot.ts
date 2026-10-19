@@ -136,7 +136,12 @@ export async function boot(): Promise<void> {
     levelId: FIRST_LEVEL_ID,
     cleared: new Set<number>(),
     riderName: DEFAULT_RIDER_NAME,
+    tutorialSeen: false,
   };
+
+  // The staged onboarding runs for a normal player, once, on the first level. `?tutorial=1`
+  // forces it on every launch (for demos and e2e); `?tutorial=0` and `?test=1` keep it off.
+  const wantsTutorial = config.tutorial ?? !config.test;
 
   let inputState: InputState = input.poll();
   let previousJump = false;
