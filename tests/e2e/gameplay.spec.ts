@@ -50,11 +50,11 @@ test.describe("starting and steering", () => {
     await openGame(page, { seed: FRIENDLY_SEED });
     await page.getByRole("button", { name: "Start the run" }).focus();
     await page.keyboard.press("Enter");
-    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 20_000 }).toBeGreaterThan(0);
+    await expect.poll(async () => (await cosmic(page)).tick, { timeout: 10_000 }).toBeGreaterThan(0);
     await expect(page.locator(".cc-screen--title")).not.toHaveClass(/cc-screen-active/);
 
     // Idle first: nothing is held, so the bike is parked and plays idle.
-    await expect.poll(async () => playerOf(await cosmic(page)).anim, { timeout: 10_000 }).toBe(
+    await expect.poll(async () => playerOf(await cosmic(page)).anim, { timeout: 8_000 }).toBe(
       "idle",
     );
 
@@ -62,29 +62,37 @@ test.describe("starting and steering", () => {
     const start = playerOf(await cosmic(page));
     await holdKeys(page, ["right"]);
     await expect
-      .poll(async () => playerOf(await cosmic(page)).x, { timeout: 20_000 })
+      .poll(async () => playerOf(await cosmic(page)).x, { timeout: 8_000 })
       .toBeGreaterThan(start.x + 30);
-    await expect.poll(async () => playerOf(await cosmic(page)).facing, { timeout: 20_000 }).toBe(1);
-    await expect.poll(async () => playerOf(await cosmic(page)).anim, { timeout: 20_000 }).toBe(
-      "walk",
-    );
+    // Facing and pose are read together, so a single poll settles both.
+    await expect
+      .poll(
+        async () => {
+          const player = playerOf(await cosmic(page));
+          return `${String(player.facing)} ${player.anim}`;
+        },
+        { timeout: 8_000 },
+      )
+      .toBe("1 walk");
 
     // Left: back the other way, mirrored.
     const turned = playerOf(await cosmic(page));
     await holdKeys(page, ["left"]);
     await expect
-      .poll(async () => playerOf(await cosmic(page)).x, { timeout: 20_000 })
+      .poll(async () => playerOf(await cosmic(page)).x, { timeout: 8_000 })
       .toBeLessThan(turned.x - 30);
-    await expect.poll(async () => playerOf(await cosmic(page)).facing, { timeout: 20_000 }).toBe(-1);
+    await expect
+      .poll(async () => playerOf(await cosmic(page)).facing, { timeout: 8_000 })
+      .toBe(-1);
 
-    // Up and down: the other axis, and a swim pose rather than a walk.
+    // Down then up: the other axis. A swim pose rather than a walk.
     await holdKeys(page, ["down"]);
     await expect
-      .poll(async () => playerOf(await cosmic(page)).y, { timeout: 20_000 })
+      .poll(async () => playerOf(await cosmic(page)).y, { timeout: 8_000 })
       .toBeGreaterThan(turned.y + 20);
     await holdKeys(page, ["up"]);
     await expect
-      .poll(async () => playerOf(await cosmic(page)).y, { timeout: 20_000 })
+      .poll(async () => playerOf(await cosmic(page)).y, { timeout: 8_000 })
       .toBeLessThan(turned.y);
     await releaseAll(page);
   });
