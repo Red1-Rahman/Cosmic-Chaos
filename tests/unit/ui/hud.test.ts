@@ -264,3 +264,30 @@ describe("applyFrame", () => {
     expect(root.style.getPropertyValue("--cc-frame-x")).toBe("6px");
   });
 });
+
+describe("tutorial card", () => {
+  it("stays out of the way until a stage is showing, then mirrors it", () => {
+    const handle = createHud(asDocument(new FakeDocument()), NO_CALLBACKS);
+    const root = handle.root as unknown as FakeElement;
+    const card = root.findByClass("cc-tutorial");
+
+    // Off: no data-cc-tutorial attribute at all, so a test can count the card as zero.
+    handle.update(model());
+    expect(card?.getAttribute("data-cc-tutorial")).toBeNull();
+    expect(card?.classList.contains("cc-tutorial--on")).toBe(false);
+
+    // On: the stage rides on the attribute and the copy lands in the two nodes.
+    handle.update(
+      model({ tutorial: { stage: 2, title: "Fire the water cannon", body: "Spray the shark." } }),
+    );
+    expect(card?.getAttribute("data-cc-tutorial")).toBe("2");
+    expect(card?.classList.contains("cc-tutorial--on")).toBe(true);
+    expect(card?.findByClass("cc-tutorial-title")?.textContent).toBe("Fire the water cannon");
+    expect(card?.findByClass("cc-tutorial-body")?.textContent).toBe("Spray the shark.");
+
+    // Back off: the attribute is removed again, not left behind as an empty string.
+    handle.update(model({ tutorial: null }));
+    expect(card?.getAttribute("data-cc-tutorial")).toBeNull();
+    expect(card?.classList.contains("cc-tutorial--on")).toBe(false);
+  });
+});

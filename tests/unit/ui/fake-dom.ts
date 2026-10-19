@@ -114,6 +114,10 @@ export class FakeElement {
     return this.attributes.get(name) ?? null;
   }
 
+  removeAttribute(name: string): void {
+    this.attributes.delete(name);
+  }
+
   append(...children: FakeElement[]): void {
     for (const child of children) {
       child.parent = this;
