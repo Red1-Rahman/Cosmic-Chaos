@@ -184,10 +184,7 @@ export async function boot(): Promise<void> {
       onRestart(): void {
         audio.unlock();
         audio.play("ui");
-        world = createWorld(config.seed, state.levelId);
-        state.started = true;
-        state.paused = false;
-        setScreen("playing");
+        startLevel(state.levelId);
       },
       onHome(): void {
         audio.play("ui");
