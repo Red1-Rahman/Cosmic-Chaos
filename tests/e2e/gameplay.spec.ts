@@ -46,14 +46,14 @@ test.describe("title screen", () => {
 
 test.describe("starting and steering", () => {
   test("starts on a keypress and the waterbike answers every direction key", async ({ page }) => {
-    await openGame(page);
+    await openGame(page, { seed: FRIENDLY_SEED });
     await page.getByRole("button", { name: "Start the run" }).focus();
     await page.keyboard.press("Enter");
     await expect.poll(async () => (await cosmic(page)).tick, { timeout: 20_000 }).toBeGreaterThan(0);
     await expect(page.locator(".cc-screen--title")).not.toHaveClass(/cc-screen-active/);
 
     // Idle first: nothing is held, so the bike is parked and plays idle.
-    await expect.poll(async () => playerOf(await cosmic(page)).anim, { timeout: 20_000 }).toBe(
+    await expect.poll(async () => playerOf(await cosmic(page)).anim, { timeout: 10_000 }).toBe(
       "idle",
     );
 
@@ -93,11 +93,11 @@ test.describe("starting and steering", () => {
     await startWithKeyboard(page);
 
     await page.keyboard.down("Space");
-    await expect.poll(async () => playerOf(await cosmic(page)).anim, { timeout: 20_000 }).toBe(
+    await expect.poll(async () => playerOf(await cosmic(page)).anim, { timeout: 10_000 }).toBe(
       "jump",
     );
     await page.keyboard.up("Space");
-    await expect.poll(async () => playerOf(await cosmic(page)).anim, { timeout: 20_000 }).toBe(
+    await expect.poll(async () => playerOf(await cosmic(page)).anim, { timeout: 10_000 }).toBe(
       "idle",
     );
 
