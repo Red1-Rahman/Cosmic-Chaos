@@ -7,6 +7,7 @@
 
 import { expect, test } from "./fixtures";
 import {
+  FASTEST_PX_PER_TICK,
   FRIENDLY_SEED,
   cosmic,
   driveToward,
@@ -104,8 +105,10 @@ test.describe("the game is stateless", () => {
     await expect.poll(async () => (await cosmic(page)).tick, { timeout: 15_000 }).toBeGreaterThan(0);
 
     // Everything the run changed is gone: the seed is the only thing that carried
-    // over, and the arena is the opening arena again down to a frame of drift.
+    // over, and the arena is the opening arena again. Positions may have moved by the
+    // ticks that have run since the restart, so the allowance is per tick.
     const after = await cosmic(page);
+    const tolerance = after.tick * FASTEST_PX_PER_TICK + 5;
     expect(after.seed).toBe(opening.seed);
     expect(after.timeScale).toBe(1);
     expect(playerOf(after).timeScale).toBe(1);
@@ -118,11 +121,11 @@ test.describe("the game is stateless", () => {
       expect(before, entity.id).toBeDefined();
       if (before === undefined) continue;
       expect(entity.hp, entity.id).toBe(before.hp);
-      expect(Math.abs(entity.x - before.x), entity.id).toBeLessThan(40);
+      expect(Math.abs(entity.x - before.x), entity.id).toBeLessThan(tolerance);
       // The Tarantula's depth is pinned to its hover line on its first step, so only
       // its horizontal opening is comparable.
       if (entity.kind !== "tarantula") {
-        expect(Math.abs(entity.y - before.y), entity.id).toBeLessThan(40);
+        expect(Math.abs(entity.y - before.y), entity.id).toBeLessThan(tolerance);
       }
     }
     expect(await page.evaluate(() => window.__storageWrites ?? [])).toEqual([]);
