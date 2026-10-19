@@ -13,8 +13,8 @@ export const ARENA = {
   h: 768,
   minX: 74,
   maxX: 1334,
-  minY: 486,
-  maxY: 648,
+  minY: 468,
+  maxY: 684,
   fieldRadius: 132,
   timeScaleInside: 0.45,
   seedDefault: 1337,
@@ -116,16 +116,22 @@ export const PARRY = {
   successLockMs: 700,
 } as const;
 
-/** Static level geometry. Obstacles are circles: cheap, exact and stable. */
+/**
+ * Static level geometry. Obstacles are circles: cheap, exact and stable.
+ *
+ * The radii are deliberately small against the play band. A rider plus a reef is
+ * the collision width, so a 27 px reef eats 49 px of a 216 px tall band; the first
+ * pass at 27/19 made the water feel like a corridor of pillars rather than an arena.
+ */
 export const OBSTACLES = {
   /** Solid reef rock. Blocks riders, wardens and pellets. */
-  reefRadius: 27,
+  reefRadius: 21,
   /** Slim kelp pillar. Same rule, smaller footprint. */
-  pillarRadius: 19,
+  pillarRadius: 14,
   /** Smallest gap two obstacles may sit apart without overlapping. */
   minGap: 84,
   /** Extra clearance kept between an obstacle and the band edge. */
-  edgeMargin: 10,
+  edgeMargin: 26,
 } as const;
 
 /** Loose cosmic cores: the collect half of every objective. */

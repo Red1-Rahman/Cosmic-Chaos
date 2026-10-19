@@ -480,9 +480,9 @@
     "playBand": {
       "minX": 74,
       "maxX": 1334,
-      "minY": 486,
-      "maxY": 648,
-      "note": "The rectangle entities are clamped to. maxY stays above the near shore so nothing walks onto rock."
+      "minY": 468,
+      "maxY": 684,
+      "note": "The rectangle entities are clamped to. minY sits just below the horizon at 456 and maxY just above the near shore at 700, so the whole swimmable band is playable rather than a thin lane in the middle of it."
     },
     "depth": {
       "note": "y doubles as depth. Farther up means smaller and slightly hazier.",

@@ -5,7 +5,7 @@
 // caller hands in. Every function here takes the world or the pieces it needs and
 // writes into them, so `world.ts` stays the only place that decides the order.
 
-import { CORES, DODGE, OBSTACLES, STAGGER, STAGGERABLE, WEAPON } from "./game-config";
+import { ARENA, CORES, DODGE, OBSTACLES, STAGGER, STAGGERABLE, WEAPON } from "./game-config";
 import { clamp } from "../util/rng";
 import type { LevelDefinition, LevelObjective } from "./levels";
 import type {
@@ -32,24 +32,20 @@ const round6 = (value: number): number => Math.round(value * 1e6) / 1e6;
 /**
  * Build the level's obstacles. Authored in arena pixels and then nudged inside the
  * play band, so a hand placed reef can never end up half off the water even if a
- * human edits a level later.
+ * human edits a level later. The band comes from ARENA, not from a local copy, so
+ * widening the water never leaves this module clamping to a stale rectangle.
  */
 export function buildObstacles(level: LevelDefinition): Obstacle[] {
   const margin = OBSTACLES.edgeMargin;
   return level.obstacles.map((spec, index) => ({
     id: `obstacle-${String(index + 1)}`,
     kind: spec.kind,
-    x: round6(clamp(spec.x, OBSTACLES_MIN_X + margin, OBSTACLES_MAX_X - margin)),
-    y: round6(clamp(spec.y, OBSTACLES_MIN_Y + margin, OBSTACLES_MAX_Y - margin)),
+    x: round6(clamp(spec.x, ARENA.minX + margin, ARENA.maxX - margin)),
+    y: round6(clamp(spec.y, ARENA.minY + margin, ARENA.maxY - margin)),
     r: spec.r,
     phase: round6(((index * 37) % 100) / 100),
   }));
 }
-
-const OBSTACLES_MIN_X = 74;
-const OBSTACLES_MAX_X = 1334;
-const OBSTACLES_MIN_Y = 486;
-const OBSTACLES_MAX_Y = 648;
 
 /** True when the point is inside any obstacle disc. */
 export function insideObstacle(
@@ -114,20 +110,24 @@ export function isInvulnerable(player: Entity): boolean {
 // Cosmic cores
 // ---------------------------------------------------------------------------
 
-/** Build the level's cores along a spread of hand picked lanes. */
+/**
+ * Build the level's cores. Eight lanes spread across the full width and the full
+ * depth of the band, alternating near and far, so a level's pickups always use the
+ * water rather than sitting in one horizontal strip.
+ */
 export function buildCores(level: LevelDefinition): Core[] {
   const lanes: readonly { readonly fx: number; readonly fy: number }[] = [
-    { fx: 0.08, fy: 0.28 },
-    { fx: 0.2, fy: 0.72 },
-    { fx: 0.34, fy: 0.44 },
-    { fx: 0.48, fy: 0.84 },
-    { fx: 0.61, fy: 0.2 },
-    { fx: 0.74, fy: 0.62 },
-    { fx: 0.87, fy: 0.34 },
-    { fx: 0.95, fy: 0.78 },
+    { fx: 0.07, fy: 0.24 },
+    { fx: 0.18, fy: 0.78 },
+    { fx: 0.31, fy: 0.12 },
+    { fx: 0.44, fy: 0.52 },
+    { fx: 0.56, fy: 0.86 },
+    { fx: 0.68, fy: 0.3 },
+    { fx: 0.8, fy: 0.68 },
+    { fx: 0.93, fy: 0.16 },
   ];
-  const width = OBSTACLES_MAX_X - OBSTACLES_MIN_X;
-  const height = OBSTACLES_MAX_Y - OBSTACLES_MIN_Y;
+  const width = ARENA.maxX - ARENA.minX;
+  const height = ARENA.maxY - ARENA.minY;
   const count = Math.min(level.cores, lanes.length);
   const cores: Core[] = [];
   for (let index = 0; index < count; index += 1) {
@@ -135,8 +135,8 @@ export function buildCores(level: LevelDefinition): Core[] {
     if (lane === undefined) continue;
     cores.push({
       id: `core-${String(index + 1)}`,
-      x: round6(OBSTACLES_MIN_X + lane.fx * width),
-      y: round6(OBSTACLES_MIN_Y + lane.fy * height),
+      x: round6(ARENA.minX + lane.fx * width),
+      y: round6(ARENA.minY + lane.fy * height),
       taken: false,
     });
   }

@@ -70,13 +70,18 @@ const FULL_ROSTER: LevelRoster = {
 /**
  * Obstacle layouts are authored in arena pixels rather than generated, so the same
  * level always looks the same and every gap is known to be wide enough for the
- * waterbike. They run the full width of the play band: nothing is wasted space.
+ * waterbike.
+ *
+ * They run the full width AND the full depth of the play band, and they are sparse:
+ * a reef is here to break a chase line and to hide behind, not to turn the water
+ * into a maze. The last level is the densest, and even there no two rocks are
+ * within 30 px of touching and every lane through the band stays open.
  */
-function reef(x: number, y: number, r = 27): ObstacleSpec {
+function reef(x: number, y: number, r = 21): ObstacleSpec {
   return { x, y, r, kind: "reef" };
 }
 
-function pillar(x: number, y: number, r = 19): ObstacleSpec {
+function pillar(x: number, y: number, r = 14): ObstacleSpec {
   return { x, y, r, kind: "pillar" };
 }
 
@@ -106,7 +111,11 @@ export const LEVELS: readonly LevelDefinition[] = Object.freeze([
       },
     ],
     cores: 4,
-    obstacles: [reef(300, 520), pillar(760, 610), reef(1120, 536), pillar(980, 500)],
+    obstacles: [
+      reef(340, 604),
+      pillar(880, 512),
+      reef(1180, 648),
+    ],
     roster: FULL_ROSTER,
     hint: "Ride over a core to pick it up. Space hops, J sprays the water cannon.",
   },
@@ -142,12 +151,10 @@ export const LEVELS: readonly LevelDefinition[] = Object.freeze([
     ],
     cores: 5,
     obstacles: [
-      reef(360, 628),
-      reef(520, 502),
-      pillar(690, 560),
-      reef(860, 634),
-      pillar(1040, 508),
-      reef(1200, 600),
+      reef(360, 660),
+      reef(700, 496),
+      pillar(1000, 588),
+      reef(1250, 512),
     ],
     roster: FULL_ROSTER,
     hint: "Spray the Orca three times to topple it. Hold K to dodge a lunge, L to parry one.",
@@ -184,14 +191,11 @@ export const LEVELS: readonly LevelDefinition[] = Object.freeze([
     ],
     cores: 5,
     obstacles: [
-      reef(250, 546),
-      reef(430, 620),
-      pillar(600, 520),
-      reef(730, 596),
-      pillar(880, 640),
-      reef(1010, 528),
-      pillar(1150, 610),
-      reef(1270, 560),
+      reef(280, 560),
+      pillar(560, 664),
+      reef(830, 500),
+      pillar(1090, 596),
+      reef(1270, 660),
     ],
     roster: FULL_ROSTER,
     hint: "Shoot inside the Snail's field: the warden slows down and your pellets arrive faster.",
@@ -228,15 +232,11 @@ export const LEVELS: readonly LevelDefinition[] = Object.freeze([
     ],
     cores: 6,
     obstacles: [
-      reef(200, 512),
-      reef(340, 634),
-      pillar(500, 556),
-      reef(640, 500),
-      pillar(760, 620),
-      reef(900, 546),
-      pillar(1060, 500),
-      reef(1180, 634),
-      pillar(1290, 570),
+      reef(230, 634),
+      reef(520, 492),
+      pillar(760, 606),
+      reef(1010, 546),
+      pillar(1220, 668),
     ],
     roster: FULL_ROSTER,
     hint: "The Shark dashes along a fixed diagonal. Line up ahead of it and spray.",
@@ -288,17 +288,12 @@ export const LEVELS: readonly LevelDefinition[] = Object.freeze([
     ],
     cores: 8,
     obstacles: [
-      reef(170, 600),
-      reef(280, 508),
-      pillar(400, 560),
-      reef(520, 636),
-      pillar(640, 512),
-      reef(760, 580),
-      pillar(880, 640),
-      reef(1000, 520),
-      pillar(1120, 604),
-      reef(1240, 546),
-      pillar(1320, 620),
+      reef(190, 604),
+      reef(420, 668),
+      pillar(640, 502),
+      reef(860, 596),
+      pillar(1080, 668),
+      reef(1290, 520),
     ],
     roster: FULL_ROSTER,
     hint: "Dodge through reefs, parry lunges, and keep the cannon firing while you ride.",
