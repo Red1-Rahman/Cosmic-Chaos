@@ -225,11 +225,7 @@ export async function boot(): Promise<void> {
         const next = levelById(state.levelId + 1);
         if (next.id <= state.levelId) return;
         audio.play("ui");
-        state.levelId = next.id;
-        world = createWorld(config.seed, state.levelId);
-        state.started = true;
-        state.paused = false;
-        setScreen("playing");
+        startLevel(next.id);
       },
     },
     { debug: config.debug },
