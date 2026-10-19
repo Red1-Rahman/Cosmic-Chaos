@@ -53,6 +53,15 @@ function objectiveViews(world: World): ObjectiveView[] {
   }));
 }
 
+/** The onboarding card for the world's current stage, or null when none is showing. */
+function tutorialCard(world: World): TutorialView | null {
+  const tutorial = world.tutorial;
+  if (tutorial === undefined || tutorial.finished || world.status !== "playing") return null;
+  const card = TUTORIAL_COPY[tutorial.stage];
+  if (card === undefined) return null;
+  return { stage: tutorial.stage, title: card.title, body: card.body };
+}
+
 /** Turn the level table plus the session's cleared set into picker rows. */
 function levelViews(state: GameState): LevelView[] {
   return LEVELS.map((level) => ({
