@@ -21,7 +21,7 @@ import {
 test.describe("the game is stateless", () => {
   test("writes nothing to any storage during a full session", async ({ page, context }) => {
     await installStorageSpy(page);
-    await openGame(page);
+    await openGame(page, { seed: FRIENDLY_SEED });
     await startWithKeyboard(page);
 
     // Play: move, hop, fire, pause, resume, restart.
@@ -127,7 +127,7 @@ test.describe("the game is stateless", () => {
   test("sends no network request after the bundle and the art have loaded", async ({ page }) => {
     const late: string[] = [];
     page.on("request", (request) => late.push(request.url()));
-    await openGame(page);
+    await openGame(page, { seed: FRIENDLY_SEED });
     await startWithKeyboard(page);
     await expect.poll(async () => (await cosmic(page)).tick, { timeout: 15_000 }).toBeGreaterThan(30);
     late.length = 0;
