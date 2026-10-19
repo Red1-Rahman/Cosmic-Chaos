@@ -6,6 +6,7 @@ Legend: [human] only a human edits. [agents] agents own it. [shared] agents may 
 |-- AGENTS.md                  [human] agent contract, read first
 |-- CLAUDE.md                  [human] one line, imports AGENTS.md
 |-- README.md                  [human]
+|-- CHANGELOG.md               [human] Keep a Changelog log of player-facing features
 |-- LICENSE                    [human] Apache 2.0, 2026 Redwan Rahman
 |-- codebase.txt               [human] this file
 |-- tech-stack.json            [shared] tooling source of truth, edit together with package.json
