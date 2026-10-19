@@ -9,6 +9,7 @@
 
 import { expect, test } from "./fixtures";
 import {
+  FASTEST_PX_PER_TICK,
   FRIENDLY_SEED,
   cosmic,
   driveToward,
@@ -186,6 +187,8 @@ test.describe("the orca", () => {
     if (orca === undefined) throw new Error("no orca");
     const away = orca.x > playerOf(start).x ? "left" : "right";
     const startOrcaX = orca.x;
+    // Which way along x the player is running, so the Orca has to follow that way.
+    const sign = away === "right" ? 1 : -1;
     await holdKeys(page, [away]);
     try {
       // The chase aims where the player is going, so the Orca travels with the player
@@ -195,7 +198,7 @@ test.describe("the orca", () => {
           async () => {
             const current = ofKind(await cosmic(page), "orca")[0];
             if (current === undefined) throw new Error("no orca");
-            return startOrcaX - current.x;
+            return sign * (current.x - startOrcaX);
           },
           { timeout: 20_000, intervals: [100] },
         )
@@ -324,18 +327,20 @@ test.describe("pause and restart", () => {
     expect(restarted.entities.map((entity) => entity.id)).toEqual(
       opening.entities.map((entity) => entity.id),
     );
+    // The snapshot is taken some ticks into the new run, so positions are allowed to
+    // have moved by at most what one tick of the fastest thing in the arena can move.
+    const tolerance = restarted.tick * FASTEST_PX_PER_TICK + 5;
     for (const entity of restarted.entities) {
       const before = opening.entities.find((other) => other.id === entity.id);
       expect(before, entity.id).toBeDefined();
       if (before === undefined) continue;
-      // Hull and time scale are reset exactly; position is the opening position to
-      // within the handful of pixels one or two frames of drift can move. The
-      // Tarantula is exempt from the depth comparison: its first step snaps it onto
-      // its hover line above the play band, which is a one step rule, not drift.
+      // Hull is reset exactly. The Tarantula is exempt from the depth comparison: its
+      // first step snaps it onto its hover line above the play band, which is a one
+      // step rule of the arena rather than drift.
       expect(entity.hp, entity.id).toBe(before.hp);
-      expect(Math.abs(entity.x - before.x), entity.id).toBeLessThan(40);
+      expect(Math.abs(entity.x - before.x), entity.id).toBeLessThan(tolerance);
       if (entity.kind !== "tarantula") {
-        expect(Math.abs(entity.y - before.y), entity.id).toBeLessThan(40);
+        expect(Math.abs(entity.y - before.y), entity.id).toBeLessThan(tolerance);
       }
     }
     // The player comes back at nominal time: nothing about the run survives.
