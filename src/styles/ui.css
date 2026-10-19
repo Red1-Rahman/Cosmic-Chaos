@@ -799,6 +799,43 @@
   color: rgb(232 244 255);
 }
 
+/* Staged onboarding card. Top-centre, between the left vitals stack and the right-hand
+   buttons, so it never covers the rider, the objectives or the dialogue. It only exists
+   on a first run, and it steps through one card at a time. */
+.cc-tutorial {
+  position: absolute;
+  top: 0.8em;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  flex-direction: column;
+  gap: 0.2em;
+  max-width: 46%;
+  padding: 0.5em 0.9em;
+  border: 2px solid rgb(160 224 255 / 55%);
+  border-radius: 0.55em;
+  background: rgb(6 12 28 / 84%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.cc-tutorial--on {
+  display: flex;
+}
+
+.cc-tutorial-title {
+  font-size: 0.78em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(168 226 255);
+}
+
+.cc-tutorial-body {
+  font-size: 0.84em;
+  line-height: 1.35;
+  color: rgb(228 240 252);
+}
+
 /* The three readiness meters, under the vitals on the left. */
 
 .cc-hud-ready {

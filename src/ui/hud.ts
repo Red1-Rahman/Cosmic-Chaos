@@ -251,6 +251,16 @@ export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
   dialogue.append(speakerNode, lineNode);
   root.append(dialogue);
 
+  // Staged onboarding card, top-centre: clear of the left stack, the right-hand buttons
+  // and the dialogue over the waterline. Hidden unless a tutorial stage is showing.
+  const tutorialCard = el(doc, "cc-tutorial");
+  tutorialCard.setAttribute("data-cc-tutorial", "");
+  tutorialCard.setAttribute("role", "status");
+  const tutorialTitle = el(doc, "cc-tutorial-title");
+  const tutorialBody = el(doc, "cc-tutorial-body");
+  tutorialCard.append(tutorialTitle, tutorialBody);
+  root.append(tutorialCard);
+
   const last: Cached = { ...NOTHING };
 
   const renderObjectives = (objectives: readonly ObjectiveView[]): void => {
@@ -278,6 +288,25 @@ export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
     dialogue.classList.toggle("cc-dialogue--on", shown !== "");
     text(speakerNode, line?.speaker ?? "");
     text(lineNode, body);
+  };
+
+  const renderTutorial = (card: TutorialView | null | undefined): void => {
+    const active = card ?? null;
+    const signature =
+      active === null ? "" : `${String(active.stage)}|${active.title}|${active.body}`;
+    if (signature === last.tutorial) return;
+    last.tutorial = signature;
+    const on = active !== null;
+    tutorialCard.classList.toggle("cc-tutorial--on", on);
+    if (active === null) {
+      tutorialCard.removeAttribute("data-cc-tutorial");
+      text(tutorialTitle, "");
+      text(tutorialBody, "");
+      return;
+    }
+    tutorialCard.setAttribute("data-cc-tutorial", String(active.stage));
+    text(tutorialTitle, active.title);
+    text(tutorialBody, active.body);
   };
 
   return {
@@ -352,6 +381,7 @@ export function createHud(doc: Document, callbacks: UiCallbacks): HudHandle {
 
       renderObjectives(model.objectives);
       renderDialogue(model.dialogue, model.riderName);
+      renderTutorial(model.tutorial);
 
       if (model.dodgeReady !== last.dodge) {
         updateReadyMeter(dodgeMeter, model.dodgeReady);

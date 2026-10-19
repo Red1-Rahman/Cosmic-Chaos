@@ -13,6 +13,7 @@ import type { ViewportHandle } from "../render/viewport";
 import { dodgeReady01, parryReady01, cannonReady01 } from "../sim/behaviours/player";
 import { speakerName } from "../sim/dialogue";
 import { FIRST_LEVEL_ID, LEVELS, levelById } from "../sim/levels";
+import { TUTORIAL_COPY } from "../sim/tutorial";
 import { createWorld, drainEvents, step } from "../sim/world";
 import type { Entity, GameEvent, InputState, World } from "../sim/types";
 import { createUi } from "../ui";
