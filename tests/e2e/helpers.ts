@@ -339,8 +339,9 @@ export async function driveToward(
   const deadline = Date.now() + (options.timeout ?? 20_000);
   await releaseAll(page);
   let lastGap = Number.POSITIVE_INFINITY;
-  let stalled = 0;
-  let detour = 0;
+  let stalledSince = -1;
+  let nudgeLeft = 0;
+  let nudgeKey: KeyName = "up";
   while (Date.now() < deadline) {
     const snapshot = await cosmic(page);
     const player = playerOf(snapshot);
@@ -355,19 +356,25 @@ export async function driveToward(
     else if (goal.x - player.x < -tolerance) keys.push("left");
     if (goal.y - player.y > tolerance) keys.push("down");
     else if (goal.y - player.y < -tolerance) keys.push("up");
-    // Reefs are solid. If the rider has stopped closing on the goal, it is wedged
-    // against one, so it backs off and tries again from a different angle.
+    // Reefs are solid. If the rider has stopped closing on the goal it is wedged
+    // against one, so it adds a short sideways shove on top of the goal keys until
+    // it slides clear. The stall is measured in simulated ticks rather than in
+    // frames, so a machine running four browsers at once decides the same way.
     const gap = Math.hypot(goal.x - player.x, goal.y - player.y);
-    if (gap > lastGap - 2) stalled += 1;
-    else stalled = 0;
-    lastGap = gap;
-    if (stalled > 24) {
-      detour = detour === 0 ? 1 : detour === 1 ? 2 : 0;
-      stalled = 0;
+    if (gap > lastGap - 1) {
+      if (stalledSince < 0) stalledSince = snapshot.tick;
+    } else {
+      stalledSince = -1;
     }
-    if (detour !== 0) {
-      keys.length = 0;
-      keys.push(detour === 1 ? "up" : "down", detour === 2 ? "left" : "right");
+    lastGap = gap;
+    if (stalledSince >= 0 && snapshot.tick - stalledSince > 20 && nudgeLeft <= 0) {
+      stalledSince = snapshot.tick;
+      nudgeLeft = 14;
+      nudgeKey = goal.y >= player.y ? "up" : "down";
+    }
+    if (nudgeLeft > 0) {
+      if (!keys.includes(nudgeKey)) keys.push(nudgeKey);
+      nudgeLeft -= 1;
     }
     await holdKeys(page, keys);
     await waitFrames(page);
