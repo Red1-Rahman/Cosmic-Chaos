@@ -36,6 +36,8 @@ interface GameState {
   /** Levels cleared this session. Never written anywhere; it dies with the tab. */
   cleared: Set<number>;
   riderName: string;
+  /** Whether the staged onboarding has already run this session. */
+  tutorialSeen: boolean;
 }
 
 const CANVAS_ID = "stage";
