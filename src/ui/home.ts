@@ -12,7 +12,7 @@ import type { UiCallbacks } from "./types.js";
 
 export const HOME_COPY = {
   kicker: "Cosmic Chaos",
-  headline: "You broke a rule of the universe. Ride anyway.",
+  headline: "You broke the conservation rule. Ride anyway.",
   /**
    * Two of the four background story paragraphs, picked by index. The full
    * BACKGROUND_STORY runs to nine rendered lines, which on a 720p window pushes the

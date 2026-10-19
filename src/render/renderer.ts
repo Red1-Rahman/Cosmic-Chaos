@@ -37,6 +37,7 @@ import { MAX_FLASH_HZ, createFlashLimiter, createParticleSystem, readStardust } 
 import type { ParticleSystem } from "./particles";
 import { SPLASH_COLOR as SPLASH_TINT } from "./particles";
 import { CORES, DODGE, PARRY } from "../sim/game-config";
+import { levelById } from "../sim/levels";
 import type { Layout, Size } from "./viewport";
 
 /** Which manifest character draws a given sim entity kind. */
@@ -289,17 +290,24 @@ export function createRenderer(
     dustCarry = 0;
   };
 
-  const backgroundFor = (presetId: string): BackgroundSlot => {
-    const cached = backgroundSlots.get(presetId);
+  const backgroundFor = (backgroundId: string, presetId: string): BackgroundSlot => {
+    const cacheKey = `${backgroundId}|${presetId}`;
+    const cached = backgroundSlots.get(cacheKey);
     if (cached !== undefined) return cached;
-    const choice = pickBackground(manifest, manifest.arena.background, presetId);
+    const choice = pickBackground(manifest, backgroundId, presetId);
     const slot: BackgroundSlot = { choice, image: options.backgrounds?.get(choice.id) };
-    backgroundSlots.set(presetId, slot);
+    backgroundSlots.set(cacheKey, slot);
     return slot;
   };
 
-  const paintBackground = (ctx: CanvasRenderingContext2D, layout: Layout): void => {
-    const slot = backgroundFor(layout.preset.id);
+  const paintBackground = (ctx: CanvasRenderingContext2D, world: World, layout: Layout): void => {
+    // Minimal renderer fixture worlds have no objective book and represent the
+    // manifest default rather than a playable campaign level.
+    const backgroundId =
+      world.objectives.length === 0
+        ? manifest.arena.background
+        : levelById(world.levelId).backgroundId;
+    const slot = backgroundFor(backgroundId, layout.preset.id);
     const image = slot.image;
     if (image === undefined) {
       ctx.fillStyle = FALLBACK_BACKGROUND_COLOR;
@@ -488,7 +496,7 @@ export function createRenderer(
     const t = Number.isFinite(alpha) ? (alpha < 0 ? 0 : alpha > 1 ? 1 : alpha) : 1;
     const interpolate = previous !== undefined && previous.tick === world.tick - 1;
 
-    paintBackground(ctx, layout);
+    paintBackground(ctx, world, layout);
 
     ctx.save();
     ctx.translate(arenaView.offsetX, arenaView.offsetY);

@@ -21,7 +21,7 @@ import type { LevelView, ObjectiveView, UiCallbacks } from "./types.js";
  */
 export const TITLE_COPY = {
   kicker: "Cosmic Chaos",
-  headline: "The Capybara broke a fundamental rule of the universe.",
+  headline: "The Capybara broke the conservation rule of the universe.",
   premise: [
     "The cosmos is correcting itself through several beings with very different jobs.",
     "The Orca enforces the rule. The Shark collects the damage. The Tarantula oversees the order. The Snail keeps the tempo of time. A few oblivious human pets drift past and take no part in any of it.",
@@ -36,6 +36,7 @@ export const BRIEFING_COPY = {
   headline: "What has to happen",
   start: "Launch",
   hint: "Enter or Space to launch",
+  next: "Next message",
 } as const;
 
 export const PAUSE_COPY = {
@@ -119,7 +120,13 @@ export function createBriefingScreen(doc: Document, callbacks: UiCallbacks): Bri
   let currentId = 1;
 
   const titleNode = el(doc, "cc-briefing-title");
+  const avatar = el(doc, "cc-story-avatar", "img") as HTMLImageElement;
+  avatar.alt = "Story speaker";
   const story = el(doc, "cc-story");
+  const rider = el(doc, "cc-copy cc-briefing-rider");
+  const next = el(doc, "cc-btn cc-btn-story-next", "button") as HTMLButtonElement;
+  next.type = "button";
+  text(next, BRIEFING_COPY.next);
   const objectives = createObjectiveList(doc);
   const hint = el(doc, "cc-hint");
   text(hint, BRIEFING_COPY.hint);
@@ -131,7 +138,7 @@ export function createBriefingScreen(doc: Document, callbacks: UiCallbacks): Bri
     kicker: BRIEFING_COPY.kicker,
     headline: BRIEFING_COPY.headline,
     body: [],
-    beforeActions: [titleNode, story, objectives.root, hint],
+    beforeActions: [titleNode, avatar, story, next, objectives.root, hint],
     actions: [
       {
         action: "start",
@@ -171,14 +178,27 @@ export function createBriefingScreen(doc: Document, callbacks: UiCallbacks): Bri
       const definition = LEVELS.find((entry) => entry.id === level.id);
       text(titleNode, `${String(level.id)}. ${level.name} - ${level.subtitle}`);
       while (story.children.length > 0) story.children[0]?.remove();
-      for (const line of definition?.brief ?? []) {
+      const lines = definition?.brief ?? [];
+      let storyIndex = 0;
+      const renderStoryLine = (index: number): void => {
+        while (story.children.length > 0) story.children[0]?.remove();
+        const line = lines[index] ?? lines[0] ?? "";
         const paragraph = el(doc, "cc-copy");
         text(paragraph, line);
         story.append(paragraph);
-      }
-      const who = el(doc, "cc-copy cc-briefing-rider");
-      text(who, `${riderName} is on the water.`);
-      story.append(who);
+        story.append(rider);
+        const speakers = ["capybara", "orca", "snail", "tarantula", "shark"];
+        const speaker = speakers[index % speakers.length] ?? "capybara";
+        avatar.src = `/assets/${speaker === "capybara" ? "Capybara-idle.png" : speaker === "orca" ? "Orca-idle.png" : speaker === "snail" ? "Snail-idle-facing-right.png" : speaker === "tarantula" ? "Spider-Idle.png" : "Shark-slide-right-diagonal-slightly-down.png"}`;
+        avatar.alt = `${speaker} story speaker`;
+        text(next, index >= lines.length - 1 ? "Story complete" : BRIEFING_COPY.next);
+      };
+      next.onclick = (): void => {
+        storyIndex = Math.min(storyIndex + 1, Math.max(0, lines.length - 1));
+        renderStoryLine(storyIndex);
+      };
+      renderStoryLine(0);
+      text(rider, `${riderName} is on the water.`);
       objectives.render(level.objectives);
       text(hint, level.hint);
     },

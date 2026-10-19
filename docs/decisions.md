@@ -314,3 +314,20 @@ Alternatives: leaving the band and only moving the art (rejected, the art is rea
 Context: at 27 px and 19 px with a 22 px body radius, a reef was 49 px wide inside a 162 px tall lane. Six of them turned the water into a corridor of pillars, and the chase broke on rocks the player could not see themselves steer around.
 Decision: reefs are 21 px and kelp pillars 14 px, the band edge margin went from 10 px to 26 px so nothing hugs the frame, and the level layouts went from up to eleven obstacles to three, four, five, five and six. The layouts also moved into the open water on the left and centre of the picture, where the canvas is genuinely water rather than the foreground rock on the right. The spec gate still asserts every pair of rocks in a level is more than 30 px clear of touching.
 Alternatives: dropping obstacle collision for the rider (rejected: reefs that only block wardens are not cover), keeping the density and shrinking the radii alone (rejected: six rocks across 216 px of height is still a slalom).
+
+## 2026-10-19: Three scene modes and readable story beats
+
+- The unexplained rule is now the **conservation rule**: the Capybara duplicated
+  a cosmic core in the lab, creating two incompatible versions of the same
+  universe map. The correction force is trying to reunite them.
+- The campaign is presented as three navigable modes instead of one repeated
+  arena: **Lab Breach** uses `canvas-01` for the origin and escape, **Candy
+  Current** uses `canvas-02` for bright exploration and time-field play, and
+  **Cosmic Correction** uses `canvas-03` for the intense final chapters.
+- Existing deterministic level objectives remain the measurable game contract;
+  the mode changes the scene, narrative framing, roster pressure and goal mix
+  without adding persistence or runtime dependencies.
+- Briefings are now message-like story beats. A Next message button advances one
+  line at a time, and the current speaker's mascot is shown from the local asset
+  set. Launch remains available so keyboard and existing automated flows retain
+  their direct path.

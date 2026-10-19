@@ -40,6 +40,9 @@ export interface LevelRoster {
 
 export interface LevelDefinition {
   readonly id: number;
+  /** The story route and scene family used by this level. */
+  readonly mode: "lab" | "candy" | "cosmic";
+  readonly backgroundId: "canvas-01" | "canvas-02" | "canvas-03";
   readonly name: string;
   readonly subtitle: string;
   /** One line shown under the level name in the picker. */
@@ -88,6 +91,8 @@ function pillar(x: number, y: number, r = 14): ObstacleSpec {
 export const LEVELS: readonly LevelDefinition[] = Object.freeze([
   {
     id: 1,
+    mode: "lab",
+    backgroundId: "canvas-01",
     name: "First Breach",
     subtitle: "The water remembers",
     blurb: "Open water, one warden, and a handful of loose cores.",
@@ -117,6 +122,8 @@ export const LEVELS: readonly LevelDefinition[] = Object.freeze([
   },
   {
     id: 2,
+    mode: "lab",
+    backgroundId: "canvas-01",
     name: "Warden's Water",
     subtitle: "Return fire",
     blurb: "The Orca hunts. Three clean hits and it goes down.",
@@ -152,6 +159,8 @@ export const LEVELS: readonly LevelDefinition[] = Object.freeze([
   },
   {
     id: 3,
+    mode: "candy",
+    backgroundId: "canvas-02",
     name: "Time and Tide",
     subtitle: "Borrowed seconds",
     blurb: "The Snail's field is wide here. Everything slow inside it is yours to hit.",
@@ -187,6 +196,8 @@ export const LEVELS: readonly LevelDefinition[] = Object.freeze([
   },
   {
     id: 4,
+    mode: "candy",
+    backgroundId: "canvas-02",
     name: "Circuit of the Avenger",
     subtitle: "Both of you, at once",
     blurb: "Reefs everywhere and a Shark that only knows one diagonal.",
@@ -222,6 +233,8 @@ export const LEVELS: readonly LevelDefinition[] = Object.freeze([
   },
   {
     id: 5,
+    mode: "cosmic",
+    backgroundId: "canvas-03",
     name: "Overlord's Audience",
     subtitle: "The whole court, at once",
     blurb: "Everything the cosmos has, and a finish line.",

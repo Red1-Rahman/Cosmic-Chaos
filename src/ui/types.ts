@@ -13,6 +13,9 @@ export interface ObjectiveView {
 /** One level, already resolved for the picker. */
 export interface LevelView {
   id: number;
+  mode?: "lab" | "candy" | "cosmic";
+  modeName?: string;
+  backgroundId?: "canvas-01" | "canvas-02" | "canvas-03";
   name: string;
   subtitle: string;
   blurb: string;

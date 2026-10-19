@@ -136,6 +136,24 @@
   color: rgb(206 228 244);
 }
 
+.cc-story-avatar {
+  display: block;
+  width: 5em;
+  height: 5em;
+  margin: 0 auto 0.7em;
+  object-fit: contain;
+  image-rendering: pixelated;
+  border: 2px solid rgb(120 178 224 / 45%);
+  border-radius: 0.7em;
+  background: rgb(10 20 38 / 70%);
+}
+
+.cc-btn-story-next {
+  display: block;
+  margin: 0.2em auto 0.7em;
+  font-size: 0.82em;
+}
+
 .cc-actions-row {
   display: flex;
   flex-wrap: wrap;
@@ -149,6 +167,14 @@
   font-size: 0.8em;
   letter-spacing: 0.08em;
   color: rgb(168 198 220);
+}
+
+.cc-level-mode {
+  margin: -0.25em 0 0.45em;
+  font-size: 0.72em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(150 214 246);
 }
 
 /* --- HUD ---------------------------------------------------------------------- */

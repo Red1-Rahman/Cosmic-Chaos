@@ -9,9 +9,9 @@ import type { LevelView, ObjectiveView, UiCallbacks } from "./types.js";
 
 export const LEVELS_COPY = {
   kicker: "Levels",
-  headline: "Five corrections, in order.",
+  headline: "Three modes. Five playable chapters.",
   body: [
-    "Each one is winnable. Nothing is hidden, nothing is random and nothing is timed against you.",
+    "Pick a scene and a goal. The chapters unlock in order, but every mode changes the feel of the run.",
   ],
   back: "Back",
   hint: "Enter or Space to pick a level, Esc to go back",
@@ -114,6 +114,14 @@ function buildCard(
     : `${String(level.id)}. Locked`;
   text(heading, label);
   card.append(heading);
+  if (level.modeName !== undefined) {
+    const mode = el(doc, "cc-level-mode");
+    text(
+      mode,
+      `${level.modeName}${level.backgroundId === undefined ? "" : ` / ${level.backgroundId}`}`,
+    );
+    card.append(mode);
+  }
 
   const subtitle = el(doc, "cc-level-sub");
   text(subtitle, level.unlocked ? level.subtitle : "Clear the level before it to open this one.");

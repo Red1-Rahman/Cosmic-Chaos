@@ -54,6 +54,14 @@ function objectiveViews(world: World): ObjectiveView[] {
 function levelViews(state: GameState): LevelView[] {
   return LEVELS.map((level) => ({
     id: level.id,
+    mode: level.mode,
+    modeName:
+      level.mode === "lab"
+        ? "Lab Breach"
+        : level.mode === "candy"
+          ? "Candy Current"
+          : "Cosmic Correction",
+    backgroundId: level.backgroundId,
     name: level.name,
     subtitle: level.subtitle,
     blurb: level.blurb,
