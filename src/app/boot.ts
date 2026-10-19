@@ -303,6 +303,7 @@ export async function boot(): Promise<void> {
         world.dialogue === null
           ? null
           : { speaker: speakerName(world.dialogue.speaker), line: world.dialogue.line },
+      tutorial: tutorialCard(world),
       levels: levelViews(state),
     };
   };
