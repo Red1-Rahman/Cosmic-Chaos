@@ -7,8 +7,11 @@ import type { BehaviourContext } from "./shared";
 import { faceFromDX } from "./shared";
 
 export const TARANTULA = {
-  /** How far above the shallow edge of the play band it hovers, in px. */
-  hoverAboveBand: 74,
+  /**
+   * How far above the shallow edge of the play band it hovers, in px. Small, so
+   * that widening the band downward did not also push it up into empty sky.
+   */
+  hoverAboveBand: 56,
   /** Largest figure on screen by a wide margin. */
   scale: 1.75,
   /** Very slow lateral drift so it is never a statue. */
