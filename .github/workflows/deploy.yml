@@ -1,77 +1,178 @@
 name: deploy
 
-# Release trigger: a push to main that changes package.json's version. Every other
-# push to main is ignored, so unfinished work never ships. The build is static files
-# pushed to itch.io with the butler CLI; there is no server and no database.
-
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - package.json
 
 permissions:
   contents: read
 
-# Never cancel a push that is already in flight; let a second one queue behind it.
 concurrency:
   group: deploy-main
   cancel-in-progress: false
 
 jobs:
   deploy:
-    name: deploy to itch.io
+    name: Deploy to itch.io
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
     steps:
-      - uses: actions/checkout@v7
+      - name: Check out repository
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: detect a version bump
+      - name: Detect version bump
         id: bump
+        shell: bash
         env:
           BEFORE: ${{ github.event.before }}
-          AFTER: ${{ github.sha }}
         run: |
-          old_version=$(git show "$BEFORE:package.json" 2>/dev/null \
-            | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).version' || echo "")
-          new_version=$(node -p 'JSON.parse(require("fs").readFileSync("package.json","utf8")).version')
-          if [ -n "$old_version" ] && [ "$old_version" = "$new_version" ]; then
+          set -euo pipefail
+
+          # Read the previous version when the previous commit contains package.json.
+          if git cat-file -e "${BEFORE}:package.json" 2>/dev/null; then
+            old_version="$(
+              git show "${BEFORE}:package.json" |
+                node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version'
+            )"
+          else
+            old_version=""
+          fi
+
+          new_version="$(
+            node -p 'require("./package.json").version'
+          )"
+
+          if [[ -z "$new_version" || "$new_version" == "undefined" ]]; then
+            echo "::error::package.json must define a version."
+            exit 1
+          fi
+
+          echo "Previous version: ${old_version:-none}"
+          echo "Current version: $new_version"
+
+          if [[ -n "$old_version" && "$old_version" == "$new_version" ]]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Version unchanged; skipping deployment."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "version=$new_version" >> "$GITHUB_OUTPUT"
+            echo "Version changed; deployment will proceed."
           fi
-          echo "version=$new_version" >> "$GITHUB_OUTPUT"
 
-      - if: steps.bump.outputs.changed == 'true'
+      - name: Set up Node.js
+        if: steps.bump.outputs.changed == 'true'
         uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
 
-      - if: steps.bump.outputs.changed == 'true'
+      - name: Install dependencies
+        if: steps.bump.outputs.changed == 'true'
         run: npm ci
 
-      - if: steps.bump.outputs.changed == 'true'
+      - name: Build game
+        if: steps.bump.outputs.changed == 'true'
         run: npm run build
 
-      - if: steps.bump.outputs.changed == 'true'
-        run: zip -r game.zip dist
-
-      - name: install butler
+      - name: Validate production build
         if: steps.bump.outputs.changed == 'true'
+        shell: bash
         run: |
-          curl -fsSL -o butler.zip "https://broth.itch.so/butler/linux-amd64/LATEST"
-          unzip -q butler.zip -d "$RUNNER_TEMP/butler"
+          set -euo pipefail
+
+          if [[ ! -f dist/index.html ]]; then
+            echo "::error::Build failed to produce dist/index.html."
+            exit 1
+          fi
+
+          echo "Production entry point found."
+          echo "Build output:"
+          find dist -maxdepth 2 -type f | sort
+
+      - name: Package HTML5 game
+        if: steps.bump.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Archive the contents of dist, not the dist directory itself.
+          cd dist
+          zip -qr "$GITHUB_WORKSPACE/game.zip" .
+
+          # Ensure index.html is at the archive root.
+          if ! unzip -Z1 "$GITHUB_WORKSPACE/game.zip" |
+              grep -Eq '^(\./)?index\.html$'; then
+            echo "::error::game.zip must contain index.html at its root."
+            exit 1
+          fi
+
+          echo "Archive contents:"
+          unzip -Z1 "$GITHUB_WORKSPACE/game.zip" | head -100
+
+      - name: Install Butler
+        if: steps.bump.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p "$RUNNER_TEMP/butler"
+
+          curl --fail --silent --show-error --location \
+            --retry 3 \
+            --output "$RUNNER_TEMP/butler.zip" \
+            "https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default"
+
+          unzip -q "$RUNNER_TEMP/butler.zip" \
+            -d "$RUNNER_TEMP/butler"
+
+          chmod +x "$RUNNER_TEMP/butler/butler"
+
+          "$RUNNER_TEMP/butler/butler" -V
           echo "$RUNNER_TEMP/butler" >> "$GITHUB_PATH"
 
-      - name: push to itch.io
+      - name: Validate deployment configuration
         if: steps.bump.outputs.changed == 'true'
+        shell: bash
+        env:
+          ITCH_USER: ${{ vars.ITCH_USER }}
+          ITCH_PROJECT: ${{ vars.ITCH_PROJECT }}
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          [[ -n "$ITCH_USER" ]] || {
+            echo "::error::Missing repository variable ITCH_USER."
+            exit 1
+          }
+
+          [[ -n "$ITCH_PROJECT" ]] || {
+            echo "::error::Missing repository variable ITCH_PROJECT."
+            exit 1
+          }
+
+          [[ -n "$BUTLER_API_KEY" ]] || {
+            echo "::error::Missing repository secret BUTLER_API_KEY."
+            exit 1
+          }
+
+      - name: Push game to itch.io
+        if: steps.bump.outputs.changed == 'true'
+        shell: bash
         env:
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
           ITCH_USER: ${{ vars.ITCH_USER }}
           ITCH_PROJECT: ${{ vars.ITCH_PROJECT }}
           VERSION: ${{ steps.bump.outputs.version }}
         run: |
-          butler push game.zip "$ITCH_USER/$ITCH_PROJECT:html5" --display-version="$VERSION"
+          set -euo pipefail
+
+          butler push \
+            "$GITHUB_WORKSPACE/game.zip" \
+            "$ITCH_USER/$ITCH_PROJECT:html5" \
+            --userversion="$VERSION"

@@ -1,6 +1,11 @@
 <p align="center">
   <img src="public/assets/Cosmic Chaos.png" alt="Cosmic Chaos banner" width="100%">
 </p>
+<p align="center">
+  <a href="https://redwan1127.itch.io/cosmic-chaos">
+    <img src="https://img.shields.io/badge/Play%20on-itch.io-fa5c5c?logo=itchdotio&logoColor=white" alt="Play Cosmic Chaos on itch.io">
+  </a>
+</p>
 
 # Cosmic Chaos
 

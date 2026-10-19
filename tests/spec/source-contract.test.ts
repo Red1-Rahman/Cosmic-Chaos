@@ -15,6 +15,7 @@ import { listAssetReferences } from "../../src/assets/loader";
 import { TOUCH_DATA_ATTRIBUTE } from "../../src/input/touch";
 import { TITLE_COPY } from "../../src/ui/title";
 import {
+  ROOT,
   codeOnly,
   lineOf,
   manifest,
@@ -76,7 +77,7 @@ describe("determinism guardrails", () => {
 
   it("reads time through the clock and not through a global", () => {
     // The app is the only layer allowed to know about a clock at all.
-    const appFiles = sourceFilesIn(join(techStackRoot(), "src", "app"));
+    const appFiles = sourceFilesIn(join(ROOT, "src", "app"));
     expect(appFiles.map((file) => file.path).sort()).toEqual([
       "src/app/boot.ts",
       "src/app/clock.ts",
@@ -130,11 +131,11 @@ describe("asset guardrails", () => {
         const dot = entry.name.lastIndexOf(".");
         if (dot < 0) continue;
         if (audioExtensions.has(entry.name.slice(dot).toLowerCase())) {
-          found.push(relative(techStackRoot(), absolute).split(sep).join("/"));
+          found.push(relative(ROOT, absolute).split(sep).join("/"));
         }
       }
     };
-    walk(techStackRoot());
+    walk(ROOT);
     expect(found).toEqual([]);
   });
 
@@ -203,7 +204,7 @@ describe("manifest driven animation names", () => {
 
   it("matches every anim assignment the behaviour modules make", () => {
     const found = new Map<string, Set<string>>();
-    for (const file of sourceFilesIn(join(techStackRoot(), "src", "sim", "behaviours"))) {
+    for (const file of sourceFilesIn(join(ROOT, "src", "sim", "behaviours"))) {
       const owner = file.path.replace(/^src\/sim\/behaviours\//, "").replace(/\.ts$/, "");
       const names = new Set<string>();
       // Only `.anim = ...` assignments: `.state = ...` assigns a different vocabulary.
@@ -246,7 +247,7 @@ describe("manifest driven animation names", () => {
 describe("source of truth files", () => {
   it("keeps AGENTS.md, codebase.txt and tech-stack.json present", () => {
     for (const file of ["AGENTS.md", "codebase.txt", "tech-stack.json", "package.json"]) {
-      expect(statSync(join(techStackRoot(), file)).isFile(), file).toBe(true);
+      expect(statSync(join(ROOT, file)).isFile(), file).toBe(true);
     }
   });
 
@@ -271,8 +272,3 @@ describe("source of truth files", () => {
     expect(pkg.devDependencies).toEqual(techStack.pins);
   });
 });
-
-/** Repository root, derived from this file so no test depends on the cwd. */
-function techStackRoot(): string {
-  return new URL("../..", import.meta.url).pathname.replace(/^\//, "");
-}
