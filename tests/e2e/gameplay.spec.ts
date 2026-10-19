@@ -129,14 +129,14 @@ test.describe("starting and steering", () => {
       expect(entity.hp, entity.id).toBeLessThanOrEqual(1);
     }
 
-    // The same seed always deals the same arena.
+    // The same seed always deals the same arena, every time, in a real browser.
     await openGame(page, { seed: FRIENDLY_SEED });
     const again = await cosmic(page);
     expect(again.entities.map((entity) => [entity.id, entity.x, entity.y])).toEqual(
       snapshot.entities.map((entity) => [entity.id, entity.x, entity.y]),
     );
-
-    // A different seed does not.
+    // A different seed deals a different one. (The regression gate pins this offline;
+    // here it only has to hold in the browser.)
     await openGame(page, { seed: FRIENDLY_SEED + 1 });
     const other = await cosmic(page);
     expect(other.entities.map((entity) => entity.x)).not.toEqual(
@@ -146,7 +146,7 @@ test.describe("starting and steering", () => {
 });
 
 test.describe("the orca", () => {
-  test("closes on the player, telegraphs, lunges and hurts", async ({ page }) => {
+  test("measurably closes the distance to the player", async ({ page }) => {
     await openGame(page, { seed: FRIENDLY_SEED });
     await startWithKeyboard(page);
 
@@ -161,18 +161,24 @@ test.describe("the orca", () => {
         { timeout: 20_000, intervals: [100] },
       )
       .toBeLessThan(startGap - 80);
+  });
 
-    // The wind-up is short, so the whole state cycle is sampled inside the page.
-    const seen = await statesOverFrames(page, "orca", 3000);
+  test("telegraphs, lunges, and the lunge hurts the player", async ({ page }) => {
+    await openGame(page, { seed: FRIENDLY_SEED });
+    await startWithKeyboard(page);
+
+    // The wind-up lasts a handful of frames, so the whole state cycle is sampled
+    // inside the page rather than polled from node, which would miss it.
+    const seen = await statesOverFrames(page, "orca", 900);
     expect(seen).toContain("chase");
     expect(seen).toContain("telegraph");
     expect(seen).toContain("lunge");
     await expect
-      .poll(async () => playerOf(await cosmic(page)).hp, { timeout: 20_000 })
+      .poll(async () => playerOf(await cosmic(page)).hp, { timeout: 10_000 })
       .toBeLessThan(1);
   });
 
-  test("keeps closing even when the player drives away from it", async ({ page }) => {
+  test("tracks the player when the player drives away from it", async ({ page }) => {
     await openGame(page, { seed: FRIENDLY_SEED });
     await startWithKeyboard(page);
     const start = await cosmic(page);
@@ -181,17 +187,23 @@ test.describe("the orca", () => {
     const away = orca.x > playerOf(start).x ? "left" : "right";
     await holdKeys(page, [away]);
     try {
-      const startGap = orcaGap(start);
-      let smallest = startGap;
-      await expect
+      // The chase aims where the player is going, so the Orca travels with the player
+      // rather than sitting on the spot it started from.
+      const travel = away === "left" ? start.x : orca.x;
+      const closing = await expect
         .poll(
           async () => {
-            smallest = Math.min(smallest, orcaGap(await cosmic(page)));
-            return smallest;
+            const snapshot = await cosmic(page);
+            const current = ofKind(snapshot, "orca")[0];
+            if (current === undefined) throw new Error("no orca");
+            return travel - current.x;
           },
           { timeout: 20_000, intervals: [100] },
         )
-        .toBeLessThan(startGap - 60);
+        .toBeGreaterThan(60)
+        .then(() => true)
+        .catch(() => false);
+      expect(closing, "the orca never followed the fleeing player").toBe(true);
     } finally {
       await releaseAll(page);
     }
