@@ -6,6 +6,21 @@ All notable features of Cosmic Chaos are listed here. The format follows
 
 Release dates are UTC, written as `DD Mon YYYY` (e.g. `19 Oct 2026`).
 
+## [Unreleased]
+
+### Added
+
+- Play-on-itch.io badge in the README linking to the released build
+
+### Changed
+
+- The deploy workflow is hardened: named steps running under `set -euo pipefail`, version detection that survives a missing previous `package.json`, a check that the build produced `dist/index.html`, a check that `index.html` sits at the root of `game.zip`, retries while downloading butler, and a fail-fast check that `ITCH_USER`, `ITCH_PROJECT` and `BUTLER_API_KEY` are configured
+- Butler is downloaded from `broth.itch.zone` and the release version is pushed with `--userversion`
+
+### Fixed
+
+- The spec gate derived its repository root by hand, dropping the leading `/` on macOS and Linux so four content-contract tests failed there; it now reuses the shared root from the spec helpers
+
 ## [0.1.0] - 19 Oct 2026
 
 Initial release.
