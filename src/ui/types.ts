@@ -85,8 +85,10 @@ export const MENU_SCREENS: readonly Screen[] = [
 ];
 
 export interface UiCallbacks {
-  /** Begin a level from scratch, from the home menu, the picker or the briefing. */
+  /** Begin a level straight away, from the home menu or the briefing's Launch. */
   onStart(levelId: number): void;
+  /** Open the briefing for a level, from the picker. Nothing simulates yet. */
+  onBrief(levelId: number): void;
   /** Restart the current level, same seed, same level. */
   onRestart(): void;
   /** Leave the run and return to the home menu. */

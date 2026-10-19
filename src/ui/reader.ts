@@ -30,6 +30,18 @@ export const CONTROLS_COPY = {
 } as const;
 
 export function createControlsScreen(doc: Document, callbacks: UiCallbacks): ScreenHandle {
+  const table = el(doc, "cc-controls-table");
+  table.setAttribute("data-cc-controls", "");
+  for (const [action, keys] of CONTROLS_COPY.rows) {
+    const row = el(doc, "cc-controls-row");
+    const name = el(doc, "cc-controls-action");
+    text(name, action);
+    const binding = el(doc, "cc-controls-keys");
+    text(binding, keys);
+    row.append(name, binding);
+    table.append(row);
+  }
+
   const screen = createPanel(doc, {
     className: "controls",
     role: "dialog",
@@ -37,6 +49,7 @@ export function createControlsScreen(doc: Document, callbacks: UiCallbacks): Scr
     kicker: CONTROLS_COPY.kicker,
     headline: CONTROLS_COPY.headline,
     body: CONTROLS_COPY.body,
+    beforeActions: [table],
     actions: [
       {
         action: "close-overlay",
@@ -50,22 +63,7 @@ export function createControlsScreen(doc: Document, callbacks: UiCallbacks): Scr
     primaryIndex: 0,
   });
 
-  const panel = screen.root.firstElementChild;
-  if (panel !== null) {
-    const table = el(doc, "cc-controls-table");
-    table.setAttribute("data-cc-controls", "");
-    for (const [action, keys] of CONTROLS_COPY.rows) {
-      const row = el(doc, "cc-controls-row");
-      const name = el(doc, "cc-controls-action");
-      text(name, action);
-      const binding = el(doc, "cc-controls-keys");
-      text(binding, keys);
-      row.append(name, binding);
-      table.append(row);
-    }
-    panel.append(table);
-    appendHint(doc, screen, "Esc also goes back");
-  }
+  if (screen.root.firstElementChild !== null) appendHint(doc, screen, "Esc also goes back");
   return screen;
 }
 

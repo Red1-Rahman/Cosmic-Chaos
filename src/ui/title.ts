@@ -118,6 +118,12 @@ export interface BriefingHandle extends ScreenHandle {
 export function createBriefingScreen(doc: Document, callbacks: UiCallbacks): BriefingHandle {
   let currentId = 1;
 
+  const titleNode = el(doc, "cc-briefing-title");
+  const story = el(doc, "cc-story");
+  const objectives = createObjectiveList(doc);
+  const hint = el(doc, "cc-hint");
+  text(hint, BRIEFING_COPY.hint);
+
   const screen = createPanel(doc, {
     className: "briefing",
     role: "dialog",
@@ -125,6 +131,7 @@ export function createBriefingScreen(doc: Document, callbacks: UiCallbacks): Bri
     kicker: BRIEFING_COPY.kicker,
     headline: BRIEFING_COPY.headline,
     body: [],
+    beforeActions: [titleNode, story, objectives.root, hint],
     actions: [
       {
         action: "start",
@@ -154,14 +161,6 @@ export function createBriefingScreen(doc: Document, callbacks: UiCallbacks): Bri
     primaryIndex: 0,
     panelClass: "cc-panel--wide",
   });
-
-  const panel = screen.root.firstElementChild;
-  const titleNode = el(doc, "cc-briefing-title");
-  const story = el(doc, "cc-story");
-  const objectives = createObjectiveList(doc);
-  const hint = el(doc, "cc-hint");
-  text(hint, BRIEFING_COPY.hint);
-  if (panel !== null) panel.append(titleNode, story, objectives.root, hint);
 
   return {
     ...screen,
@@ -239,6 +238,8 @@ export interface VictoryHandle extends ScreenHandle {
 
 export function createVictoryScreen(doc: Document, callbacks: UiCallbacks): VictoryHandle {
   let hasNext = false;
+  const story = el(doc, "cc-story");
+  const objectives = createObjectiveList(doc);
 
   const screen = createPanel(doc, {
     className: "victory",
@@ -247,6 +248,7 @@ export function createVictoryScreen(doc: Document, callbacks: UiCallbacks): Vict
     kicker: VICTORY_COPY.kicker,
     headline: VICTORY_COPY.title,
     body: [VICTORY_COPY.body],
+    beforeActions: [story, objectives.root],
     actions: [
       {
         action: "next-level",
@@ -279,13 +281,8 @@ export function createVictoryScreen(doc: Document, callbacks: UiCallbacks): Vict
 
   // The panel owns one primary action node; the victory screen keeps a live handle
   // on it so "next level" can grey itself out on the last level.
-  const primary = screen.primary;
-  const story = el(doc, "cc-story");
-  const objectives = createObjectiveList(doc);
-  const panel = screen.root.firstElementChild;
-  if (panel !== null) panel.append(story, objectives.root);
-
   const syncNext = (): void => {
+    const primary = screen.primary;
     primary.disabled = !hasNext;
     primary.setAttribute("aria-disabled", hasNext ? "false" : "true");
     text(primary, hasNext ? VICTORY_COPY.next : VICTORY_COPY.lastOne);

@@ -218,3 +218,87 @@ Alternatives: leaving it at the bottom and shrinking it (rejected: the play band
 Context: on a 390x844 phone the viewport handler picks the 9:20 preset, whose logical 810x1800 box contain-fits to a frame around 380x844 CSS px. Driving `--cc-font-size` off the frame height produced roughly 24.8 px of text inside a 380 px wide box, so every line of the title screen wrapped to two or three words, the panel grew past the viewport and the start button was pushed off the bottom of the screen. Height is the LONG side in portrait and the SHORT side in landscape, so it is the one dimension that disagrees with the layout.
 Decision: `--cc-font-size` is now `clamp(min(frame.w, frame.h) / 34, 11, 26)` via `frameShortSide` and `fontSizeFor` in `src/ui/hud.ts`, keeping the existing divisor and clamp, so a 1280x720 landscape window stays at 720/34 = 21.176 px exactly as before and a 390x844 phone lands at 380/34 = 11.176 px, down from 24.8 and inside the 11..14 floor. Consequence of the smaller type: the vitals rows and the seed/preset chip row moved from two absolutely positioned blocks with a fixed 4.2em translate into one flow column `.cc-hud-stack` (the old translate overlapped them on short frames and would have overlapped them worse at the floor), the stack took a `right: 11.8em` inset so it cannot run under the pause and mute buttons on 9:20, `.cc-meter-track` became shrinkable, and `.cc-debug` moved from `top: 8.8em` to `10.8em` to clear the whole stack while still keeping top offset plus the 33% cap above the horizon (8.64/34 + 1/3 = 0.587, under 456/768). `.cc-panel` also gained `max-width: min(34em, 100%)`, `max-height: 100%` and `margin: auto`, so the panel can never scroll sideways at 9:20 and an over-tall panel stays scrollable instead of having its top clipped by flex centring.
 Alternatives: a per-orientation font size (rejected: two rules to keep in sync and a discontinuity at the rotation), a separate portrait CSS override (rejected: the same rule would then live in two places), `min(frame.w, frame.h)` in CSS via `min()` over the frame vars (rejected: the clamp still needs computing, and the rule belongs next to the other ui maths where it can be unit tested).
+
+## 2026-10-19 design: home menu, levels, objectives and three more verbs
+
+Context: Milestone 1 delivered a single arena with one verb (move, hop, act) and no way to win it. The human asked for a home screen, levels, objectives, narrative, dialogue, obstacles, water guns, dodging and parrying, and asked that the whole canvas be used.
+Decision: the boot screen is now a home menu with four doors (Play, Levels, Controls, License) and a rider name field. Play launches level one straight into the water; Levels opens a picker whose cards are locked until the previous level is cleared. The License door is a black page whose full Apache 2.0 text scrolls upward on a CSS animation, closed with Escape or a button. Between picking a level and riding into it sits a briefing screen with the level's story, its objective list with targets, and one gameplay hint.
+Alternatives: a settings screen with sliders (rejected: nothing here is tunable and statelessness forbids remembering a setting), a separate first-run flow (rejected: the premise is the reason to press Play).
+
+## 2026-10-19 design: the rider name lives in a tab, not anywhere else
+
+Context: the human asked for an "add your name" option, and AGENTS.md forbids all persistence.
+Decision: a plain `<input type="text">` on the home screen. The value is sanitised (control and format characters stripped, trimmed, clamped to 18 characters) and held in `src/app/boot.ts` for the length of the session. It appears in the HUD objective board and in the briefing. Nothing is written to storage, so a reload forgets it, and the label on the field says so.
+Alternatives: a name in the seed (rejected: it would change the arena for every test that typed one), storing it (rejected: localStorage is banned and would break the stateless e2e gate).
+
+## 2026-10-19 design: objectives are collect, stagger and survive
+
+Context: the game needed goals that are measurable, visible and actually winnable, and that do not depend on the player out-running a chase.
+Decision: every level lists objectives of three kinds. `collect` counts the loose cosmic cores actually picked up. `stagger` counts warden topples of a named kind. `survive` counts simulated seconds. The same three functions in `updateObjectives` evaluate all of them every step, the briefing shows the exact numbers, and the HUD shows a live count per objective. A level is won the moment every objective is done; the world stops stepping and the victory panel plays.
+Alternatives: a score or a timer alone (rejected: neither teaches the cannon, the dodge or the parry), one shared objective shape with a per-kind payload (rejected: three explicit kinds are simpler to read and to test).
+
+## 2026-10-19 design: the water cannon topples, it never harms
+
+Context: "water gun" plus the hard lore rule that no character may be harmed as a game mechanic, and that the humans especially must never be hurt.
+Decision: the water cannon fires real pellets (24 max, 190 ms apart, 620 ms of life, unscaled dt so the rider's own slow clock does not slow the water). A pellet that reaches a warden adds one unit to its stagger meter; three units topple it for 2.8 s, during which it cannot attack, and a topple knocks it back and costs it its heading for a moment. Pellets pass straight through humans and never interact with them at all, and nothing in the sim can reduce a human's hp.
+Alternatives: damage numbers (rejected: the lore rules out harming the cast, and a wounded warden reads as gore-adjacent), hitting the tarantula (rejected: its `mustNot` list says no combat).
+
+## 2026-10-19 design: dodge and parry are the two answers to the Orca
+
+Context: the Orca lunge was already telegraphed, but the only answer was to out-run it, which is not always possible in a 1260 px band.
+Decision: the dodge is a 220 ms burst with a 700 px/s impulse and 420 ms of invulnerability, on a 1.1 s cooldown, and it ignores reefs for its duration so sliding through cover is a real option. The parry is a 260 ms window; an attack that lands inside it deals no damage, gives no knockback, and instead topples the attacker. Both are edge triggered, so holding the key fires once. `hitPlayer` now returns which of the four things happened, so the AI can tell a parry from a dodge from a hit.
+Alternatives: more health (rejected: more waiting, not more playing), slowing the Orca (rejected: the chase would stop being the threat it is), a shield meter (rejected: a cooldown reads faster than a resource bar at 60 Hz).
+
+## 2026-10-19 design: reefs and kelp pillars are circles
+
+Context: levels needed obstacles, and no obstacle art exists.
+Decision: obstacles are discs, authored in arena pixels in `src/sim/levels.ts` and drawn procedurally in `src/render/props.ts`. The push-out is radial, so a warden chasing into a reef is steered around it rather than pinned to it, which is exactly the "reefs break the chase" behaviour a dodge-em-up wants. Reefs are solid for riders, wardens and pellets; the dodge is the only thing that passes through. Level layouts keep every pair more than 30 px apart, which a spec test asserts, so nothing can ever wedge.
+Alternatives: axis-aligned boxes (rejected: they produce corners that trap a steering AI), convex polygons (rejected: the push-out is much more code for no gameplay difference), importing sprite art (rejected: no human has added any).
+
+## 2026-10-19 sim: five levels, each with its own seed offset
+
+Context: the arena is one photograph, so variety has to come from rules rather than from new art.
+Decision: `LEVELS` in `src/sim/levels.ts` holds five levels. Level n adds `seedOffset` to the base seed (`levelSeed(baseSeed, id)`), so `?seed=` still reproduces a run exactly and two levels never deal the same opening. Each level has its own brief, outro, hint, core count, reef layout and objective book, all hand authored rather than generated. Unlocking is sequential and lives in a `Set<number>` inside `src/app/boot.ts`, so it dies with the tab.
+Alternatives: procedural level generation (rejected: the hand-authored layouts are what make each level feel different, and generation would need a stream the world does not carry), reusing one layout with different objectives (rejected: the water would look identical five times).
+
+## 2026-10-19 sim: the replay keeps the rider alive so the golden keeps testing something
+
+Context: with reefs in the water, the scripted regression replay began ending in `defeat` around tick 900. `step` returns early once the status is not `playing`, so every checkpoint after that recorded the same frozen world and the tail of the golden became worthless.
+Decision: `tests/regression/replay.ts` restores the rider's hull to 1 after every step. The replay is a determinism fixture, not a difficulty curve, and this keeps all 1010 steps simulating.
+Alternatives: shortening the script (rejected: the tail would still be dead), asserting defeat instead of a hash (rejected: a frozen world hashes identically whatever broke it).
+
+## 2026-10-19 change: the golden hashes were regenerated, and here is why
+
+Context: the simulation changed on purpose (levels, obstacles, cores, pellets, dodge, parry, stagger) and `hashWorld` now folds level, obstacles, cores, pellets, objectives, the stagger tally and the current line into the hash. The golden file had to be rewritten.
+Decision: regenerated with the real `replay()` and recorded in this log rather than done quietly. The script in `tests/regression/script.ts` also grew three phases (dodge burst, parry window, sweep the water) so the new mechanics are inside the hashed replay rather than only in unit tests.
+Alternatives: hashing only the pre-existing fields (rejected: then the new state would be unhashed and a determinism bug in it would pass), leaving the golden red (rejected: the gate means nothing if it is always red).
+
+## 2026-10-19 change: characters.json moved the Capybara out of the "no levels" rule
+
+Context: the capybara's `mustNot` listed "Multiple levels", which the human's request directly contradicts.
+Decision: removed that entry and added the water cannon, the dodge, the parry and a winnable level list to `may`. `milestone1.must` is untouched, so every original rule is still enforced by the spec gate. Added "being toppled by the water cannon" to the Orca and Shark `may` lists. `Persistence of any kind` stays on `mustNot`: level progress and the rider name live only in the tab.
+Alternatives: leaving the file alone (rejected: it would be untrue, and AGENTS.md requires the source of truth to be fixed in the same change), rewriting `mustNot` wholesale (rejected: the inventory and persistence bans are still real).
+
+## 2026-10-19 ui: the licence text is imported from LICENSE, not copied
+
+Context: the licence reader must show the licence the project actually ships, and a copied string constant would drift the moment the human edits LICENSE.
+Decision: `src/ui/license-text.ts` does `import licenseText from "../../LICENSE?raw"`, a build-time Vite import, so there is one licence file and the screen cannot disagree with it. The scroll is a CSS `@keyframes` animation rather than a JavaScript timer, so `src/ui` still reads no clock, which is what keeps "real time lives only in `src/app/clock.ts`" true. Escape is a `document` keydown listener installed by `src/ui/index.ts` and only acts on the three overlay screens.
+Alternatives: inlining the text (rejected: a guaranteed drift), fetching it at runtime (rejected: the loader is the only module allowed to fetch, and a fetch for something already in the bundle is silly), a JavaScript scroll loop (rejected: it would put a second clock in the ui layer).
+
+## 2026-10-19 ui: touch controls grew a 2x2 action cluster
+
+Context: the cannon, the dodge and the parry all need a button on a phone, and the pad plus two buttons no longer fit a 390 px wide thumb zone.
+Decision: the four action buttons (cannon, hop, dodge, parry) live in a 2x2 grid anchored bottom right; the cannon takes the larger front slot because it is pressed most. The pad is untouched on the left. `TOUCH_CONTROLS` grew to eight entries, and the spec test that asserts every control has a stylesheet rule was updated rather than relaxed.
+Alternatives: a floating action bar (rejected: it moves between runs), a two-mode pad (rejected: switching modes mid-chase is worse than one more button).
+
+## 2026-10-19 test: the e2e "friendly seed" is now chosen against the real movement model
+
+Context: reefs are solid, so the seed the e2e suite steers on could put one on the line the steering test drives along, and the test then timed out instead of failing.
+Decision: `FRIENDLY_SEED` in `tests/e2e/helpers.ts` runs the real `createWorld`/`step` over the candidate seeds and replays the exact opening the steering test performs (right, back left, down, up), keeping only seeds where all four legs actually move. The old snail-gap and orca-gap criteria are unchanged.
+Alternatives: asserting on the position and letting the test drive around (rejected: a test that has to navigate is a test that eventually times out), widening the arena band (rejected: the band is mirrored from the manifest art).
+
+## 2026-10-19 design: the level picker briefs you, the home menu does not
+
+Context: a briefing screen was built for the level story and objectives, and nothing reached it: both the home Play button and the picker cards called the same "start this level" callback.
+Decision: two callbacks. `onStart(levelId)` begins a run immediately and is what the home Play button uses, so the fastest possible entry is still one keypress. `onBrief(levelId)` opens the briefing and is what a level card uses, because a player who chose a specific level wants to read what it asks for. The briefing's Launch button then calls `onStart`. Opening the briefing does not touch the world, so nothing simulates behind it.
+Alternatives: one callback with a briefing for both routes (rejected: the home button would then be two clicks to reach the water), no briefing at all (rejected: the objectives and the control hint have to be read somewhere, and a popup mid-run is worse).

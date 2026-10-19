@@ -15,6 +15,7 @@ import { asDocument, FakeDocument, type FakeElement } from "./fake-dom.js";
 
 const NO_CALLBACKS: UiCallbacks = {
   onStart: (): void => undefined,
+  onBrief: (): void => undefined,
   onRestart: (): void => undefined,
   onHome: (): void => undefined,
   onOpenLevels: (): void => undefined,

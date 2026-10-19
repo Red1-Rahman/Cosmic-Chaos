@@ -28,6 +28,8 @@ export interface PanelSpec {
   primaryIndex: number;
   /** Extra class on the panel, so wide layouts can opt out of the narrow one. */
   panelClass?: string;
+  /** Nodes appended after the story and before the buttons, e.g. a name field. */
+  beforeActions?: readonly HTMLElement[];
 }
 
 /** Build one panel from a spec. Throws rather than dropping a screen's only action. */
@@ -56,6 +58,7 @@ export function createPanel(doc: Document, spec: PanelSpec): ScreenHandle {
   }
 
   const buttons = el(doc, "cc-actions-row");
+  for (const node of spec.beforeActions ?? []) panel.append(node);
   panel.append(buttons);
   const created: HTMLButtonElement[] = [];
   for (const action of spec.actions) {

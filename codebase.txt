@@ -31,13 +31,13 @@ Legend: [human] only a human edits. [agents] agents own it. [shared] agents may 
 |       `-- Capybara-*, Orca-*, Shark-*, Spider-*, Snail-*, human-*, Human-*   (sprites)
 |-- src/
 |   |-- main.ts                [agents] entry, calls app/boot
-|   |-- app/                   [agents] wiring: boot, game loop, clock, test hooks. Only place with real time
+|   |-- app/                   [agents] wiring: boot, game loop, clock, screen stack, test hooks. Only place with real time
 |   |-- sim/                   [agents] pure deterministic simulation. No DOM, no audio, no clocks, no imports from other layers
 |   |-- assets/                [agents] manifest loader, image preload, animation sampler. Only place that may fetch
 |   |-- render/                [agents] viewport/letterbox, canvas drawing, procedural props, particles
 |   |-- audio/                 [agents] Web Audio synth voices, AudioPort, null and recording backends
 |   |-- input/                 [agents] keyboard, gamepad, virtual touch D-pad, merged InputState
-|   |-- ui/                    [agents] title screen, HUD, pause, debug overlay
+|   |-- ui/                    [agents] home menu, level picker, briefing, HUD, pause, licence reader, debug overlay
 |   |-- util/                  [agents] rng.ts (mulberry32), math helpers, tiny shared types
 |   |-- styles/                [agents] plain CSS
 |   `-- data/
@@ -60,24 +60,48 @@ DEFAULT MODULE CONTRACT (names are defaults. If you change one, update this file
   util/rng.ts          mulberry32(seed), createRng(seed): { next(), int(a,b), pick(list), fork(label) }
                        Two streams: sim (gameplay) and cosmetic (particles, noise buffers). Math.random is banned.
   app/clock.ts         Clock { nowMs() }. Real and fake implementations. Only file allowed to read real time.
-  sim/types.ts         InputState { moveX, moveY, jump, action } with moveX and moveY in [-1, 1]
-                       GameEvent union (hit, jump, splash, laser, timeFieldEnter, timeFieldExit, spawn, defeat, ui)
-  sim/world.ts         createWorld(seed), step(world, input, fixedDt), world.events drained each frame, hashWorld(world)
+  sim/types.ts         InputState { moveX, moveY, jump, action, dodge, parry } with moveX and moveY in [-1, 1].
+                       `action` fires the water cannon, `dodge` starts the burst, `parry` opens the deflect window.
+                       GameEvent union (hit, jump, splash, laser, dodge, parry, parrySuccess, blocked, collect,
+                       stagger, objective, dialogue, victory, timeFieldEnter, timeFieldExit, spawn, defeat, ui)
+  sim/levels.ts        LevelDefinition[] and levelById/levelSeed/isUnlocked. Objectives, brief and outro text,
+                       core count and the authored reef and kelp layout of each level. Pure data.
+  sim/dialogue.ts      BACKGROUND_STORY and the DIALOGUE trigger table. lineFor(trigger, count) is deterministic.
+  sim/arena-objects.ts Everything in the water that is not a character: obstacles, cores, pellets and the
+                       objective book. buildObstacles/buildCores/buildObjectives/collectCores/stepPellets/updateObjectives.
+  sim/game-config.ts   ARENA and SPAWN_RULES mirror assets.json (a spec test enforces the mirror). MOVEMENT,
+                       WEAPON, STAGGER, DODGE, PARRY, OBSTACLES and CORES are sim-owned tuning blocks.
+  sim/world.ts         createWorld(seed, levelId=1), step(world, input, fixedDt), world.events drained each frame,
+                       hashWorld(world)
   assets/loader.ts     loadManifest(), loadImages(manifest), parseManifest(unknown)
   assets/animation.ts  sampleAnimation(manifest, characterId, name, elapsedMs) -> { spriteId, dx, dy, rot, sx, sy, alpha }
                        resolves aliases, interpolates keyframes, pure
   render/viewport.ts   pickPreset(winW, winH), computeLayout(win, preset), applyLayout(canvas, layout)
-  render/renderer.ts   render(ctx, world, atlas, alpha)
+  render/renderer.ts   render(ctx, world, atlas, alpha); also draws obstacles, cores, pellets and the parry shield
+  render/props.ts      Procedural waterbike, time field, shore crystals, reefs, kelp pillars, cores, pellets,
+                       dodge streak and parry ring. No art exists for any of these.
   audio/port.ts        AudioPort { unlock(), play(cue), setMuted(bool) }  Cues map from GameEvents in app/
   input/input.ts       createInput(target): { poll(): InputState, dispose() }
-  app/test-hooks.ts    exposes window.__cosmic (read-only snapshot: tick, seed, timeScale, entities) only when the URL has ?test=1
+  app/test-hooks.ts    exposes window.__cosmic (read-only snapshot: tick, seed, level, objectives, coresLeft,
+                       pellets, dialogue, timeScale, entities) only when the URL has ?test=1
+
+SCREEN STACK (src/ui, driven by src/app/boot.ts)
+  home -> playing -> paused -> playing
+  home -> levels  -> briefing -> playing
+  home -> controls | license -> home            Escape closes the last three
+  playing -> victory -> playing (next level) | home
+  playing -> defeat  -> playing (retry)  | home
+  Nothing is persisted: level progress and the rider name live in the app for the length of the tab.
 
 WHERE DOES X GO
   New enemy behavior                 -> src/sim/ and its test in tests/unit/
+  New level, objective or story beat -> src/sim/levels.ts or src/sim/dialogue.ts
+  New level geometry or pickup       -> src/sim/arena-objects.ts plus the authored layout in src/sim/levels.ts
   New sound                          -> src/audio/voices/ as a data spec, plus a spec test
   New sprite pose or image           -> a human adds the file, runs npm run assets:lock, then edits assets.json
   Screen layout, letterboxing        -> src/render/viewport.ts
-  Button or HUD element              -> src/ui/ (touch D-pad lives in src/input/)
+  Menu screen or button              -> src/ui/ (home.ts, levels.ts, reader.ts, title.ts; touch D-pad lives in src/input/)
+  License text                       -> read from LICENSE with a Vite ?raw import in src/ui/license-text.ts
   Anything that needs real time      -> src/app/clock.ts only
   Anything that needs fetch          -> src/assets/loader.ts only
   A new dependency                   -> do not. Ask the human, then edit tech-stack.json and package.json together

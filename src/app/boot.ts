@@ -147,6 +147,14 @@ export async function boot(): Promise<void> {
         state.paused = false;
         setScreen("playing");
       },
+      onBrief(levelId): void {
+        audio.unlock();
+        audio.play("ui");
+        // The briefing names the story, the objectives and the hint before anything
+        // starts moving, so nothing on screen is a surprise.
+        state.levelId = levelById(levelId).id;
+        setScreen("briefing");
+      },
       onRestart(): void {
         audio.unlock();
         audio.play("ui");

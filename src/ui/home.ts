@@ -13,10 +13,14 @@ import type { UiCallbacks } from "./types.js";
 export const HOME_COPY = {
   kicker: "Cosmic Chaos",
   headline: "You broke a rule of the universe. Ride anyway.",
-  premise: [
-    "The cosmos assigned the job of correcting you to six very different beings, gave them a coastline, and left.",
-    "You have a waterbike, a water cannon, a dodge and a parry. They have a job each.",
-  ],
+  /**
+   * Two of the four background story paragraphs, picked by index. The full
+   * BACKGROUND_STORY runs to nine rendered lines, which on a 720p window pushes the
+   * Play button off the bottom of the panel: the panel scrolls, and a player who
+   * cannot see the start button does not press it. Paragraph 0 sets up the premise
+   * and paragraph 2 introduces the cast, which is the part worth reading.
+   */
+  storyLines: [0, 2],
   play: "Play",
   levels: "Levels",
   controls: "Controls",
@@ -31,13 +35,26 @@ export interface HomeHandle extends ScreenHandle {
 }
 
 export function createHomeScreen(doc: Document, callbacks: UiCallbacks): HomeHandle {
+  const nameField = createNameField(doc, (value) => {
+    callbacks.onSetRiderName(value);
+  });
+  const story = el(doc, "cc-story");
+  for (const index of HOME_COPY.storyLines) {
+    const line = BACKGROUND_STORY[index];
+    if (line === undefined) continue;
+    const paragraph = el(doc, "cc-copy");
+    text(paragraph, line);
+    story.append(paragraph);
+  }
+
   const screen = createPanel(doc, {
     className: "home",
     role: "dialog",
     label: "Cosmic Chaos home",
     kicker: HOME_COPY.kicker,
     headline: HOME_COPY.headline,
-    body: HOME_COPY.premise,
+    body: [],
+    beforeActions: [story, nameField.root],
     actions: [
       {
         action: "play",
@@ -76,19 +93,7 @@ export function createHomeScreen(doc: Document, callbacks: UiCallbacks): HomeHan
   });
 
   const panel = screen.root.firstElementChild;
-  const nameField = createNameField(doc, (value) => {
-    callbacks.onSetRiderName(value);
-  });
-  if (panel !== null) {
-    const story = el(doc, "cc-story");
-    for (const line of BACKGROUND_STORY) {
-      const paragraph = el(doc, "cc-copy");
-      text(paragraph, line);
-      story.append(paragraph);
-    }
-    panel.append(story, nameField.root);
-    appendHint(doc, screen, HOME_COPY.hint);
-  }
+  if (panel !== null) appendHint(doc, screen, HOME_COPY.hint);
   return {
     ...screen,
     nameField,

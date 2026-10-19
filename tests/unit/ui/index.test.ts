@@ -59,6 +59,7 @@ function model(overrides: Partial<HudModel> = {}): HudModel {
 
 interface Calls {
   start: number[];
+  brief: number[];
   restart: number;
   home: number;
   levels: number;
@@ -75,6 +76,9 @@ function callbacksFor(calls: Calls): UiCallbacks {
   return {
     onStart: (levelId): void => {
       calls.start.push(levelId);
+    },
+    onBrief: (levelId): void => {
+      calls.brief.push(levelId);
     },
     onRestart: (): void => {
       calls.restart += 1;
@@ -112,6 +116,7 @@ function callbacksFor(calls: Calls): UiCallbacks {
 function emptyCalls(): Calls {
   return {
     start: [],
+    brief: [],
     restart: 0,
     home: 0,
     levels: 0,
@@ -236,7 +241,7 @@ describe("home screen", () => {
     expect(text).toContain("broke");
     expect(text).toContain("orca");
     expect(text).toContain("snail");
-    expect(text).toContain("waterbike");
+    expect(text).toContain("tarantula");
 
     for (const action of ["play", "levels", "controls", "license"]) {
       const button = host.findByAttribute("data-cc-action", action);
@@ -386,8 +391,11 @@ describe("level picker", () => {
     const cards = host.findAllByClass("cc-level-card-button");
     cards[1]?.click();
     expect(calls.start).toEqual([]);
+    expect(calls.brief).toEqual([]);
     cards[0]?.click();
-    expect(calls.start).toEqual([1]);
+    // A card opens the briefing, not the water: the objectives come first.
+    expect(calls.brief).toEqual([1]);
+    expect(calls.start).toEqual([]);
   });
 
   it("rebuilds only when the unlocked set actually changes", () => {
