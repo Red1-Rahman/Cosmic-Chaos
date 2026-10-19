@@ -4,7 +4,7 @@
 //
 // The overlay itself is pointer-transparent, so the touch D-pad below it keeps
 // every tap.
-import type { DialogueView, HudModel, ObjectiveView, UiCallbacks } from "./types.js";
+import type { DialogueView, HudModel, ObjectiveView, TutorialView, UiCallbacks } from "./types.js";
 import {
   clamp,
   clamp01,
