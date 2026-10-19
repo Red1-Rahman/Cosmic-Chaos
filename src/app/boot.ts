@@ -18,7 +18,7 @@ import { createWorld, drainEvents, step } from "../sim/world";
 import type { Entity, GameEvent, InputState, World } from "../sim/types";
 import { createUi } from "../ui";
 import { DEFAULT_RIDER_NAME, riderNameOr } from "../ui/dom";
-import type { HudModel, LevelView, ObjectiveView, Screen, Ui } from "../ui";
+import type { HudModel, LevelView, ObjectiveView, Screen, TutorialView, Ui } from "../ui";
 import { createRealClock } from "./clock";
 import { readConfig } from "./config";
 import { cueForEvent, engineForState } from "./event-audio";
