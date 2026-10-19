@@ -318,7 +318,9 @@ test.describe("pause and restart", () => {
 
     const restarted = await cosmic(page);
     expect(restarted.seed).toBe(opening.seed);
-    expect(restarted.fieldRadius).toBe(opening.fieldRadius);
+    // The field readout is zero until the snail's first step, so it is compared
+    // against the manifest rather than against the pre-start snapshot.
+    expect(restarted.fieldRadius).toBe(manifest.arena.fieldRadius);
     expect(restarted.entities.map((entity) => entity.id)).toEqual(
       opening.entities.map((entity) => entity.id),
     );
