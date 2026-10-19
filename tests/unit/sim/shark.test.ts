@@ -75,12 +75,13 @@ describe("shark dash loop", () => {
   it("dashes much faster than it patrols, along a fixed diagonal", () => {
     const world = createWorld(1337);
     const shark = need(world, "shark");
-    // Park the Snail in the far corner: this test is about the dash to patrol speed
-    // ratio, and a dash that clips the time field would be slowed by the field
-    // rather than by its own speed.
+    // Park the Snail in the far corner and clear the reefs. This test is about the
+    // dash to patrol speed ratio: a dash that clips the time field or a reef would
+    // be slowed by that, not by its own speed.
     const snail = need(world, "snail");
     snail.x = world.arena.maxX - 4;
     snail.y = world.arena.minY + 4;
+    world.obstacles.length = 0;
     shark.x = world.arena.minX + 120;
     shark.y = world.arena.minY + 20;
     shark.props.dirX = 1;
