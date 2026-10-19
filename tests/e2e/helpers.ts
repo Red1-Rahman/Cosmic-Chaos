@@ -58,11 +58,11 @@ export interface CosmicSnapshot {
 }
 
 /**
- * A seed where the snail spawns close to the player and the orca spawns as far away as
- * the spawn rules allow. Chosen offline with the real spawner, so a browser test never
- * has to spend ten seconds driving across the arena, and never gets jumped on while it
- * does: the Orca needs several seconds just to close that gap, which is far longer
- * than any assertion below takes.
+ * A seed where the snail spawns a short drive away from the player and the orca
+ * spawns as far away as the spawn rules allow. Chosen offline with the real spawner,
+ * so a browser test never has to spend ten seconds driving across the arena, and
+ * never gets jumped on while it does: the Orca needs several seconds just to close
+ * that gap, which is far longer than any assertion in the suite takes.
  */
 export const FRIENDLY_SEED: number = (() => {
   let best = 1337;
@@ -74,8 +74,9 @@ export const FRIENDLY_SEED: number = (() => {
     const orca = world.entities.find((entity) => entity.kind === "orca");
     if (player === undefined || snail === undefined || orca === undefined) continue;
     // Far enough that the snail's own drift cannot walk the player into the field
-    // before a test has even looked, close enough that driving into it is quick.
-    if (Math.hypot(snail.x - player.x, snail.y - player.y) < 260) continue;
+    // before a test has even looked, near enough that driving into it is quick.
+    const snailGap = Math.hypot(snail.x - player.x, snail.y - player.y);
+    if (snailGap < 280 || snailGap > 420) continue;
     const orcaGap = Math.hypot(orca.x - player.x, orca.y - player.y);
     if (orcaGap <= bestOrcaGap) continue;
     bestOrcaGap = orcaGap;
