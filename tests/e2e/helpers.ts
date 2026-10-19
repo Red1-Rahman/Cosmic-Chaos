@@ -264,9 +264,26 @@ export async function statesOverFrames(
 }
 
 /**
- * Steers toward a point in arena coordinates until `done` says the player is close
- * enough or the field has been entered. Keys are re-chosen every pass, so the drive
- * reacts to where the player actually is rather than to a blind timer.
+ * Waits a fixed number of animation frames. Pacing a drive on frames rather than on
+ * a timer or on a tick value keeps it honest and, unlike a tick modulo, it cannot
+ * deadlock when the world has stopped stepping.
+ */
+export async function waitFrames(page: Page, frames = 4): Promise<void> {
+  await page.evaluate(async (count) => {
+    for (let i = 0; i < count; i += 1) {
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    }
+  }, frames);
+}
+
+/**
+ * Steers toward a point in arena coordinates until `done` says the player has arrived
+ * or the run is over. Keys are re-chosen every pass, so the drive reacts to where the
+ * player actually is rather than to a blind timer.
  */
 export async function driveToward(
   page: Page,
@@ -275,11 +292,13 @@ export async function driveToward(
   options: { tolerance?: number; timeout?: number } = {},
 ): Promise<EntitySnapshot> {
   const tolerance = options.tolerance ?? 40;
-  const deadline = Date.now() + (options.timeout ?? 30_000);
+  const deadline = Date.now() + (options.timeout ?? 20_000);
   await releaseAll(page);
   while (Date.now() < deadline) {
-    const player = playerOf(await cosmic(page));
-    if (done(player)) {
+    const snapshot = await cosmic(page);
+    const player = playerOf(snapshot);
+    // A run that has ended will never move again, so stop instead of driving forever.
+    if (snapshot.status !== "playing" || done(player)) {
       await releaseAll(page);
       return player;
     }
@@ -290,15 +309,18 @@ export async function driveToward(
     if (goal.y - player.y > tolerance) keys.push("down");
     else if (goal.y - player.y < -tolerance) keys.push("up");
     await holdKeys(page, keys);
-    // Pace on the simulation itself: four frames of drift per pass.
-    await page.waitForFunction(() => {
-      const snapshot = window.__cosmic;
-      return snapshot !== undefined && snapshot.tick % 4 === 0;
-    });
+    await waitFrames(page);
   }
   await releaseAll(page);
   return playerOf(await cosmic(page));
 }
+
+/**
+ * How far the fastest thing in the arena travels in one fixed step, in arena pixels.
+ * A comparison taken a few ticks into a fresh run has to allow for exactly this much
+ * movement per tick, or it would be asserting that time had stopped.
+ */
+export const FASTEST_PX_PER_TICK = 12;
 
 /** The preset id the HUD reports for the layout currently applied. */
 export async function reportedPreset(page: Page): Promise<string> {
