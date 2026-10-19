@@ -151,6 +151,20 @@ export async function boot(): Promise<void> {
     ui.show(screen);
   }
 
+  // One place that launches a level, so the tutorial rule is identical for a fresh start,
+  // a restart and the next-level button. The home backdrop world is never built here, so
+  // the title screen always shows the full cast.
+  function startLevel(levelId: number): void {
+    state.levelId = levelById(levelId).id;
+    const firstRun = !state.tutorialSeen && state.levelId === FIRST_LEVEL_ID;
+    const useTutorial = config.tutorial === true || (wantsTutorial && firstRun);
+    world = createWorld(config.seed, state.levelId, { tutorial: useTutorial });
+    if (useTutorial) state.tutorialSeen = true;
+    state.started = true;
+    state.paused = false;
+    setScreen("playing");
+  }
+
   const ui: Ui = createUi(
     {
       onStart(levelId): void {
