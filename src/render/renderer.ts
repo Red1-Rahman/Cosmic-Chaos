@@ -324,7 +324,11 @@ export function createRenderer(
    * The camera's horizontal focus: the player's x, interpolated between ticks
    * exactly like its sprite, or undefined so the view rests on the band centre.
    */
-  const focusXFor = (player: Entity | undefined, t: number, interpolate: boolean): number | undefined => {
+  const focusXFor = (
+    player: Entity | undefined,
+    t: number,
+    interpolate: boolean,
+  ): number | undefined => {
     if (player === undefined) return undefined;
     if (!interpolate || previous === undefined) return player.x;
     const cached = previous.positions.get(player.id);

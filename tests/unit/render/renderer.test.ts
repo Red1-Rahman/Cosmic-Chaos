@@ -105,9 +105,7 @@ describe("computeArenaView", () => {
         );
         // The band's full depth stays visible; only its width may be followed.
         expect(view.offsetY + band.minY * view.scale).toBeGreaterThanOrEqual(-1e-6);
-        expect(view.offsetY + band.maxY * view.scale).toBeLessThanOrEqual(
-          preset.logical.h + 1e-6,
-        );
+        expect(view.offsetY + band.maxY * view.scale).toBeLessThanOrEqual(preset.logical.h + 1e-6);
       }
     }
   });
@@ -239,7 +237,12 @@ describe("createRenderer", () => {
     const layout = layoutFor("9:20", { w: 810, h: 1800 });
     renderer.render(fake.ctx, makeWorld(fullRoster()), layout, 0);
     // fullRoster's player sits at x 700, which the camera follows.
-    const view = computeArenaView(manifest.arena.logical, layout.logical, manifest.arena.playBand, 700);
+    const view = computeArenaView(
+      manifest.arena.logical,
+      layout.logical,
+      manifest.arena.playBand,
+      700,
+    );
     expect(fake.find("translate")?.args).toEqual([view.offsetX, view.offsetY]);
     expect(fake.find("scale")?.args).toEqual([view.scale, view.scale]);
   });
@@ -473,7 +476,11 @@ describe("createRenderer", () => {
     fake.reset();
     const portrait = layoutFor("1:sqrt2", { w: 768, h: 1086 });
     renderer.render(fake.ctx, makeWorld([]), portrait, 0);
-    const view = computeArenaView(manifest.arena.logical, portrait.logical, manifest.arena.playBand);
+    const view = computeArenaView(
+      manifest.arena.logical,
+      portrait.logical,
+      manifest.arena.playBand,
+    );
     expect(fake.find("translate")?.args).toEqual([view.offsetX, view.offsetY]);
     expect(fake.find("scale")?.args).toEqual([view.scale, view.scale]);
   });

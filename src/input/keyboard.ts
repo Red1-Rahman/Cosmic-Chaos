@@ -36,7 +36,16 @@ const PARRY_CODES: readonly string[] = ["KeyL", "KeyQ"];
 export const ESCAPE_CODE = "Escape";
 
 /** Input kinds that take text, and so take the keyboard with them. */
-const TEXT_INPUT_TYPES = new Set(["", "text", "email", "number", "password", "search", "tel", "url"]);
+const TEXT_INPUT_TYPES = new Set([
+  "",
+  "text",
+  "email",
+  "number",
+  "password",
+  "search",
+  "tel",
+  "url",
+]);
 
 /** Every key this source reacts to, so default scrolling can be suppressed for them only. */
 export function isGameKeyCode(code: string): boolean {
