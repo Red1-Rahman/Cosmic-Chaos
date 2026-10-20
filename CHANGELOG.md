@@ -8,6 +8,8 @@ Release dates are UTC, written as `DD Mon YYYY` (e.g. `19 Oct 2026`).
 
 ## [Unreleased]
 
+## [0.1.1] - 20 Oct 2026
+
 ### Added
 
 - Play-on-itch.io badge in the README linking to the released build

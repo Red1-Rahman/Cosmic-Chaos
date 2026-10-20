@@ -374,10 +374,10 @@ Context: the macOS + webkit and Ubuntu + firefox jobs sit behind `gate-windows-c
 Decision: delete the local converter and use `ROOT` from `tests/spec/helpers.ts`, which is already built with `fileURLToPath` and had been serving every passing spec test on both OSes. The gate now has one root computation instead of two.
 Alternatives: keeping the local function and swapping in `fileURLToPath` (rejected: a second converter that can drift from `helpers.ROOT` again), stripping the leading slash only on Windows (rejected: platform special cases paper over the same bug), skipping `spec` on the POSIX runners (rejected: it hides a real portability defect behind the matrix).
 
-## 2026-10-19 changelog: post-release changes accumulate under [Unreleased]
+## 2026-10-19 changelog: post-release changes accumulate under [0.1.1]
 
 Context: v0.1.0 shipped on GitHub Releases and itch.io, and `CHANGELOG.md` only had released sections with no rule for what happens to the changes after a release.
-Decision: from now on every change is logged under `## [Unreleased]` (the Keep a Changelog convention the file already follows); at release time the human picks major, minor or patch from the accumulated entries under semver, and the entries then move into a dated section. `codebase.txt`'s line for `CHANGELOG.md` was widened from "player-facing features" to "notable changes", because the log now also records CI and deploy work.
+Decision: from now on every change is logged under `## [0.1.1]` (the Keep a Changelog convention the file already follows); at release time the human picks major, minor or patch from the accumulated entries under semver, and the entries then move into a dated section. `codebase.txt`'s line for `CHANGELOG.md` was widened from "player-facing features" to "notable changes", because the log now also records CI and deploy work.
 Alternatives: dating every change as it lands (rejected: changes would not group into releases), keeping only released sections (rejected: work after a release would be invisible until the next bump).
 
 ## 2026-10-19 deploy: butler comes from broth.itch.zone and the /archive/default path serves the zip
