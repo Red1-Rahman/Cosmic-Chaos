@@ -13,7 +13,7 @@ A vibe-coded web game made of random bs.
 
 A capybara scientist broke a rule of the universe. A warden orca, a vengeful shark, a celestial tarantula overlord and a steward snail have opinions about that. Humans are space-suited pets who have no idea what is going on.
 
-Vanilla TypeScript, Canvas 2D, procedural Web Audio. No framework, no database, no hosting. Runs on localhost.
+Vanilla TypeScript, Canvas 2D, procedural Web Audio. No framework, no database.
 
 ## Quick start
 
