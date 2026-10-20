@@ -189,8 +189,27 @@ export function createBriefingScreen(doc: Document, callbacks: UiCallbacks): Bri
         story.append(rider);
         const speakers = ["capybara", "orca", "snail", "tarantula", "shark"];
         const speaker = speakers[index % speakers.length] ?? "capybara";
-        avatar.src = `/assets/${speaker === "capybara" ? "Capybara-idle.png" : speaker === "orca" ? "Orca-idle.png" : speaker === "snail" ? "Snail-idle-facing-right.png" : speaker === "tarantula" ? "Spider-Idle.png" : "Shark-slide-right-diagonal-slightly-down.png"}`;
-        avatar.alt = `${speaker} story speaker`;
+        // The briefing re-renders on every frame (ui/index update). Firefox
+        // restarts an image request when its src is assigned again, even with
+        // the same URL, so a repeat assignment aborts the request in flight and
+        // opens a new one every frame — the avatar picture loads forever and
+        // every aborted fetch lands as a requestfailed console entry. Assign
+        // only when the speaker actually changed.
+        const src = `/assets/${
+          speaker === "capybara"
+            ? "Capybara-idle.png"
+            : speaker === "orca"
+              ? "Orca-idle.png"
+              : speaker === "snail"
+                ? "Snail-idle-facing-right.png"
+                : speaker === "tarantula"
+                  ? "Spider-Idle.png"
+                  : "Shark-slide-right-diagonal-slightly-down.png"
+        }`;
+        if (avatar.getAttribute("src") !== src) {
+          avatar.src = src;
+          avatar.alt = `${speaker} story speaker`;
+        }
         text(next, index >= lines.length - 1 ? "Story complete" : BRIEFING_COPY.next);
       };
       next.onclick = (): void => {
