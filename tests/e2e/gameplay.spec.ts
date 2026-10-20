@@ -12,8 +12,9 @@ import {
   FASTEST_PX_PER_TICK,
   FRIENDLY_SEED,
   cosmic,
-  driveToward,
   holdKeys,
+  installFieldWatch,
+  installWardenReflex,
   manifest,
   ofKind,
   openGame,
@@ -21,6 +22,7 @@ import {
   playThroughHome,
   playerOf,
   releaseAll,
+  restartRun,
   startWithKeyboard,
   statesOverFrames,
   ticksOverFrames,
@@ -312,99 +314,116 @@ test.describe("the snail's time field", () => {
   test("changes the tick rate of what is inside it and only of what is inside it", async ({
     page,
   }) => {
+    // Pacing room for a Restart-required run: the Warden may end one attempt
+    // under the read and the same opening gets dealt again, and on a crowded
+    // machine the sim itself runs slower than the wall. 45s holds one full
+    // cycle with margin; the assertions themselves are unchanged.
+    test.setTimeout(45_000);
     await openGame(page, { seed: FRIENDLY_SEED });
     await startWithKeyboard(page);
+    // The Warden's dashes are dodged at frame speed, and the field phases are
+    // driven and read inside the page: on a crowded machine a node-side drive
+    // loop only moves a step every few rendered frames apart, while the page
+    // keeps its own cadence. Every sample reads the whole world exactly once,
+    // so no boundary crossing between two reads can be mistaken for a lie, and
+    // a broken invariant never turns into a pass.
+    await installWardenReflex(page);
+    await installFieldWatch(page, {
+      profile: "invariant",
+      insideScale: manifest.arena.timeScaleInside,
+      leave: 2.4,
+    });
 
     const outside = playerOf(await cosmic(page));
     expect(outside.inTimeField).toBe(false);
     expect(outside.timeScale).toBe(1);
 
-    await driveToward(
-      page,
-      async () => {
-        const snapshot = await cosmic(page);
-        return { x: snapshot.fieldX, y: snapshot.fieldY };
-      },
-      (player) => player.inTimeField,
-      { timeout: 25_000 },
-    );
-    // A crossing resolves its scale from where the rider stood at the start of
-    // the step, so the flag and the scale only agree from the step after the
-    // rider enters; poll until both say the same thing.
+    // The read lands when a created frame's whole sample agrees with the lore;
+    // the phases trail is what a miss reports.
     await expect
       .poll(
         async () => {
-          const player = playerOf(await cosmic(page));
-          return player.inTimeField ? player.timeScale : -1;
+          const snapshot = await cosmic(page);
+          if (snapshot.status !== "playing") {
+            await restartRun(page);
+            return "run-over";
+          }
+          return await page.evaluate(() => window.__fieldWatch.phase);
         },
-        { timeout: 25_000 },
+        { timeout: 32_000 },
       )
-      .toBeCloseTo(manifest.arena.timeScaleInside, 5);
+      .toBe("ok");
 
-    const inside = playerOf(await cosmic(page));
-    expect(inside.timeScale).toBeLessThan(1);
-    expect(inside.timeScale).toBeCloseTo(manifest.arena.timeScaleInside, 5);
-    // The world readout the HUD shows follows the player.
-    expect((await cosmic(page)).timeScale).toBeCloseTo(manifest.arena.timeScaleInside, 5);
-    await expect(page.locator("[data-cc-time-scale]")).toHaveText(/0\.45/);
-    await expect(page.locator("[data-cc-field]")).toHaveAttribute("data-cc-field", "in");
-
-    const snapshot = await cosmic(page);
-    expect(snapshot.entities.filter((entity) => !entity.inTimeField).length).toBeGreaterThan(0);
-    // `inTimeField` measures the field against where an entity stands now, while
-    // `timeScale` was resolved from where it stood at the start of the step it is
-    // stepping, so an entity caught mid-crossing is still scaled for the side it
-    // has just left. Wait for a tick with nobody mid-crossing and hold the
-    // invariant there; that is every tick but the crossing one, and a real
-    // offender never clears, so the poll times out instead of passing.
-    await expect
-      .poll(
-        async () => {
-          const current = await cosmic(page);
-          return current.entities
-            .filter((entity) => {
-              const expected = entity.inTimeField ? manifest.arena.timeScaleInside : 1;
-              return Math.abs(entity.timeScale - expected) > 1e-5;
-            })
-            .map((entity) => entity.id);
-        },
-        { timeout: 15_000 },
-      )
-      .toEqual([]);
+    // The HUD follows the player, and its own frame may be seconds behind the
+    // sim when the machine is crowded, so the two checks retry across that
+    // whole window rather than trusting the instant after the read.
+    await expect(page.locator("[data-cc-time-scale]")).toHaveText(/0\.45/, { timeout: 10_000 });
+    await expect(page.locator("[data-cc-field]")).toHaveAttribute("data-cc-field", "in", {
+      timeout: 10_000,
+    });
   });
 
   test("puts the player back at one after leaving the field", async ({ page }) => {
+    // Same pacing room as the invariant test above: a defeat under one long
+    // drive or read re-deals the same opening, and the sim runs slower than
+    // the wall on a crowded machine. 45s holds a full cycle with margin.
+    test.setTimeout(45_000);
     await openGame(page, { seed: FRIENDLY_SEED });
     await startWithKeyboard(page);
-    await driveToward(
-      page,
-      async () => {
-        const snapshot = await cosmic(page);
-        return { x: snapshot.fieldX, y: snapshot.fieldY };
-      },
-      (player) => player.inTimeField,
-      { timeout: 25_000 },
-    );
-    await expect
-      .poll(async () => playerOf(await cosmic(page)).inTimeField, { timeout: 25_000 })
-      .toBe(true);
+    // The in-page module drives and reads the phases: entering settles at the
+    // field centre first, then the leave phase steers just past the rim; a run
+    // ended under either is dealt again by the node side. The Warden is the
+    // reflex's business only.
+    await installWardenReflex(page);
+    await installFieldWatch(page, {
+      profile: "release",
+      insideScale: manifest.arena.timeScaleInside,
+      leave: 2.4,
+    });
 
-    // Drive to the far side of the arena, comfortably outside the field radius. The
-    // test aims just past the rim rather than at the far wall, so the ride stays
-    // short: every extra hundred pixels is another hundred pixels past a reef.
-    await driveToward(
-      page,
-      async () => {
-        const snapshot = await cosmic(page);
-        return { x: snapshot.fieldX + snapshot.fieldRadius * 2.4, y: snapshot.fieldY };
-      },
-      (player) => !player.inTimeField,
-      { timeout: 25_000 },
-    );
+    // Phase one of the read: cross the rim and settle inside the field.
     await expect
-      .poll(async () => playerOf(await cosmic(page)).timeScale, { timeout: 25_000 })
-      .toBe(1);
-    await expect(page.locator("[data-cc-field]")).toHaveAttribute("data-cc-field", "out");
+      .poll(
+        async () => {
+          const snapshot = await cosmic(page);
+          if (snapshot.status !== "playing") {
+            await restartRun(page);
+            return "run-over";
+          }
+          return await page.evaluate(() =>
+            window.__fieldWatch.enterOk ? "ok" : window.__fieldWatch.phase,
+          );
+        },
+        { timeout: 18_000 },
+      )
+      .toBe("ok");
+
+    // Phase two: leave through the rim and see the world stamp the rider back
+    // to one.
+    await page.evaluate(() => {
+      window.__fieldWatch.aim = "beyond";
+    });
+    await expect
+      .poll(
+        async () => {
+          const snapshot = await cosmic(page);
+          if (snapshot.status !== "playing") {
+            await restartRun(page);
+            return "run-over";
+          }
+          return await page.evaluate(() =>
+            window.__fieldWatch.leaveOk ? "ok" : window.__fieldWatch.phase,
+          );
+        },
+        { timeout: 20_000 },
+      )
+      .toBe("ok");
+
+    // The HUD marker trails the sim by whole seconds on a crowded machine, so
+    // it retries across that window instead of trusting the instant after.
+    await expect(page.locator("[data-cc-field]")).toHaveAttribute("data-cc-field", "out", {
+      timeout: 10_000,
+    });
   });
 });
 

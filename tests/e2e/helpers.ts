@@ -262,6 +262,265 @@ export async function releaseAll(page: Page): Promise<void> {
   await holdKeys(page, []);
 }
 
+/**
+ * Deal the same opening again after the Warden ends a run mid-read. The
+ * defeat dialog restarts the very same level and seed, so a run that ended
+ * under a measurement costs only the time it took, not the measurement.
+ */
+export async function restartRun(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect.poll(async () => (await cosmic(page)).status, { timeout: 10_000 }).toBe("playing");
+  // A fresh run ticks from zero; wait for the world to actually step rather
+  // than trusting the status alone.
+  await expect.poll(async () => (await cosmic(page)).tick, { timeout: 10_000 }).toBeGreaterThan(0);
+}
+
+/**
+ * Fast reflex, page-side. A dash connects within a few hundred milliseconds of
+ * its wind-up beginning, and the node loop's cadence is too slow for that when
+ * a worker is busy, so the ride is protected where the clock actually lives.
+ * The page watches the live snapshot with requestAnimationFrame and presses the
+ * dodge once per wind-up, off the simulation's own clock: the wind-up is a
+ * fixed 420ms, the dash covers at most another 260ms, so a burst fired 270
+ * sim-ms into the wind-up carries 420ms of invulnerability across the whole
+ * contact range of every possible lunge. No reaction speed is needed — only
+ * that the wind-up is seen, which one frame of latency allows. If a wind-up
+ * was never seen (watcher joined mid-wind-up), the committed dash itself
+ * triggers the press.
+ *
+ * The burst rides the keys the ride is holding when it fires, so the ride
+ * steers the dodge where it wants to go (see rideAndWatch). The key is held
+ * for several frames before the keyup: the input source is a held-key set the
+ * game polls once per frame, so a press and a release inside one JavaScript
+ * turn would never be seen at all. Each press is mirrored onto
+ * `window.__reflexPresses` for diagnostics. The reflex lives for the page's
+ * lifetime, and the context closes with the test.
+ */
+export async function installWardenReflex(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    window.__reflexPresses = { count: 0, marks: "" };
+    let code: string | null = null;
+    let frames = 0;
+    /** Sim time of the wind-up's first sighting; stale from a restarted world. */
+    let born = -1;
+    /** Sim time of the last dodge, so one wind-up presses once. */
+    let lastDodge = -1e9;
+    const reflex = (): void => {
+      const snapshot = window.__cosmic;
+      if (snapshot !== undefined) {
+        if (code !== null) {
+          frames += 1;
+          if (frames >= 6) {
+            window.dispatchEvent(new KeyboardEvent("keyup", { code }));
+            code = null;
+          }
+        } else {
+          const player = snapshot.entities.find((entity) => entity.kind === "player");
+          const orca = snapshot.entities.find((entity) => entity.kind === "orca");
+          if (orca !== undefined && player !== undefined && snapshot.status === "playing") {
+            if (born > snapshot.timeMs) born = -1; // a restarted world: clocks went back
+            let fire = "";
+            if (orca.state === "telegraph") {
+              if (born < 0) born = snapshot.timeMs;
+              if (snapshot.timeMs - born >= 270 && snapshot.timeMs - lastDodge > 900) {
+                fire = `t${born.toFixed(0)}`;
+              }
+            } else {
+              born = -1;
+              if (orca.state === "lunge" && snapshot.timeMs - lastDodge > 900) {
+                fire = `l${snapshot.timeMs.toFixed(0)}`;
+              }
+            }
+            if (fire !== "") {
+              lastDodge = snapshot.timeMs;
+              code = "KeyK";
+              frames = 0;
+              window.dispatchEvent(new KeyboardEvent("keydown", { code }));
+              window.__reflexPresses.count += 1;
+              window.__reflexPresses.marks += `@${fire} `;
+            }
+          } else {
+            born = -1;
+          }
+        }
+      }
+      window.requestAnimationFrame(reflex);
+    };
+    window.requestAnimationFrame(reflex);
+  });
+}
+
+declare global {
+  interface Window {
+    /** Diagnostic mirror of the warden reflex presses. */
+    __reflexPresses: { count: number; marks: string };
+    /** The in-page field phase driver's live state, for node-side polls. */
+    __fieldWatch: {
+      aim: "centre" | "beyond";
+      enterOk: boolean;
+      leaveOk: boolean;
+      phase: string;
+    };
+  }
+}
+
+export interface FieldWatchOptions {
+  /**
+   * "invariant" reads the whole lore invariant of the time field on one sample;
+   * "release" reads the enter-then-leave phases of the same field.
+   */
+  profile: "invariant" | "release";
+  /** The time scale stamped on anything inside the field. */
+  insideScale: number;
+  /** How far past the field centre the leave phase steers, in field radii. */
+  leave: number;
+}
+
+/**
+ * The field phases, driven and read in-place. A node-side drive loop costs one
+ * to several waits per pass, and on a busy machine those waits are rendered
+ * frames apart — the sim runs at a fraction of wall speed while rAF only lands
+ * a few times a second, so a node loop is glacial exactly when the world moves
+ * fastest. This module lives inside the page instead:
+ *
+ * - every rendered frame it steers toward the aim (field centre by default,
+ *   a point past the rim once the node side flips the aim), using the same
+ *   goal keys, tick-measured stall detection and sideways shove the node
+ *   driver uses, so reefs stay real obstacles rather than walls;
+ * - it holds the invariant the phase needs on the very frames that satisfy
+ *   it, latching the verdict so a fast rim crossing can never be missed by a
+ *   poll; the latch is honest — it became true because a whole sample agreed;
+ * - it does not touch the Warden: the reflex (installWardenReflex) handles
+ *   that, riding the move keys this module holds.
+ *
+ * Synthetic key events reach the input source through the same held-key set a
+ * real keyboard does, and the context closes with the test.
+ */
+export async function installFieldWatch(page: Page, options: FieldWatchOptions): Promise<void> {
+  await page.evaluate((cfg) => {
+    const tolerance = 40;
+    const state: Window["__fieldWatch"] = (window.__fieldWatch = {
+      aim: "centre",
+      enterOk: false,
+      leaveOk: false,
+      phase: "boot",
+    });
+    let held: string[] = [];
+    let lastGap = Number.POSITIVE_INFINITY;
+    let stalledSince = -1;
+    let nudgeLeft = 0;
+    let nudgeKey = "KeyW";
+    let trail = "";
+    let lastLabel = "";
+    const note = (label: string, okNow: boolean): void => {
+      if (label !== lastLabel) {
+        trail = trail === "" ? label : `${trail}→${label}`;
+        lastLabel = label;
+      }
+      state.phase = okNow ? "ok" : trail;
+    };
+    const settle = (keys: string[]): void => {
+      const wanted = new Set(keys);
+      for (const code of held) {
+        if (!wanted.has(code)) window.dispatchEvent(new KeyboardEvent("keyup", { code }));
+      }
+      for (const code of keys) {
+        if (!held.includes(code)) window.dispatchEvent(new KeyboardEvent("keydown", { code }));
+      }
+      held = [...keys];
+    };
+    const watch = (): void => {
+      const snapshot = window.__cosmic;
+      if (snapshot === undefined) {
+        window.requestAnimationFrame(watch);
+        return;
+      }
+      const player = snapshot.entities.find((entity) => entity.kind === "player");
+      if (player === undefined || snapshot.status !== "playing") {
+        settle([]);
+        window.requestAnimationFrame(watch);
+        return;
+      }
+      if (cfg.profile === "invariant") {
+        const scaledIn =
+          Math.abs(player.timeScale - cfg.insideScale) <= 1e-5 &&
+          Math.abs(snapshot.timeScale - cfg.insideScale) <= 1e-5;
+        let othersOk = true;
+        let outsideCount = 0;
+        for (const entity of snapshot.entities) {
+          const expected = entity.inTimeField ? cfg.insideScale : 1;
+          if (Math.abs(entity.timeScale - expected) > 1e-5) othersOk = false;
+          if (!entity.inTimeField) outsideCount += 1;
+        }
+        const okNow = player.inTimeField && scaledIn && othersOk && outsideCount >= 1;
+        state.enterOk = state.enterOk || okNow;
+        note(
+          !player.inTimeField
+            ? "outside"
+            : !scaledIn
+              ? "entering"
+              : !othersOk
+                ? "crossing"
+                : outsideCount === 0
+                  ? "nobody-outside"
+                  : "in-settled",
+          okNow,
+        );
+      } else {
+        const enterHold =
+          player.inTimeField && Math.abs(player.timeScale - cfg.insideScale) <= 1e-5;
+        state.enterOk = state.enterOk || enterHold;
+        const leaveHold =
+          !player.inTimeField &&
+          Math.abs(player.timeScale - 1) <= 1e-5 &&
+          Math.abs(snapshot.timeScale - 1) <= 1e-5;
+        state.leaveOk = state.leaveOk || leaveHold;
+        note(
+          player.inTimeField
+            ? enterHold
+              ? "in-settled"
+              : "entering"
+            : Math.abs(player.timeScale - 1) > 1e-5
+              ? "still-slow"
+              : leaveHold
+                ? "out-settled"
+                : "readout",
+          state.leaveOk,
+        );
+      }
+      // Steer for the aim point with the same rules as the node driver.
+      const goal =
+        state.aim === "beyond"
+          ? { x: snapshot.fieldX + snapshot.fieldRadius * cfg.leave, y: snapshot.fieldY }
+          : { x: snapshot.fieldX, y: snapshot.fieldY };
+      const keys: string[] = [];
+      if (goal.x - player.x > tolerance) keys.push("KeyD");
+      else if (goal.x - player.x < -tolerance) keys.push("KeyA");
+      if (goal.y - player.y > tolerance) keys.push("KeyS");
+      else if (goal.y - player.y < -tolerance) keys.push("KeyW");
+      const gap = Math.hypot(goal.x - player.x, goal.y - player.y);
+      if (gap > lastGap - 1) {
+        if (stalledSince < 0) stalledSince = snapshot.tick;
+      } else {
+        stalledSince = -1;
+      }
+      lastGap = gap;
+      if (stalledSince >= 0 && snapshot.tick - stalledSince > 20 && nudgeLeft <= 0) {
+        stalledSince = snapshot.tick;
+        nudgeLeft = 14;
+        nudgeKey = goal.y >= player.y ? "KeyS" : "KeyW";
+      }
+      if (nudgeLeft > 0) {
+        if (!keys.includes(nudgeKey)) keys.push(nudgeKey);
+        nudgeLeft -= 1;
+      }
+      settle(keys);
+      window.requestAnimationFrame(watch);
+    };
+    window.requestAnimationFrame(watch);
+  }, options);
+}
+
 /** The behaviour state of the first entity of a kind, read straight out of the hook. */
 export async function stateOf(page: Page, kind: string): Promise<string> {
   return page.evaluate((wanted) => {
@@ -347,15 +606,19 @@ export async function waitFrames(page: Page, frames = 4): Promise<void> {
 }
 
 /**
- * Steers toward a point in arena coordinates until `done` says the player has arrived
- * or the run is over. Keys are re-chosen every pass, so the drive reacts to where the
- * player actually is rather than to a blind timer.
+ * Steers toward a point in arena coordinates until `done` says the phase has
+ * landed, or the run is over. Keys are re-chosen every pass, so the drive reacts
+ * to where the player actually is rather than to a blind timer. With
+ * `restartOnOver`, a run that ended under the phase does not stop the drive:
+ * the defeat dialog deals the very same level and seed again and the drive
+ * simply resumes from it, so a Warden mauling mid-read costs a ride, not the
+ * read.
  */
 export async function driveToward(
   page: Page,
   target: () => Promise<{ x: number; y: number }>,
-  done: (player: EntitySnapshot) => boolean,
-  options: { tolerance?: number; timeout?: number } = {},
+  done: (player: EntitySnapshot, snapshot: CosmicSnapshot) => boolean | Promise<boolean>,
+  options: { tolerance?: number; timeout?: number; restartOnOver?: boolean } = {},
 ): Promise<EntitySnapshot> {
   const tolerance = options.tolerance ?? 40;
   const deadline = Date.now() + (options.timeout ?? 20_000);
@@ -367,8 +630,20 @@ export async function driveToward(
   while (Date.now() < deadline) {
     const snapshot = await cosmic(page);
     const player = playerOf(snapshot);
-    // A run that has ended will never move again, so stop instead of driving forever.
-    if (snapshot.status !== "playing" || done(player)) {
+    if (snapshot.status !== "playing") {
+      if (options.restartOnOver ?? false) {
+        // A run that has ended will never move again, and a defeated world
+        // answers every read the same way forever: nothing moves. Deal the
+        // same opening again and keep driving.
+        await restartRun(page);
+        continue;
+      }
+      // Default behaviour: a run over means whatever this drive wanted cannot
+      // come true here; report and let the caller decide.
+      await releaseAll(page);
+      return player;
+    }
+    if (await Promise.resolve(done(player, snapshot))) {
       await releaseAll(page);
       return player;
     }
@@ -392,7 +667,11 @@ export async function driveToward(
     if (stalledSince >= 0 && snapshot.tick - stalledSince > 20 && nudgeLeft <= 0) {
       stalledSince = snapshot.tick;
       nudgeLeft = 14;
-      nudgeKey = goal.y >= player.y ? "up" : "down";
+      // The shove slides the rider clear of the wedging reef on the band's wide
+      // axis, toward the goal's side of the water: a rider pinned to a band
+      // edge is nudged back into open water, where a shove into the edge could
+      // never clear anything.
+      nudgeKey = goal.y >= player.y ? "down" : "up";
     }
     if (nudgeLeft > 0) {
       if (!keys.includes(nudgeKey)) keys.push(nudgeKey);
